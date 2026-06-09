@@ -7,7 +7,6 @@
       .det    { fill:#1c3a5e; }
       .fuse   { fill:#1bb3a3; }
       .alert  { fill:#f5a623; }
-      .llm    { fill:#7a5bd5; }
       .topic  { fill:#0f2540; }
       .qry    { fill:#33506f; }
       .w      { fill:#ffffff; }
@@ -52,7 +51,7 @@
     <text x="820" y="200" text-anchor="middle" class="w mut">EO/IR camera,</text>
     <text x="820" y="216" text-anchor="middle" class="w mut">vision inference</text>
   </g>
-  <text x="930" y="132" text-anchor="end" class="mut" fill="#6b7a8d">each = edge daemon, advertises a capability</text>
+  <text x="930" y="132" text-anchor="end" class="mut" fill="#6b7a8d">each = edge daemon, advertises a capability · embeds a compact classifier</text>
 
   <!-- topic 1 -->
   <rect x="60" y="276" width="640" height="52" rx="26" class="topic"/>
@@ -66,12 +65,13 @@
   <text x="360" y="460" text-anchor="middle" class="dk" font-size="12" font-weight="400">on_contact_observed_correlate_track</text>
   <text x="360" y="484" text-anchor="middle" font-size="11" fill="#06302b">multi-sensor triangulation → confirmed tracks</text>
 
-  <!-- serve_llm side -->
-  <rect x="600" y="380" width="320" height="120" rx="12" class="llm"/>
-  <text x="760" y="416" text-anchor="middle" class="wb" font-size="16">serve_llm (on edge)</text>
-  <text x="760" y="442" text-anchor="middle" class="w mut" font-size="12">on-device classification,</text>
-  <text x="760" y="462" text-anchor="middle" class="w mut" font-size="12">natural-language alerting</text>
-  <text x="760" y="484" text-anchor="middle" font-size="11" fill="#e7ddfb">raw data never leaves the site</text>
+  <!-- edge model provenance (candidate / offline) -->
+  <rect x="600" y="380" width="320" height="120" rx="12" fill="#eef1f5" stroke="#9bb0c4" stroke-width="2" stroke-dasharray="8 6"/>
+  <text x="760" y="412" text-anchor="middle" font-size="15" font-weight="700" fill="#33506f">Edge model provenance</text>
+  <text x="760" y="431" text-anchor="middle" font-size="11" fill="#6b7a8d">candidate · offline · roadmap</text>
+  <text x="760" y="455" text-anchor="middle" font-size="12" fill="#33506f">compact classifiers evolved via</text>
+  <text x="760" y="473" text-anchor="middle" font-size="12" fill="#33506f">federated neuroevolution</text>
+  <text x="760" y="491" text-anchor="middle" font-size="11" fill="#6b7a8d">macula-tweann · macula-neuroevolution</text>
 
   <!-- topic 2 -->
   <rect x="180" y="544" width="360" height="52" rx="26" class="topic"/>
@@ -101,10 +101,9 @@
   <path class="flow" marker-end="url(#a2)" d="M360,328 L360,380"/>
   <text x="372" y="360" class="mut" fill="#0f2540">subscribe</text>
 
-  <!-- fuse <-> llm RPC -->
-  <path class="flow" marker-end="url(#a2)" d="M540,440 L600,440"/>
-  <path class="flow" marker-end="url(#a2)" d="M600,470 L540,470"/>
-  <text x="548" y="432" class="mut" fill="#0f2540">RPC: classify</text>
+  <!-- evolved models shipped to sensor slices (candidate) -->
+  <path marker-end="url(#a2)" d="M760,380 C760,300 825,272 822,232" fill="none" stroke="#9bb0c4" stroke-width="2" stroke-dasharray="6 6"/>
+  <text x="772" y="322" class="mut" fill="#6b7a8d">ships evolved models</text>
 
   <path class="flow" marker-end="url(#a2)" d="M360,500 L360,544"/>
   <text x="372" y="528" class="mut" fill="#0f2540">publish track</text>

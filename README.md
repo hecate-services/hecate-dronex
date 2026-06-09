@@ -42,9 +42,11 @@ That is exactly what a capability mesh is for:
   detection capability.
 - **Sovereign data path** — no Big Tech in the chain; a hard requirement
   for European critical-infrastructure and public-sector procurement.
-- **On-edge LLM** — `serve_llm` is already embedded for on-device
-  classification and natural-language alerting; raw sensor data never
-  leaves the site.
+- **Edge AI that fits** — detection is compact, per-modality classifiers
+  running inside each sensor slice (not a language model). Candidate path to
+  producing and improving them is federated neuroevolution
+  (`macula-tweann` / `macula-neuroevolution`) across the fleet, with raw
+  sensor data never leaving the site.
 
 ## Documentation
 

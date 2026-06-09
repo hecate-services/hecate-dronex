@@ -103,7 +103,7 @@ Macula's four primitives map almost one-to-one onto a counter-UAS pipeline.
 | **RPC** | On-demand interrogation. "Give me your last 30s of spectrum / IQ capture / a still frame." Fusion calls a sensor only when it needs corroboration, instead of every sensor firehosing everything. |
 | **Content Streaming** | Live EO/IR video, audio, or RF waterfall to an operator console when a contact escalates. |
 | **Content Sharing** | Archived clips, captured IQ blobs, evidence packages — content-addressed, suitable for chain of custody. |
-| **Capability advertisement** | Dynamic, heterogeneous fleet. A node announces `rf_sensor` / `remote_id_sensor` / `eo_camera`, exactly as `serve_llm` announces its model capability today. Fusion discovers what is online without static config. |
+| **Capability advertisement** | Dynamic, heterogeneous fleet. A node announces `rf_sensor` / `remote_id_sensor` / `eo_camera`. Fusion discovers what is online without static config. |
 
 The default carries **tiny detection facts**; raw media moves only on
 escalation and only by explicit request. This keeps the hot loop cheap.
@@ -174,12 +174,20 @@ directory makes the integration point scream at the filesystem level.
 3. **Sovereign data path.** No Microsoft / AWS / Azure in the chain. For
    European defence and critical-infrastructure procurement this is frequently
    a hard requirement, not a preference.
-4. **On-edge LLM already embedded.** `serve_llm` in every daemon enables
-   on-device classification and natural-language alerting ("DJI Mavic, NE
-   perimeter, climbing") without raw data leaving the site.
-5. **Federated AI (Faber).** Detection classifiers can be evolved/trained
-   across the fleet without centralizing raw sensor data — federated learning
-   fits the substrate natively and avoids pooling raw RF/video.
+4. **Edge AI that fits the problem (and is not an LLM).** Detection is
+   compact, discriminative, per-modality classification: acoustic signatures,
+   RF modulation, micro-Doppler, vision. Those classifiers run **inside each
+   `detect_*` slice** (the model belongs to the slice that owns the modality),
+   doing inference at the edge with raw data staying local. This is not a
+   language model, and there is no separate horizontal "AI service."
+5. **Federated training is a natural fit — candidate: neuroevolution.** To
+   produce and improve those compact classifiers, federated neuroevolution
+   (`macula-tweann` / `macula-neuroevolution`, the Faber lineage) is the
+   leading candidate: TWEANN evolves *small* network topologies, which is
+   exactly what cheap edge nodes need, and it can run across the fleet without
+   centralizing raw RF/video. Honest caveat: this is a candidate, not a
+   settled choice. Conventional small supervised models are the baseline;
+   pick empirically, per modality.
 
 ---
 
@@ -190,6 +198,7 @@ directory makes the integration point scream at the filesystem level.
 | **Latency** | Cross-station wide-area routing has been a real tuning surface (advertise-settle timing, observer mailbox bottlenecks). Counter-UAS wants sub-second to seconds. | Run fusion **at the edge cluster**. Use the mesh for cross-site situational sharing, not for the hot detection loop. |
 | **High-bandwidth streaming at scale** | Raw IQ and 4K EO over the streaming primitive is unproven at fleet scale. | Sensors do local DSP/inference and publish **detections** (tiny). Stream raw media only on escalation. |
 | **Macula is coordination, not algorithms** | The RF demod, acoustic classifier and CV model must still be built or bought. | Treat detection algorithms as first-class engineering, not "just integration." |
+| **Edge-AI method unproven** | Neuroevolution is an attractive candidate (compact, federated-friendly, on-brand) but not validated for these modalities. | Baseline with conventional small supervised models; benchmark neuroevolution per modality; choose on evidence, not aesthetics. |
 | **Dual-use authorization** | Detection is defensive and legitimate; anything past awareness is a different regime. | Hard scope: detect / classify / track / alert. No jamming, spoofing, takeover, or kinetic response. |
 
 ---
