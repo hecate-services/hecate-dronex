@@ -1,0 +1,14 @@
+# Build artifacts
+_build/
+.rebar3/
+*.beam
+erl_crash.dump
+
+# Generated docs (PDF is committed deliberately; HTML scratch is not)
+architecture/build/
+*.html.tmp
+
+# Editor / OS
+.DS_Store
+*~
+.idea/

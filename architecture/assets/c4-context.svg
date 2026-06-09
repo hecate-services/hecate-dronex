@@ -1,0 +1,99 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1040 740" font-family="'Helvetica Neue',Arial,sans-serif">
+  <defs>
+    <style>
+      .title  { font-size:26px; font-weight:700; fill:#0f2540; }
+      .sub    { font-size:14px; fill:#6b7a8d; }
+      .sys    { fill:#1bb3a3; }
+      .systxt { fill:#06302b; font-weight:700; }
+      .actor  { fill:#1c3a5e; }
+      .acttxt { fill:#eaf2f8; }
+      .ext    { fill:#33506f; }
+      .mesh   { fill:#0f2540; }
+      .lbl    { font-size:13px; fill:#0f2540; }
+      .lblw   { font-size:13px; fill:#ffffff; }
+      .ftnt   { font-size:12px; fill:#6b7a8d; }
+      .flow   { stroke:#5b7186; stroke-width:2.2; fill:none; }
+      .flowt  { stroke:#1bb3a3; stroke-width:2.6; fill:none; }
+    </style>
+    <marker id="arr" markerWidth="11" markerHeight="11" refX="8" refY="4" orient="auto">
+      <path d="M0,0 L9,4 L0,8 z" fill="#5b7186"/>
+    </marker>
+    <marker id="arrt" markerWidth="11" markerHeight="11" refX="8" refY="4" orient="auto">
+      <path d="M0,0 L9,4 L0,8 z" fill="#1bb3a3"/>
+    </marker>
+  </defs>
+
+  <rect width="1040" height="740" fill="#ffffff"/>
+  <text x="40" y="48" class="title">DroneX — System Context</text>
+  <text x="40" y="72" class="sub">Federated counter-UAS airspace awareness · detect · classify · track · alert</text>
+
+  <!-- Drones (observed phenomena) -->
+  <rect x="60" y="110" width="210" height="92" rx="10" class="ext"/>
+  <text x="165" y="150" text-anchor="middle" class="lblw" font-weight="700" font-size="15">Drones (UAS)</text>
+  <text x="165" y="172" text-anchor="middle" class="lblw" font-size="12">emit Remote-ID, RF,</text>
+  <text x="165" y="188" text-anchor="middle" class="lblw" font-size="12">sound, heat, motion</text>
+
+  <!-- Sensor fleet -->
+  <rect x="60" y="300" width="210" height="140" rx="10" class="actor"/>
+  <text x="165" y="338" text-anchor="middle" class="acttxt" font-weight="700" font-size="15">Sensor fleet</text>
+  <text x="165" y="362" text-anchor="middle" class="acttxt" font-size="12">RF · Remote-ID</text>
+  <text x="165" y="380" text-anchor="middle" class="acttxt" font-size="12">acoustic · EO/IR</text>
+  <text x="165" y="398" text-anchor="middle" class="acttxt" font-size="12">radar</text>
+  <text x="165" y="422" text-anchor="middle" class="acttxt" font-size="11" fill="#8fb8d6">cheap, heterogeneous, edge</text>
+
+  <!-- Central system -->
+  <rect x="410" y="290" width="230" height="150" rx="14" class="sys"/>
+  <text x="525" y="345" text-anchor="middle" class="systxt" font-size="22">DroneX</text>
+  <text x="525" y="372" text-anchor="middle" class="systxt" font-size="12" font-weight="400">federated airspace</text>
+  <text x="525" y="390" text-anchor="middle" class="systxt" font-size="12" font-weight="400">awareness service</text>
+  <text x="525" y="414" text-anchor="middle" font-size="11" fill="#06302b">fusion · alerting · console</text>
+
+  <!-- Operators -->
+  <rect x="780" y="110" width="200" height="92" rx="10" class="actor"/>
+  <text x="880" y="150" text-anchor="middle" class="acttxt" font-weight="700" font-size="15">Security operators</text>
+  <text x="880" y="174" text-anchor="middle" class="acttxt" font-size="12">watch console, triage</text>
+
+  <!-- C2 / authority -->
+  <rect x="780" y="300" width="200" height="110" rx="10" class="actor"/>
+  <text x="880" y="338" text-anchor="middle" class="acttxt" font-weight="700" font-size="15">C2 / authority</text>
+  <text x="880" y="362" text-anchor="middle" class="acttxt" font-size="12">site security,</text>
+  <text x="880" y="380" text-anchor="middle" class="acttxt" font-size="12">airport ops, police</text>
+
+  <!-- Peer sites -->
+  <rect x="780" y="500" width="200" height="100" rx="10" class="ext"/>
+  <text x="880" y="538" text-anchor="middle" class="lblw" font-weight="700" font-size="15">Peer DroneX sites</text>
+  <text x="880" y="562" text-anchor="middle" class="lblw" font-size="12">federation —</text>
+  <text x="880" y="580" text-anchor="middle" class="lblw" font-size="12">shared awareness</text>
+
+  <!-- Macula mesh substrate -->
+  <rect x="240" y="630" width="560" height="74" rx="10" class="mesh"/>
+  <text x="520" y="664" text-anchor="middle" class="lblw" font-weight="700" font-size="16">Macula mesh</text>
+  <text x="520" y="686" text-anchor="middle" class="lblw" font-size="12">QUIC · federated · no cloud · sovereign data path</text>
+
+  <!-- Flows -->
+  <!-- drones -> sensors -->
+  <path class="flow" marker-end="url(#arr)" d="M165,202 L165,300"/>
+  <text x="178" y="256" class="lbl">emit signatures</text>
+
+  <!-- sensors -> DroneX -->
+  <path class="flowt" marker-end="url(#arrt)" d="M270,365 L410,365"/>
+  <text x="282" y="356" class="lbl" fill="#0f7a6e">detection facts (pub/sub)</text>
+
+  <!-- DroneX -> operators -->
+  <path class="flow" marker-end="url(#arr)" d="M600,300 C660,250 720,200 780,170"/>
+  <text x="630" y="232" class="lbl">alerts + live stream</text>
+
+  <!-- DroneX -> C2 -->
+  <path class="flow" marker-end="url(#arr)" d="M640,360 L780,358"/>
+  <text x="652" y="348" class="lbl">track escalations</text>
+
+  <!-- DroneX <-> peers -->
+  <path class="flow" marker-end="url(#arr)" d="M620,438 C690,490 740,520 780,540"/>
+  <text x="640" y="500" class="lbl">shared tracks</text>
+
+  <!-- DroneX -> mesh -->
+  <path class="flowt" marker-end="url(#arrt)" d="M525,440 L520,630"/>
+  <text x="535" y="540" class="lbl" fill="#0f7a6e">runs on</text>
+
+  <text x="40" y="726" class="ftnt">C4 Level 1 (Context). Teal = mesh-native flow. Scope: detect / classify / track / alert only.</text>
+</svg>

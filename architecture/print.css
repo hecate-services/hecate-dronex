@@ -1,0 +1,81 @@
+/* DroneX design-doc print stylesheet (weasyprint) */
+
+@page {
+  size: A4;
+  margin: 20mm 18mm 22mm 18mm;
+  @bottom-center {
+    content: "DroneX — Federated Counter-UAS Airspace Awareness";
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    font-size: 8.5pt;
+    color: #9bb0c4;
+  }
+  @bottom-right {
+    content: counter(page) " / " counter(pages);
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    font-size: 8.5pt;
+    color: #9bb0c4;
+  }
+}
+
+@page cover { margin: 0; @bottom-center { content: ""; } @bottom-right { content: ""; } }
+
+html { font-family: 'Helvetica Neue', Arial, sans-serif; color: #1a2533; font-size: 10.5pt; line-height: 1.5; }
+body { margin: 0; }
+
+/* ---- Cover ---- */
+.cover {
+  page: cover;
+  page-break-after: always;
+  background: #0f2540;
+  color: #eaf2f8;
+  height: 297mm;
+  box-sizing: border-box;
+  padding: 55mm 24mm 24mm 24mm;
+  position: relative;
+}
+.cover .kicker { color: #1bb3a3; font-size: 13pt; letter-spacing: 3px; text-transform: uppercase; font-weight: 700; }
+.cover h1 { font-size: 34pt; line-height: 1.1; margin: 8mm 0 4mm 0; color: #ffffff; border: none; }
+.cover .lede { font-size: 13pt; color: #b9cad9; max-width: 150mm; }
+.cover .meta { position: absolute; bottom: 26mm; left: 24mm; font-size: 10pt; color: #8fb8d6; }
+.cover .meta strong { color: #eaf2f8; }
+.cover .rule { width: 60mm; height: 4px; background: #1bb3a3; margin: 7mm 0; }
+.cover .scope { position: absolute; bottom: 26mm; right: 24mm; max-width: 78mm; font-size: 9pt; color: #8fb8d6; text-align: right; border-right: 3px solid #f5a623; padding-right: 5mm; }
+
+/* ---- Headings ---- */
+h1 { font-size: 19pt; color: #0f2540; margin-top: 12mm; border-bottom: 3px solid #1bb3a3; padding-bottom: 2mm; }
+h2 { font-size: 14pt; color: #0f2540; margin-top: 9mm; border-bottom: 1px solid #cdd9e4; padding-bottom: 1.5mm; }
+h3 { font-size: 11.5pt; color: #1c3a5e; margin-top: 6mm; }
+h1, h2, h3 { page-break-after: avoid; }
+
+/* first real H1 after cover should not push huge top margin */
+.cover + h1 { margin-top: 0; }
+
+a { color: #0f7a6e; text-decoration: none; }
+
+/* ---- Blockquote (scope/callout) ---- */
+blockquote {
+  margin: 5mm 0; padding: 3mm 5mm;
+  background: #fff7e9; border-left: 4px solid #f5a623;
+  color: #5a3d00; font-size: 9.8pt;
+}
+
+/* ---- Tables ---- */
+table { width: 100%; border-collapse: collapse; margin: 5mm 0; font-size: 9.5pt; page-break-inside: avoid; }
+th { background: #0f2540; color: #eaf2f8; text-align: left; padding: 2.2mm 3mm; font-size: 9pt; }
+td { border-bottom: 1px solid #d7e0e9; padding: 2.2mm 3mm; vertical-align: top; }
+tr:nth-child(even) td { background: #f4f8fb; }
+
+/* ---- Figures ---- */
+figure { margin: 6mm 0; text-align: center; page-break-inside: avoid; }
+figure img { max-width: 100%; max-height: 165mm; }
+figcaption { font-size: 8.8pt; color: #6b7a8d; margin-top: 2mm; font-style: italic; }
+img { max-width: 100%; }
+
+/* ---- Code ---- */
+pre { background: #f4f6f8; border: 1px solid #dde4ec; border-radius: 4px; padding: 3mm 4mm; font-size: 8.6pt; line-height: 1.4; overflow-wrap: break-word; white-space: pre-wrap; page-break-inside: avoid; }
+code { font-family: 'DejaVu Sans Mono', monospace; font-size: 9pt; color: #0f2540; }
+p code, li code { background: #eef2f6; padding: 0.3mm 1mm; border-radius: 3px; }
+
+hr { border: none; border-top: 1px solid #cdd9e4; margin: 8mm 0; }
+ul, ol { margin: 3mm 0 3mm 6mm; }
+li { margin: 1mm 0; }
