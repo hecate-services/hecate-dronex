@@ -22,7 +22,7 @@
   </defs>
 
   <rect width="1040" height="858" fill="#ffffff"/>
-  <text x="40" y="48" class="title">DroneX — Container Model</text>
+  <text x="40" y="48" class="title">DroneX · Container Model</text>
   <text x="40" y="72" class="sub">Divisions (bounded contexts) over the mesh · domain events stay internal, facts cross the mesh</text>
 
   <!-- boundary -->

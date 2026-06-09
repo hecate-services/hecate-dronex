@@ -1,5 +1,5 @@
 ---
-title: "DroneX — Federated Counter-UAS Airspace Awareness on the Macula Mesh"
+title: "DroneX: Federated Counter-UAS Airspace Awareness on the Macula Mesh"
 subtitle: "Working Design Document"
 author: "Hecate Services"
 date: "2026-06-09"
@@ -82,7 +82,7 @@ DroneX sites.
 **External actors and systems**
 
 - **Sensor nodes** (RF, Remote-ID, acoustic, EO/IR, radar) feed detections in.
-- **Drones** emit Remote-ID broadcasts and RF/acoustic/optical signatures —
+- **Drones** emit Remote-ID broadcasts and RF/acoustic/optical signatures,
   the phenomena being observed, not parties to the system.
 - **Security operators** receive alerts and view the live console.
 - **C2 / external authority** (site security, airport ops, police) receive
@@ -102,7 +102,7 @@ Macula's four primitives map almost one-to-one onto a counter-UAS pipeline.
 | **Pub/Sub** | Detection facts fan out. Each sensor publishes `airspace.contact_observed` (bearing, confidence, timestamp, sensor-id). Fusion, alerting and logging subscribe independently. |
 | **RPC** | On-demand interrogation. "Give me your last 30s of spectrum / IQ capture / a still frame." Fusion calls a sensor only when it needs corroboration, instead of every sensor firehosing everything. |
 | **Content Streaming** | Live EO/IR video, audio, or RF waterfall to an operator console when a contact escalates. |
-| **Content Sharing** | Archived clips, captured IQ blobs, evidence packages — content-addressed, suitable for chain of custody. |
+| **Content Sharing** | Archived clips, captured IQ blobs, evidence packages, content-addressed, suitable for chain of custody. |
 | **Capability advertisement** | Dynamic, heterogeneous fleet. A node announces `rf_sensor` / `remote_id_sensor` / `eo_camera`. Fusion discovers what is online without static config. |
 
 The default carries **tiny detection facts**; raw media moves only on
@@ -180,7 +180,7 @@ directory makes the integration point scream at the filesystem level.
    `detect_*` slice** (the model belongs to the slice that owns the modality),
    doing inference at the edge with raw data staying local. This is not a
    language model, and there is no separate horizontal "AI service."
-5. **Federated training is a natural fit — candidate: neuroevolution.** To
+5. **Federated training is a natural fit (candidate: neuroevolution).** To
    produce and improve those compact classifiers, federated neuroevolution
    (`macula-tweann` / `macula-neuroevolution`, the Faber lineage) is the
    leading candidate: TWEANN evolves *small* network topologies, which is
@@ -236,14 +236,14 @@ drops.
 ![Many ears, one picture](assets/explainer-fusion.svg)
 
 No single sensor is certain where a drone is. But when several point roughly
-toward the same spot, the lines cross — and the crossing point is the drone.
+toward the same spot, the lines cross, and the crossing point is the drone.
 Many uncertain observations become one confident location.
 
 ---
 
 ## 10. Next steps
 
-1. **Walking skeleton:** `detect_remote_id` division — capability
+1. **Walking skeleton:** `detect_remote_id` division: capability
    advertisement + `airspace.contact_observed` fact schema + a fusion process
    manager that correlates two receivers into a single track.
 2. **Hardware probe:** ESP32 Remote-ID receiver feeding a Hecate daemon.

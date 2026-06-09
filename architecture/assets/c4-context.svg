@@ -24,7 +24,7 @@
   </defs>
 
   <rect width="1040" height="740" fill="#ffffff"/>
-  <text x="40" y="48" class="title">DroneX — System Context</text>
+  <text x="40" y="48" class="title">DroneX · System Context</text>
   <text x="40" y="72" class="sub">Federated counter-UAS airspace awareness · detect · classify · track · alert</text>
 
   <!-- Drones (observed phenomena) -->
@@ -62,7 +62,7 @@
   <!-- Peer sites -->
   <rect x="780" y="500" width="200" height="100" rx="10" class="ext"/>
   <text x="880" y="538" text-anchor="middle" class="lblw" font-weight="700" font-size="15">Peer DroneX sites</text>
-  <text x="880" y="562" text-anchor="middle" class="lblw" font-size="12">federation —</text>
+  <text x="880" y="562" text-anchor="middle" class="lblw" font-size="12">federation,</text>
   <text x="880" y="580" text-anchor="middle" class="lblw" font-size="12">shared awareness</text>
 
   <!-- Macula mesh substrate -->

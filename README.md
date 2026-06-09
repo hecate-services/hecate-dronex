@@ -21,13 +21,13 @@ inference) is application logic that runs at each sensor node and publishes
 ## Layer position
 
 ```
-Layer 4 — apps        hecate-app-dronex   (operator console + thin plugin
+Layer 4 - apps        hecate-app-dronex   (operator console + thin plugin
                                             shim in hecate-daemon)
-Layer 3 — session     hecate-daemon
-Layer 2 — services    ▶ hecate-dronex ◀   (this repo)
+Layer 3 - session     hecate-daemon
+Layer 2 - services    ▶ hecate-dronex ◀   (this repo)
                                             fusion + alerting on edge cluster
-Layer 1 — identity    hecate-realm
-Layer 0 — kernel      macula-station
+Layer 1 - identity    hecate-realm
+Layer 0 - kernel      macula-station
 ```
 
 ## Why a mesh
@@ -36,13 +36,13 @@ Drone detection is a **distributed sensor-fusion** problem. No single
 sensor is reliable alone; you need many cheap nodes fused into one track.
 That is exactly what a capability mesh is for:
 
-- **Federated, no cloud** — survives degraded or contested comms; keeps
+- **Federated, no cloud:** survives degraded or contested comms; keeps
   fusing locally when the uplink is cut.
-- **Edge-native** — a sensor node is just a Hecate daemon advertising a
+- **Edge-native:** a sensor node is just a Hecate daemon advertising a
   detection capability.
-- **Sovereign data path** — no Big Tech in the chain; a hard requirement
+- **Sovereign data path:** no Big Tech in the chain; a hard requirement
   for European critical-infrastructure and public-sector procurement.
-- **Edge AI that fits** — detection is compact, per-modality classifiers
+- **Edge AI that fits:** detection is compact, per-modality classifiers
   running inside each sensor slice (not a language model). Candidate path to
   producing and improving them is federated neuroevolution
   (`macula-tweann` / `macula-neuroevolution`) across the fleet, with raw
@@ -52,7 +52,7 @@ That is exactly what a capability mesh is for:
 
 | Document | Purpose |
 |----------|---------|
-| [architecture/DESIGN_DRONEX_MESH.md](architecture/DESIGN_DRONEX_MESH.md) | Working design document — modalities, primitive mapping, DDD shape, gaps, strategy |
+| [architecture/DESIGN_DRONEX_MESH.md](architecture/DESIGN_DRONEX_MESH.md) | Working design document: modalities, primitive mapping, DDD shape, gaps, strategy |
 | [architecture/DESIGN_DRONEX_MESH.pdf](architecture/DESIGN_DRONEX_MESH.pdf) | Same, as a distributable PDF (cover + diagrams) |
 
 Build the PDF:

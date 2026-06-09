@@ -25,7 +25,7 @@
   <rect x="0" y="560" width="1040" height="160" fill="#e6eef5"/>
 
   <text x="40" y="58" font-size="30" font-weight="700" fill="#0f2540">Many ears, one picture</text>
-  <text x="40" y="86" font-size="16" fill="#6b7a8d">no single sensor is sure — together they are</text>
+  <text x="40" y="86" font-size="16" fill="#6b7a8d">no single sensor is sure, together they are</text>
 
   <!-- cones (uncertainty wedges) toward the drone -->
   <polygon points="180,540 430,150 600,230" fill="#1bb3a3" opacity="0.22"/>
@@ -52,9 +52,9 @@
   <use href="#sensor" x="180" y="540"/>
   <use href="#sensor" x="520" y="560"/>
   <use href="#sensor" x="860" y="540"/>
-  <text x="180" y="630" text-anchor="middle" font-size="14" fill="#0f2540">sensor 1 — "roughly that way"</text>
-  <text x="520" y="650" text-anchor="middle" font-size="14" fill="#0f2540">sensor 2 — "roughly that way"</text>
-  <text x="860" y="630" text-anchor="middle" font-size="14" fill="#0f2540">sensor 3 — "roughly that way"</text>
+  <text x="180" y="630" text-anchor="middle" font-size="14" fill="#0f2540">sensor 1: "roughly that way"</text>
+  <text x="520" y="650" text-anchor="middle" font-size="14" fill="#0f2540">sensor 2: "roughly that way"</text>
+  <text x="860" y="630" text-anchor="middle" font-size="14" fill="#0f2540">sensor 3: "roughly that way"</text>
 
   <!-- caption -->
   <rect x="40" y="664" width="960" height="44" rx="10" fill="#0f2540"/>

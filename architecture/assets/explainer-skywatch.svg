@@ -55,7 +55,7 @@
   <use href="#watcher" x="330" y="430"/>
   <use href="#watcher" x="540" y="430"/>
   <use href="#watcher" x="690" y="430"/>
-  <text x="420" y="430" text-anchor="middle" font-size="15" fill="#0f2540">many small, cheap watchers — each notices a little</text>
+  <text x="420" y="430" text-anchor="middle" font-size="15" fill="#0f2540">many small, cheap watchers, each notices a little</text>
 
   <!-- guard with single clear picture -->
   <rect x="800" y="408" width="190" height="150" rx="14" fill="#ffffff" stroke="#1c3a5e" stroke-width="2.5"/>
@@ -69,6 +69,6 @@
 
   <!-- caption strip -->
   <rect x="40" y="600" width="960" height="86" rx="12" fill="#0f2540"/>
-  <text x="60" y="634" font-size="16" fill="#eaf2f8">No expensive central tower. No cloud. The watchers keep working — and keep talking —</text>
+  <text x="60" y="634" font-size="16" fill="#eaf2f8">No expensive central tower. No cloud. The watchers keep working, and keep talking,</text>
   <text x="60" y="662" font-size="16" fill="#eaf2f8">even when the internet drops. Add a watcher, the picture just gets sharper.</text>
 </svg>
