@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1040 700" font-family="'Helvetica Neue',Arial,sans-serif">
+  <defs>
+    <style>
+      .title { font-size:26px; font-weight:700; fill:#0f2540; }
+      .sub   { font-size:14px; fill:#6b7a8d; }
+      .w     { fill:#ffffff; }
+      .mut   { font-size:11px; }
+      .bndy  { fill:none; stroke:#9bb0c4; stroke-width:2; stroke-dasharray:8 6; }
+      .flow  { stroke:#5b7186; stroke-width:2.2; fill:none; }
+      .gt    { stroke:#7a5bd5; stroke-width:2.2; fill:none; stroke-dasharray:7 5; }
+    </style>
+    <marker id="c1" markerWidth="11" markerHeight="11" refX="8" refY="4" orient="auto"><path d="M0,0 L9,4 L0,8 z" fill="#5b7186"/></marker>
+    <marker id="c1g" markerWidth="11" markerHeight="11" refX="8" refY="4" orient="auto"><path d="M0,0 L9,4 L0,8 z" fill="#7a5bd5"/></marker>
+  </defs>
+
+  <rect width="1040" height="700" fill="#ffffff"/>
+  <text x="40" y="46" class="title">Simulator: the scoring loop</text>
+  <text x="40" y="70" class="sub">Ground truth stays internal; fusion earns its tracks from facts; the scorer compares the two.</text>
+
+  <rect x="34" y="92" width="588" height="556" rx="14" class="bndy"/>
+  <text x="50" y="114" font-size="13" fill="#9bb0c4" font-weight="700">simulate_airspace context (dev only)</text>
+
+  <!-- simulate_airspace -->
+  <rect x="60" y="128" width="300" height="92" rx="11" fill="#1bb3a3"/>
+  <text x="210" y="162" text-anchor="middle" font-size="16" font-weight="700" fill="#06302b">simulate_airspace</text>
+  <text x="210" y="184" text-anchor="middle" font-size="11" fill="#06302b">scenario · scalable clock · drone kinematics</text>
+  <text x="210" y="204" text-anchor="middle" font-size="11" fill="#06302b">emits ground-truth events</text>
+
+  <!-- emitters -->
+  <rect x="60" y="256" width="240" height="74" rx="10" fill="#1c3a5e"/>
+  <text x="180" y="285" text-anchor="middle" font-size="12.5" font-weight="700" class="w">on_drone_repositioned_</text>
+  <text x="180" y="303" text-anchor="middle" font-size="12.5" font-weight="700" class="w">observe_remote_id</text>
+  <text x="180" y="322" text-anchor="middle" class="mut" fill="#8fb8d6">applies sensor model</text>
+
+  <rect x="320" y="256" width="240" height="74" rx="10" fill="#1c3a5e"/>
+  <text x="440" y="285" text-anchor="middle" font-size="12.5" font-weight="700" class="w">on_drone_repositioned_</text>
+  <text x="440" y="303" text-anchor="middle" font-size="12.5" font-weight="700" class="w">observe_acoustic</text>
+  <text x="440" y="322" text-anchor="middle" class="mut" fill="#8fb8d6">applies sensor model</text>
+
+  <!-- fact bar -->
+  <rect x="60" y="366" width="500" height="50" rx="25" fill="#0f2540"/>
+  <text x="310" y="390" text-anchor="middle" font-size="14" font-weight="700" class="w">airspace.contact_observed</text>
+  <text x="310" y="407" text-anchor="middle" class="mut" fill="#8fb8d6">identical to a real sensor (the swap point)</text>
+
+  <!-- fusion (unchanged) -->
+  <rect x="160" y="452" width="300" height="64" rx="11" fill="#eef1f5" stroke="#9bb0c4" stroke-width="2"/>
+  <text x="310" y="480" text-anchor="middle" font-size="15" font-weight="700" fill="#33506f">fuse_airspace</text>
+  <text x="310" y="500" text-anchor="middle" font-size="11" fill="#6b7a8d">unchanged · correlate facts to tracks</text>
+
+  <!-- track confirmed -->
+  <rect x="160" y="548" width="300" height="48" rx="24" fill="#0f2540"/>
+  <text x="310" y="577" text-anchor="middle" font-size="13" font-weight="700" class="w">airspace.track_confirmed</text>
+
+  <!-- scorer -->
+  <rect x="668" y="300" width="332" height="150" rx="12" fill="#33506f"/>
+  <text x="834" y="334" text-anchor="middle" font-size="16" font-weight="700" class="w">query_detection_quality</text>
+  <text x="834" y="356" text-anchor="middle" font-size="11" fill="#cdd9e4">the ground-truth oracle: compares</text>
+  <text x="834" y="374" text-anchor="middle" font-size="11" fill="#cdd9e4">estimated tracks against truth</text>
+  <text x="834" y="400" text-anchor="middle" font-size="11.5" class="w">latency · track RMSE · false / missed · ID</text>
+  <text x="834" y="428" text-anchor="middle" class="mut" fill="#9bb0c4">CI gate · demo headline · grant evidence</text>
+
+  <!-- console -->
+  <rect x="668" y="492" width="332" height="74" rx="11" fill="#1c3a5e"/>
+  <text x="834" y="524" text-anchor="middle" font-size="14" font-weight="700" class="w">hecate-app-dronex</text>
+  <text x="834" y="546" text-anchor="middle" font-size="11" fill="#8fb8d6">map: truth vs estimate · live score panel</text>
+
+  <!-- internal flows -->
+  <path class="flow" marker-end="url(#c1)" d="M180,220 L180,256"/>
+  <path class="flow" marker-end="url(#c1)" d="M300,220 C360,235 400,240 440,256"/>
+  <path class="flow" marker-end="url(#c1)" d="M180,330 L240,366"/>
+  <path class="flow" marker-end="url(#c1)" d="M440,330 L380,366"/>
+  <path class="flow" marker-end="url(#c1)" d="M310,416 L310,452"/>
+  <path class="flow" marker-end="url(#c1)" d="M310,516 L310,548"/>
+
+  <!-- ground truth (internal, purple dashed) to scorer -->
+  <path class="gt" marker-end="url(#c1g)" d="M360,150 C520,150 660,200 760,300"/>
+  <text x="556" y="172" font-size="11" font-weight="700" fill="#7a5bd5">ground truth · internal · never on mesh</text>
+
+  <!-- estimated tracks (fact) to scorer -->
+  <path class="flow" marker-end="url(#c1)" d="M460,572 C560,572 620,500 690,452"/>
+  <text x="486" y="538" font-size="11" fill="#5b7186">estimated tracks (mesh fact)</text>
+
+  <!-- scorer to console -->
+  <path class="flow" marker-end="url(#c1)" d="M834,450 L834,492"/>
+</svg>

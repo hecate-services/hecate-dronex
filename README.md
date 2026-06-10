@@ -52,13 +52,15 @@ That is exactly what a capability mesh is for:
 
 | Document | Purpose |
 |----------|---------|
-| [architecture/DESIGN_DRONEX_MESH.md](architecture/DESIGN_DRONEX_MESH.md) | Working design document: modalities, primitive mapping, DDD shape, gaps, strategy |
-| [architecture/DESIGN_DRONEX_MESH.pdf](architecture/DESIGN_DRONEX_MESH.pdf) | Same, as a distributable PDF (cover + diagrams) |
+| [architecture/DESIGN_DRONEX_MESH.md](architecture/DESIGN_DRONEX_MESH.md) | System design: modalities, primitive mapping, DDD shape, gaps, strategy |
+| [architecture/DESIGN_DRONEX_SIMULATION.md](architecture/DESIGN_DRONEX_SIMULATION.md) | Simulation framework: the swap point, fidelity layers, scoring loop, build order |
+| `architecture/*.pdf` | Each design doc as a distributable PDF (cover + diagrams) |
 
-Build the PDF:
+Build the PDFs (all design docs, or one):
 
 ```bash
-scripts/build-pdf.sh
+scripts/build-pdf.sh                        # build every architecture/DESIGN_*.md
+scripts/build-pdf.sh DESIGN_DRONEX_SIMULATION.md
 ```
 
 ## Status

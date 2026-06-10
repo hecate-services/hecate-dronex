@@ -1,9 +1,14 @@
 ---
+cover_title: "DroneX"
 title: "DroneX: Federated Counter-UAS Airspace Awareness on the Macula Mesh"
 subtitle: "Working Design Document"
 author: "Hecate Services"
 date: "2026-06-09"
 status: "Draft / Concept"
+repo: "hecate-services/hecate-dronex"
+kicker: "Hecate Services · Working Design"
+lede: "Federated counter-UAS airspace awareness on the Macula capability mesh. Turning a fleet of cheap, heterogeneous sensors into one coherent airspace picture, with no cloud and no single point of failure."
+scope: "Scope: detect · classify · track · alert. Defensive situational awareness only. No interference with aircraft."
 ---
 
 # DroneX: Drone Detection on the Macula Capability Mesh
