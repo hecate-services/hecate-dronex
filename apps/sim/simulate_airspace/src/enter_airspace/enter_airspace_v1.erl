@@ -17,7 +17,7 @@
     entered_at :: integer() | undefined
 }).
 
--opaque t() :: #enter_airspace_v1{}.
+-type t() :: #enter_airspace_v1{}.
 -export_type([t/0]).
 
 command_type() -> enter_airspace_v1.

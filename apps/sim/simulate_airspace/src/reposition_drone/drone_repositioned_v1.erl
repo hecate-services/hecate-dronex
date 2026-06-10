@@ -16,7 +16,7 @@
     observed_at :: integer() | undefined
 }).
 
--opaque t() :: #drone_repositioned_v1{}.
+-type t() :: #drone_repositioned_v1{}.
 -export_type([t/0]).
 
 event_type() -> drone_repositioned_v1.

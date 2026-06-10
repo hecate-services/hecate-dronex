@@ -17,7 +17,7 @@
     entered_at :: integer() | undefined
 }).
 
--opaque t() :: #drone_entered_airspace_v1{}.
+-type t() :: #drone_entered_airspace_v1{}.
 -export_type([t/0]).
 
 event_type() -> drone_entered_airspace_v1.

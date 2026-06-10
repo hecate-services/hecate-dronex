@@ -14,7 +14,7 @@
     observed_at :: integer() | undefined
 }).
 
--opaque t() :: #reposition_drone_v1{}.
+-type t() :: #reposition_drone_v1{}.
 -export_type([t/0]).
 
 command_type() -> reposition_drone_v1.

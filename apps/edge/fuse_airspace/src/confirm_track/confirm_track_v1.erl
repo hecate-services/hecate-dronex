@@ -19,7 +19,7 @@
     first_seen_at :: integer() | undefined
 }).
 
--opaque t() :: #confirm_track_v1{}.
+-type t() :: #confirm_track_v1{}.
 -export_type([t/0]).
 
 command_type() -> confirm_track_v1.

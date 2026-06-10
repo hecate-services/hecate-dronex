@@ -23,7 +23,7 @@
     confirmed_at  :: integer() | undefined
 }).
 
--opaque t() :: #track_confirmed_v1{}.
+-type t() :: #track_confirmed_v1{}.
 -export_type([t/0]).
 
 event_type() -> track_confirmed_v1.

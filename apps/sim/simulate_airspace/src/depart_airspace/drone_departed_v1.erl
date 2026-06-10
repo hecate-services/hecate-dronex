@@ -11,7 +11,7 @@
     departed_at :: integer() | undefined
 }).
 
--opaque t() :: #drone_departed_v1{}.
+-type t() :: #drone_departed_v1{}.
 -export_type([t/0]).
 
 event_type() -> drone_departed_v1.

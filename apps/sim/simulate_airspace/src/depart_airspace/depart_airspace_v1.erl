@@ -11,7 +11,7 @@
     departed_at :: integer() | undefined
 }).
 
--opaque t() :: #depart_airspace_v1{}.
+-type t() :: #depart_airspace_v1{}.
 -export_type([t/0]).
 
 command_type() -> depart_airspace_v1.
