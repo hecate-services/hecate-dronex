@@ -1,0 +1,35 @@
+%% Production config (interpolated at release build for `as prod`).
+%% Runtime knobs (SITE_ID, DRONEX_ROLE, DRONEX_TIME_SCALE, DRONEX_SCENARIO,
+%% DRONEX_SEED) are read from OS env at boot, not from this file.
+[
+    {hecate_dronex, [
+        {site_id,    "leuven-perimeter"},
+        {role,       edge},
+        {http_port,  8474},
+        {time_scale, 1.0},
+        {seed,       0},
+        {scenario,   "perimeter_probe"}
+    ]},
+
+    {evoq, [
+        {event_store_adapter,    reckon_evoq_adapter},
+        {subscription_adapter,   reckon_evoq_adapter},
+        {snapshot_store_adapter, reckon_evoq_adapter}
+    ]},
+
+    %% Mesh: the edge brain joins the realm and subscribes/publishes facts.
+    %% A dark node (no station_seeds) runs fine via the local fact bus.
+    {hecate_om, [
+        {realm, <<"ABB81B5A614B63551B400B810648C0C8A78EFAD845442630C94B46CC95D2FCD1">>},
+        {station_seeds, []}
+    ]},
+
+    {kernel, [
+        {logger_level, info},
+        {logger, [
+            {handler, default, logger_std_h,
+                #{formatter => {logger_formatter,
+                    #{depth => 30, chars_limit => 8192}}}}
+        ]}
+    ]}
+].

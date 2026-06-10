@@ -1,0 +1,19 @@
+{application, fuse_airspace, [
+    {description, "DroneX edge brain: correlate airspace.contact_observed facts into confirmed tracks"},
+    {vsn, "0.1.0"},
+    {registered, []},
+    {mod, {fuse_airspace_app, []}},
+    {applications, [
+        kernel,
+        stdlib,
+        crypto,
+        reckon_db,
+        evoq,
+        reckon_evoq,
+        hecate_om,
+        dronex_contracts
+    ]},
+    {env, []},
+    {modules, []},
+    {licenses, ["Apache-2.0"]}
+]}.

@@ -1,0 +1,18 @@
+{application, simulate_airspace, [
+    {description, "DroneX simulator: ground-truth drone lifecycle (enter/reposition/depart) + scenario driver + clock"},
+    {vsn, "0.1.0"},
+    {registered, []},
+    {mod, {simulate_airspace_app, []}},
+    {applications, [
+        kernel,
+        stdlib,
+        crypto,
+        reckon_db,
+        evoq,
+        reckon_evoq,
+        dronex_contracts
+    ]},
+    {env, []},
+    {modules, []},
+    {licenses, ["Apache-2.0"]}
+]}.

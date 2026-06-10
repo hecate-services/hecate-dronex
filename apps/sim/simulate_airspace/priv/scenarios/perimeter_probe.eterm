@@ -1,0 +1,25 @@
+%% Scenario: perimeter_probe
+%% One Remote-ID-broadcasting drone crosses a windy, low-visibility perimeter,
+%% watched by two sensors. Read by dronex_scenario via file:consult/1.
+%%
+%% Coordinates are site-local metres. Paths are waypoints {t (s), x, y, alt};
+%% run_scenario interpolates one ground-truth position per simulated second.
+{scenario, #{
+    environment => #{wind_ms => 6, visibility => low},
+
+    sensors => [
+        #{id => <<"ne-03">>, modality => remote_id,
+          x => 120, y => 40, range_m => 800, p_detect => 0.97},
+        #{id => <<"ne-04">>, modality => remote_id,
+          x => 60,  y => 90, range_m => 800, p_detect => 0.97}
+    ],
+
+    drones => [
+        #{id => <<"bogey-1">>, type => <<"DJI Mavic 3">>, remote_id => present,
+          path => [
+              #{t => 0,  x => 0,   y => 0,  alt => 0},
+              #{t => 45, x => 80,  y => 30, alt => 60},
+              #{t => 90, x => 140, y => 60, alt => 80}
+          ]}
+    ]
+}}.

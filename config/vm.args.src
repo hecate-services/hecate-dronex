@@ -1,0 +1,21 @@
+## Substituted by the start script at boot from the runtime env.
+##
+## Required (no defaults; boot fails fast if unset):
+##   NODE_NAME       e.g. dronex_edge@beam03.lab
+##   RELEASE_COOKIE  shared Erlang dist cookie for the site cluster
+##
+## Optional (defaults in the quadlet .env):
+##   INET_DIST_PORT_MIN / INET_DIST_PORT_MAX
+
+-name ${NODE_NAME}
+-setcookie ${RELEASE_COOKIE}
+
+-kernel inet_dist_listen_min ${INET_DIST_PORT_MIN}
+-kernel inet_dist_listen_max ${INET_DIST_PORT_MAX}
+
++sbwt none
++sbwtdcpu none
++sbwtdio none
+
+-heart
+-mode interactive

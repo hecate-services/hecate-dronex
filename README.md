@@ -63,11 +63,19 @@ scripts/build-pdf.sh                        # build every architecture/DESIGN_*.
 scripts/build-pdf.sh DESIGN_DRONEX_SIMULATION.md
 ```
 
+## Implementation
+
+The walking skeleton lives under `apps/`, split into `dronex-edge` (the site
+brain) and `dronex-sim` (the driver) as two rebar3 releases in one umbrella.
+See [apps/README.md](apps/README.md) for the code layout, the swap point in
+code, and build/run instructions.
+
 ## Status
 
-Architecture / concept stage. Working document and diagrams first; walking
-skeleton (`detect_remote_id` division + `contact_observed` fact schema +
-fusion process manager) to follow.
+Architecture documented; walking skeleton scaffolded (ground-truth drone
+lifecycle, Remote-ID sensor model, scenario driver, single-sensor fusion,
+scoring oracle). Next: more modalities, multi-sensor triangulation, alerting,
+multi-site (L2).
 
 ## License
 

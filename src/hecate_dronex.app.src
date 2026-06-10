@@ -1,0 +1,21 @@
+{application, hecate_dronex, [
+    {description, "DroneX: federated counter-UAS airspace awareness (edge brain + simulator driver)"},
+    {vsn, "0.1.0"},
+    {registered, []},
+    {mod, {hecate_dronex_app, []}},
+    {applications, [
+        kernel,
+        stdlib,
+        crypto,
+        ssl,
+        cowboy,
+        hecate_om,
+        reckon_db,
+        evoq,
+        reckon_evoq,
+        dronex_contracts
+    ]},
+    {env, []},
+    {modules, []},
+    {licenses, ["Apache-2.0"]}
+]}.

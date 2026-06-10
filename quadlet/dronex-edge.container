@@ -1,0 +1,36 @@
+# Quadlet unit for the DroneX edge brain (one per site).
+# Runs on Hecate infrastructure nodes at a site, never on a laptop.
+# Lives in hecate-gitops/system/ and is symlinked into
+# /etc/containers/systemd/ by the reconciler.
+
+[Unit]
+Description=Hecate service: dronex-edge
+After=network-online.target macula-station.service
+Wants=network-online.target
+Requires=macula-station.service
+
+[Container]
+ContainerName=dronex-edge
+Image=ghcr.io/hecate-services/hecate-dronex-edge:latest
+AutoUpdate=registry
+
+# Realm-issued service-principal cert (read-only).
+Volume=/etc/hecate/secrets/dronex-edge:/etc/hecate/secrets:ro,Z
+
+# Per-site state (tracks, read models) on the bulk drive.
+Volume=/bulk0/hecate/dronex-edge:/var/lib/hecate-dronex:Z
+
+# Local macula-station socket (the SDK speaks to this).
+Volume=/run/macula:/run/macula:Z
+
+User=hecate
+Group=hecate
+
+EnvironmentFile=/etc/hecate/gitops/system/dronex-edge.env
+
+[Service]
+Restart=always
+RestartSec=10s
+
+[Install]
+WantedBy=multi-user.target

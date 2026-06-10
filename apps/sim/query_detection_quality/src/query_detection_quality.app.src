@@ -1,0 +1,20 @@
+{application, query_detection_quality, [
+    {description, "DroneX simulator: the ground-truth oracle. Scores fusion (track_confirmed facts) against ground truth."},
+    {vsn, "0.1.0"},
+    {registered, []},
+    {mod, {query_detection_quality_app, []}},
+    {applications, [
+        kernel,
+        stdlib,
+        crypto,
+        evoq,
+        reckon_evoq,
+        hecate_om,
+        esqlite,
+        jsx,
+        dronex_contracts
+    ]},
+    {env, []},
+    {modules, []},
+    {licenses, ["Apache-2.0"]}
+]}.

@@ -1,0 +1,9 @@
+{application, dronex_contracts, [
+    {description, "Shared DroneX integration-fact contracts + fact bus + sensor-model behaviour. Known to both dronex-edge and dronex-sim."},
+    {vsn, "0.1.0"},
+    {registered, []},
+    {applications, [kernel, stdlib, crypto]},
+    {env, []},
+    {modules, []},
+    {licenses, ["Apache-2.0"]}
+]}.

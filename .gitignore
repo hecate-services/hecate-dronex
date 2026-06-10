@@ -1,8 +1,11 @@
 # Build artifacts
 _build/
+_checkouts/
+_data/
 .rebar3/
 *.beam
 erl_crash.dump
+rebar3.crashdump
 
 # Generated docs (PDF is committed deliberately; HTML scratch is not)
 architecture/build/

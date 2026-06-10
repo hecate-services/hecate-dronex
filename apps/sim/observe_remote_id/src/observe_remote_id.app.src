@@ -1,0 +1,19 @@
+{application, observe_remote_id, [
+    {description, "DroneX simulator: Remote-ID sensor emitter. Turns ground truth into airspace.contact_observed facts (the swap point)."},
+    {vsn, "0.1.0"},
+    {registered, []},
+    {mod, {observe_remote_id_app, []}},
+    {applications, [
+        kernel,
+        stdlib,
+        crypto,
+        evoq,
+        reckon_evoq,
+        hecate_om,
+        dronex_contracts,
+        simulate_airspace
+    ]},
+    {env, []},
+    {modules, []},
+    {licenses, ["Apache-2.0"]}
+]}.
