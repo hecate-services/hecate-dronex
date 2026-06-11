@@ -42,9 +42,12 @@ walk(Drone, Continuous, Cycle) ->
     Type     = maps:get(type, Drone, <<"unknown">>),
     RemoteId = maps:get(remote_id, Drone, absent),
     %% A fresh id per cycle in continuous mode: a departed drone leaves its
-    %% aggregate "departed", so re-entering the same id would be rejected.
+    %% aggregate "departed", so re-entering the same id would be rejected. Use a
+    %% "#" separator (NOT "-"): base ids already contain "-" (e.g. "bogey-1"), so
+    %% the emitter must be able to recover the base id to look up the drone's
+    %% static attrs (remote_id presence, type) in the scenario.
     Id = case Continuous of
-             true  -> <<Base/binary, "-", (integer_to_binary(Cycle))/binary>>;
+             true  -> <<Base/binary, "#", (integer_to_binary(Cycle))/binary>>;
              false -> Base
          end,
     case maps:get(path, Drone, []) of

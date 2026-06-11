@@ -13,6 +13,7 @@
 -behaviour(evoq_projection).
 
 -export([interested_in/0, init/1, project/4]).
+-export([base_id/1]).   %% exported for regression test (continuous-mode suffix)
 
 interested_in() ->
     [<<"drone_repositioned">>].
@@ -79,11 +80,23 @@ publish_fact(Topic, Fact) ->
             ok
     end.
 
+%% Continuous mode tags each replay's drone id with a "#<cycle>" suffix; the
+%% drone's static attrs (type, remote_id presence) live under the base id in the
+%% scenario, so strip the suffix before the lookup.
 scenario_drone(DroneId) ->
-    case [D || D <- dronex_scenario:drones(), maps:get(id, D, undefined) =:= DroneId] of
+    Base = base_id(DroneId),
+    case [D || D <- dronex_scenario:drones(), maps:get(id, D, undefined) =:= Base] of
         [D | _] -> D;
         []      -> #{}
     end.
+
+base_id(DroneId) when is_binary(DroneId) ->
+    case binary:split(DroneId, <<"#">>) of
+        [Base | _] -> Base;
+        _          -> DroneId
+    end;
+base_id(DroneId) ->
+    DroneId.
 
 g(Key, Map) ->
     case maps:find(Key, Map) of
