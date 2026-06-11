@@ -19,12 +19,18 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2]).
 
 -define(RESUBSCRIBE_MS, 2000).
+%% A walking drone emits a contact every sim-step (~125ms at the demo time
+%% scale); the realm refreshes every 2s and ages tracks stale after 12s, so one
+%% track_confirmed per second per track is ample on the wire and keeps the relays
+%% from being flooded. Track birth (the first contact) always publishes.
+-define(MIN_PUBLISH_MS, 800).
 
 -record(state, {
     contact_topic :: binary(),
     track_topic   :: binary(),
     subscribed = false :: boolean(),
-    tracks = #{} :: #{binary() => binary()}   %% drone_id -> track_id
+    tracks = #{} :: #{binary() => binary()},   %% drone_id -> track_id
+    last_pub = #{} :: #{binary() => integer()}  %% track_id -> last publish (mono ms)
 }).
 
 start_link() ->
@@ -92,14 +98,26 @@ correlate(DroneId, Drone, Fact, undefined, #state{tracks = Tracks} = State) ->
         confidence    => airspace_contact_observed:confidence(Fact),
         sensor_ids    => [airspace_contact_observed:sensor_id(Fact)],
         first_seen_at => airspace_contact_observed:observed_at(Fact)}),
-    publish_track(State, TrackId, Fact),
-    State#state{tracks = Tracks#{DroneId => TrackId}};
+    %% Track birth always publishes; subsequent refreshes are throttled.
+    State1 = publish_track(State, TrackId, Fact, force),
+    State1#state{tracks = Tracks#{DroneId => TrackId}};
 correlate(_DroneId, _Drone, Fact, TrackId, State) when is_binary(TrackId) ->
-    %% Existing track: refresh the live fact, no new domain event.
-    publish_track(State, TrackId, Fact),
-    State.
+    %% Existing track: refresh the live fact (no new domain event), throttled.
+    publish_track(State, TrackId, Fact, throttle).
 
-publish_track(#state{track_topic = Topic}, TrackId, Fact) ->
+%% Throttle per-track refresh publishes; always publish on `force` (birth).
+publish_track(#state{last_pub = LastPub} = State, TrackId, Fact, Mode) ->
+    Now  = erlang:monotonic_time(millisecond),
+    Last = maps:get(TrackId, LastPub, 0),
+    case Mode =:= force orelse (Now - Last) >= ?MIN_PUBLISH_MS of
+        true ->
+            do_publish_track(State, TrackId, Fact),
+            State#state{last_pub = LastPub#{TrackId => Now}};
+        false ->
+            State
+    end.
+
+do_publish_track(#state{track_topic = Topic}, TrackId, Fact) ->
     TrackFact = airspace_track_confirmed:new(#{
         track_id      => TrackId,
         drone         => airspace_contact_observed:drone(Fact),

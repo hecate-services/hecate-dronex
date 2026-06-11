@@ -52,21 +52,20 @@ observe_and_publish(Data) ->
 
 publish_observation(Topic, Drone, Sensor, Env) ->
     case remote_id_sensor_model:observe(Drone, Sensor, Env) of
-        {ok, Fact} ->
-            deliver_local(Fact),
-            publish_fact(Topic, Fact);
-        miss ->
-            ok
+        {ok, Fact} -> route_contact(Topic, Fact);
+        miss       -> ok
     end.
 
-%% Local hand-off to co-located fusion. The macula mesh does NOT deliver a
-%% node's own publish back to a subscriber on the same node, so on a single
-%% sim node the correlator only sees the contact via this direct message. The
-%% mesh publish (publish_fact) still reaches fusion on a SEPARATE node, which
-%% is the production sensor topology (sensors and the brain on different nodes).
-deliver_local(Fact) ->
+%% Route the contact to fusion. A co-located correlator is the ONLY consumer in
+%% a single-node sim, so hand off in-process and do NOT publish to the mesh: the
+%% mesh would just drop the contact (no remote subscriber, and same-node
+%% publishes don't loop back). A pure sensor node (no local fusion) instead
+%% publishes the contact to the mesh as the producer side of the swap point, for
+%% fusion running on a separate node. This keeps the per-site mesh traffic to the
+%% track_confirmed facts the realm actually consumes.
+route_contact(Topic, Fact) ->
     case whereis(on_contact_observed_correlate_track) of
-        undefined -> ok;
+        undefined -> publish_fact(Topic, Fact);
         Pid       -> Pid ! {dronex_local_contact, Fact}, ok
     end.
 
