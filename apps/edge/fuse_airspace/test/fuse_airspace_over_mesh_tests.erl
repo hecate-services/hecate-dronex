@@ -53,5 +53,23 @@ over_mesh() ->
         end)
     after
         catch application:stop(fuse_airspace),
+        catch cowboy:stop_listener(hecate_dronex_http_listener),
+        catch stop_root_sup(),
+        catch application:stop(reckon_db),
+        catch application:stop(hecate_om),
         catch file:del_dir_r(Tmp)
+    end.
+
+%% hecate_om:boot starts hecate_dronex_sup as a named singleton linked to this
+%% test process; application:stop can't reach it. Unlink before killing so the
+%% kill doesn't propagate back, and wait for it to die so the next store-booting
+%% test finds the name free.
+stop_root_sup() ->
+    case whereis(hecate_dronex_sup) of
+        undefined -> ok;
+        Pid ->
+            unlink(Pid),
+            MRef = monitor(process, Pid),
+            exit(Pid, kill),
+            receive {'DOWN', MRef, process, Pid, _} -> ok after 5000 -> ok end
     end.

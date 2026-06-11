@@ -8,7 +8,9 @@
 
 -define(AGG, air_track_aggregate).
 
-tid() -> <<"track-bogey-1">>.
+%% Unique track id: the over-mesh tests create "track-bogey-1", and evoq's
+%% aggregate registry is global per (module, stream_id).
+tid() -> <<"spec-track-1">>.
 sid() -> air_track_aggregate:stream_id(tid()).
 
 confirm_payload() ->

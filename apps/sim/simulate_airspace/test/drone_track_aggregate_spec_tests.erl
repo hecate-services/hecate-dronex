@@ -11,8 +11,11 @@
 
 -define(AGG, drone_track_aggregate).
 
-sid() -> drone_track_aggregate:stream_id(<<"bogey-1">>).
-did() -> <<"bogey-1">>.
+%% A unique drone id: the over-mesh tests run a scenario for "bogey-1", and
+%% evoq's aggregate registry is global per (module, stream_id), so sharing the
+%% id would collide across tests in the same VM.
+sid() -> drone_track_aggregate:stream_id(did()).
+did() -> <<"spec-drone-1">>.
 
 enter_payload() ->
     #{drone_id => did(), drone_type => <<"DJI Mavic 3">>, remote_id => present,
