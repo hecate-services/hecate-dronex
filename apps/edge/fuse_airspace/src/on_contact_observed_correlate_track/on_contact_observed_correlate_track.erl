@@ -54,6 +54,10 @@ handle_info({macula_event, _Ref, _Topic, Fact, _Meta}, State) ->
     {noreply, correlate(Fact, State)};
 handle_info({macula_event, _Ref, _Topic, Fact}, State) ->
     {noreply, correlate(Fact, State)};
+%% Direct hand-off from a co-located emitter (the mesh doesn't loop same-node
+%% publishes; see observe_remote_id deliver_local/1).
+handle_info({dronex_local_contact, Fact}, State) when is_map(Fact) ->
+    {noreply, correlate(Fact, State)};
 handle_info(_Other, State) ->
     {noreply, State}.
 
