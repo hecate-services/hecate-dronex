@@ -1,0 +1,50 @@
+# Build the OCI image for hecate-dronex-sim and push to ghcr.io.
+# Triggered on push to main and on tag pushes.
+#
+# The GitHub mirror runs this (Codeberg has Forgejo Actions disabled per the
+# migration pattern). The Containerfile defaults to RELEASE=dronex_sim — the
+# demo image that generates drones and publishes airspace facts to the mesh.
+# (dronex_edge, the production site brain, is built with --build-arg RELEASE.)
+
+name: build-and-push
+
+on:
+  push:
+    branches: [main]
+    tags:     ['v*']
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to ghcr.io
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set tag
+        id: tag
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            echo "tag=${GITHUB_REF#refs/tags/v}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=latest" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Containerfile
+          push: true
+          tags: |
+            ghcr.io/hecate-services/hecate-dronex-sim:latest
+            ghcr.io/hecate-services/hecate-dronex-sim:${{ steps.tag.outputs.tag }}
