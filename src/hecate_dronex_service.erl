@@ -11,7 +11,7 @@
 
 -export([info/0, start/1, stop/1, health/0, capabilities/0, identity_spec/0]).
 -export([store_id/0, data_dir/0]).
--export([site_id/0, role/0, time_scale/0, seed/0, scenario/0]).
+-export([site_id/0, role/0, time_scale/0, seed/0, scenario/0, continuous/0]).
 
 info() ->
     #{name        => <<"hecate-dronex">>,
@@ -103,6 +103,17 @@ scenario() ->
     case os:getenv("DRONEX_SCENARIO") of
         false -> application:get_env(hecate_dronex, scenario, "perimeter_probe");
         S     -> S
+    end.
+
+%% @doc Continuous mode: the scenario driver replays each drone forever (with a
+%% fresh id per cycle) so a live demo keeps showing activity. Off by default so
+%% tests see a single deterministic pass. DRONEX_CONTINUOUS=true|1 enables it.
+-spec continuous() -> boolean().
+continuous() ->
+    case os:getenv("DRONEX_CONTINUOUS") of
+        "true" -> true;
+        "1"    -> true;
+        _      -> application:get_env(hecate_dronex, continuous, false)
     end.
 
 %%--------------------------------------------------------------------

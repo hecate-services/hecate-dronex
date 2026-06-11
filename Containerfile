@@ -1,11 +1,22 @@
-# Multi-stage Erlang build for the dronex_edge release (the site brain).
-# The dronex_sim release is a dev/test artifact and is not containerised here.
-# Pushed to ghcr.io/hecate-services/hecate-dronex-edge:latest + :semver.
+# Multi-stage Erlang build for a DroneX release.
+#
+#   RELEASE=dronex_sim  (default) — the demo/simulator: generates drones, runs
+#                        the full loop, and publishes airspace/<site>/* facts to
+#                        the mesh. This is the image the live dashboard demo runs
+#                        (4 tenants on the beam cluster). -> hecate-dronex-sim
+#   RELEASE=dronex_edge — the production site brain (consumes real sensor facts,
+#                        zero simulation code).                -> hecate-dronex-edge
+#
+# Build:  docker build -t ghcr.io/hecate-services/hecate-dronex-sim:latest .
+#         docker build --build-arg RELEASE=dronex_edge -t .../hecate-dronex-edge .
+
+ARG RELEASE=dronex_sim
 
 #----------------------------------------------------------------------
 # Stage 1 — builder
 #----------------------------------------------------------------------
 FROM docker.io/erlang:27-alpine AS builder
+ARG RELEASE
 
 RUN apk add --no-cache git curl bash build-base cmake perl linux-headers
 
@@ -21,21 +32,22 @@ COPY config ./config
 COPY src ./src
 COPY apps ./apps
 
-# Build only the edge release (contains zero simulation code).
-RUN rebar3 as prod tar -n dronex_edge
+RUN rebar3 as prod tar -n ${RELEASE}
 
 #----------------------------------------------------------------------
 # Stage 2 — runtime
 #----------------------------------------------------------------------
 FROM docker.io/alpine:3.22
+ARG RELEASE
+ENV RELEASE=${RELEASE}
 
 RUN apk add --no-cache libstdc++ ncurses-libs openssl ca-certificates
 
 WORKDIR /app
-COPY --from=builder /build/_build/prod/rel/dronex_edge/*.tar.gz /tmp/release.tar.gz
+COPY --from=builder /build/_build/prod/rel/${RELEASE}/*.tar.gz /tmp/release.tar.gz
 RUN tar xf /tmp/release.tar.gz && rm /tmp/release.tar.gz
 
 VOLUME ["/etc/hecate/secrets", "/var/lib/hecate-dronex"]
 
-ENTRYPOINT ["/app/bin/dronex_edge"]
-CMD ["foreground"]
+# The release boot script is /app/bin/<release>; expand $RELEASE at runtime.
+ENTRYPOINT ["/bin/sh", "-c", "exec /app/bin/$RELEASE foreground"]

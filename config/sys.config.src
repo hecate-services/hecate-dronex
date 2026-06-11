@@ -17,11 +17,20 @@
         {snapshot_store_adapter, reckon_evoq_adapter}
     ]},
 
-    %% Mesh: the edge brain joins the realm and subscribes/publishes facts.
-    %% A dark node (no station_seeds) runs fine via the local fact bus.
+    %% Mesh: connect to the Leuven relay stations and publish facts under the
+    %% io.macula realm tag (= macula_realm:id(<<"io.macula">>)). Same seeds +
+    %% realm as parksim/ClankerCab, so the realm-side DroneX dashboard
+    %% subscribes airspace/<site>/track_confirmed alongside the other demos.
+    %% The realm tag is a topic namespace, not authorization. A dark node (no
+    %% reachable station) degrades to no-op publishes.
     {hecate_om, [
         {realm, <<"ABB81B5A614B63551B400B810648C0C8A78EFAD845442630C94B46CC95D2FCD1">>},
-        {station_seeds, []}
+        {station_seeds, [
+            <<"https://station-be-leuven-centrum.macula.io:4433">>,
+            <<"https://station-be-leuven-gasthuisberg.macula.io:4433">>,
+            <<"https://station-be-leuven-heverlee.macula.io:4433">>,
+            <<"https://station-be-leuven-korbeek-lo.macula.io:4433">>
+        ]}
     ]},
 
     {kernel, [
