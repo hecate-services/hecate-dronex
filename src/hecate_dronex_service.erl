@@ -11,7 +11,7 @@
 
 -export([info/0, start/1, stop/1, health/0, capabilities/0, identity_spec/0]).
 -export([store_id/0, data_dir/0]).
--export([site_id/0, role/0, time_scale/0, seed/0, scenario/0, continuous/0]).
+-export([site_id/0, role/0, time_scale/0, seed/0, scenario/0, continuous/0, http_port/0]).
 
 info() ->
     #{name        => <<"hecate-dronex">>,
@@ -103,6 +103,17 @@ scenario() ->
     case os:getenv("DRONEX_SCENARIO") of
         false -> application:get_env(hecate_dronex, scenario, "perimeter_probe");
         S     -> S
+    end.
+
+%% @doc HTTP admin/query port. Overridable via DRONEX_HTTP_PORT, because the
+%% beam nodes already run other BEAM services binding 8473-8475 (parksim +
+%% reckon-gateway) and the dronex container shares host networking.
+-spec http_port() -> inet:port_number().
+http_port() ->
+    case os:getenv("DRONEX_HTTP_PORT") of
+        false -> application:get_env(hecate_dronex, http_port, 8484);
+        ""    -> application:get_env(hecate_dronex, http_port, 8484);
+        P     -> list_to_integer(P)
     end.
 
 %% @doc Continuous mode: the scenario driver replays each drone forever (with a

@@ -19,7 +19,7 @@ init([]) ->
     {ok, {SupFlags, Children}}.
 
 cowboy_child() ->
-    Port = application:get_env(hecate_dronex, http_port, 8474),
+    Port = hecate_dronex_service:http_port(),
     Dispatch = cowboy_router:compile([{'_', [{"/health", hecate_om_health_handler, []} | role_routes()]}]),
     #{id    => cowboy_listener,
       start => {cowboy, start_clear, [

@@ -5,7 +5,7 @@
     {hecate_dronex, [
         {site_id,    "leuven-perimeter"},
         {role,       edge},
-        {http_port,  8474},
+        {http_port,  8484},
         {time_scale, 1.0},
         {seed,       0},
         {scenario,   "perimeter_probe"}
