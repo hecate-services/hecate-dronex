@@ -1,0 +1,75 @@
+%% Scenario: perimeter_patrol
+%% A standing fleet of Remote-ID drones flying continuous closed-loop patrols
+%% over the site. Unlike perimeter_probe (one drone crosses and leaves), patrol
+%% drones never depart: run_scenario enters each once with a STABLE id and flies
+%% the circuit forever, so every track is continuously refreshed and the radar
+%% always shows a busy picture. Read by dronex_scenario via file:consult/1.
+%%
+%% Coordinates are site-local metres. Paths are waypoints {t (s), x, y, alt};
+%% run_scenario interpolates one ground-truth position per simulated second.
+%% Each path is CLOSED (last waypoint == first position) so the loop is seamless
+%% when it repeats. `patrol => true` selects the no-depart loop behaviour.
+{scenario, #{
+    environment => #{wind_ms => 5, visibility => moderate},
+
+    sensors => [
+        #{id => <<"perim-ne">>, modality => remote_id,
+          x => 160, y => 40,  range_m => 1200, p_detect => 0.98},
+        #{id => <<"perim-sw">>, modality => remote_id,
+          x => 40,  y => 160, range_m => 1200, p_detect => 0.98},
+        #{id => <<"perim-ctr">>, modality => remote_id,
+          x => 100, y => 100, range_m => 1200, p_detect => 0.99}
+    ],
+
+    drones => [
+        #{id => <<"patrol-alpha">>, type => <<"DJI Mavic 3">>, remote_id => present,
+          patrol => true,
+          path => [
+              #{t => 0,   x => 10,  y => 10,  alt => 40},
+              #{t => 28,  x => 10,  y => 90,  alt => 45},
+              #{t => 56,  x => 90,  y => 90,  alt => 50},
+              #{t => 84,  x => 90,  y => 10,  alt => 45},
+              #{t => 112, x => 10,  y => 10,  alt => 40}
+          ]},
+
+        #{id => <<"patrol-bravo">>, type => <<"Autel EVO II">>, remote_id => present,
+          patrol => true,
+          path => [
+              #{t => 0,   x => 120, y => 15,  alt => 70},
+              #{t => 30,  x => 190, y => 30,  alt => 75},
+              #{t => 60,  x => 190, y => 95,  alt => 80},
+              #{t => 90,  x => 120, y => 80,  alt => 72},
+              #{t => 120, x => 120, y => 15,  alt => 70}
+          ]},
+
+        #{id => <<"patrol-charlie">>, type => <<"Skydio X2">>, remote_id => present,
+          patrol => true,
+          path => [
+              #{t => 0,   x => 20,  y => 120, alt => 90},
+              #{t => 35,  x => 95,  y => 130, alt => 95},
+              #{t => 70,  x => 180, y => 175, alt => 100},
+              #{t => 105, x => 60,  y => 185, alt => 92},
+              #{t => 140, x => 20,  y => 120, alt => 90}
+          ]},
+
+        #{id => <<"patrol-delta">>, type => <<"Parrot Anafi">>, remote_id => present,
+          patrol => true,
+          path => [
+              #{t => 0,   x => 100, y => 55,  alt => 110},
+              #{t => 22,  x => 145, y => 100, alt => 115},
+              #{t => 44,  x => 100, y => 145, alt => 120},
+              #{t => 66,  x => 55,  y => 100, alt => 115},
+              #{t => 88,  x => 100, y => 55,  alt => 110}
+          ]},
+
+        #{id => <<"patrol-echo">>, type => <<"DJI Matrice 300">>, remote_id => present,
+          patrol => true,
+          path => [
+              #{t => 0,   x => 150, y => 150, alt => 60},
+              #{t => 26,  x => 150, y => 110, alt => 65},
+              #{t => 52,  x => 110, y => 110, alt => 68},
+              #{t => 78,  x => 110, y => 150, alt => 65},
+              #{t => 104, x => 150, y => 150, alt => 60}
+          ]}
+    ]
+}}.

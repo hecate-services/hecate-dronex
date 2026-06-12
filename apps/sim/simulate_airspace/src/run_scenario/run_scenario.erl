@@ -41,11 +41,37 @@ walk(Drone, Continuous, Cycle) ->
     Base     = maps:get(id, Drone),
     Type     = maps:get(type, Drone, <<"unknown">>),
     RemoteId = maps:get(remote_id, Drone, absent),
-    %% A fresh id per cycle in continuous mode: a departed drone leaves its
-    %% aggregate "departed", so re-entering the same id would be rejected. Use a
-    %% "#" separator (NOT "-"): base ids already contain "-" (e.g. "bogey-1"), so
-    %% the emitter must be able to recover the base id to look up the drone's
-    %% static attrs (remote_id presence, type) in the scenario.
+    case maps:get(patrol, Drone, false) of
+        true  -> patrol(Drone, Base, Type, RemoteId);
+        false -> probe(Drone, Continuous, Cycle, Base, Type, RemoteId)
+    end.
+
+%% Patrol: enter ONCE with a stable id, then fly the (closed) circuit forever.
+%% The drone never departs, so its aggregate stays airborne and its track is
+%% continuously refreshed — the dashboard always shows it, instead of blinking
+%% between probe runs. Stable id means the emitter's scenario lookup matches
+%% directly (no "#cycle" suffix to strip).
+patrol(Drone, Id, Type, RemoteId) ->
+    case maps:get(path, Drone, []) of
+        [] ->
+            ok;
+        [#{x := X0, y := Y0, alt := A0} | _] = Path ->
+            _ = maybe_enter_airspace:dispatch(#{drone_id => Id, drone_type => Type,
+                                                remote_id => RemoteId,
+                                                x => X0, y => Y0, alt => A0}),
+            patrol_loop(Id, Path)
+    end.
+
+patrol_loop(Id, Path) ->
+    walk_path(Id, Path),
+    patrol_loop(Id, Path).
+
+%% Probe: enter -> cross -> depart. A fresh id per cycle in continuous mode: a
+%% departed drone leaves its aggregate "departed", so re-entering the same id
+%% would be rejected. Use a "#" separator (NOT "-"): base ids already contain
+%% "-" (e.g. "bogey-1"), so the emitter must be able to recover the base id to
+%% look up the drone's static attrs (remote_id presence, type) in the scenario.
+probe(Drone, Continuous, Cycle, Base, Type, RemoteId) ->
     Id = case Continuous of
              true  -> <<Base/binary, "#", (integer_to_binary(Cycle))/binary>>;
              false -> Base
