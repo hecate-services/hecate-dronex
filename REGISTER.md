@@ -209,6 +209,63 @@ described as "third from the left". Somebody added a switch to the panel. The
 instructions still said third from the left, so the test went on being performed,
 on the wrong switch, and the report kept saying the test was done.
 
+## I.11: the island stopped, stayed healthy, and nothing said so
+
+Twenty minutes after the first deploy, the island on beam02 had stopped. Not
+crashed — stopped. Its clock was not advancing, it had published nothing, and
+every `gen_server:call` into it timed out at five seconds and then at thirty.
+
+`/health` answered `ok` throughout. `docker ps` said `healthy`. `docker stats`
+said 0.55% CPU. The station link was up and the process was `running`.
+
+**The chain, in the order it was actually unpicked.**
+
+| | what was seen | what it meant |
+|---|---|---|
+| 1 | calls time out | read as a wedged process; it was a busy one |
+| 2 | `current_function` = `timer:sleep`, reductions flat | not busy either — *waiting* |
+| 3 | `current_stacktrace` | `island_server:handle_info/2` → `roster_log:append/3` → `reckon_gater_retry:do_retry/4` |
+| 4 | container log | `{invalid_stream_id, <<"roster">>}`, `Retry attempt 8 … after 14621ms` |
+
+The stream id was `roster`. `reckon_gater_stream_id` accepts exactly two shapes,
+a user stream `<prefix>-<32 lowercase hex>` or a system stream `$<ns>:<name>`,
+and a bare word is neither. It is now `$dronex:roster`.
+
+⚠ **And the rejection did not fail like a validation error.**
+`reckon_gater_retry` has an explicit non-retriable whitelist with
+`{invalid_stream_id, _, _}` in it. But `reckon_db_stream_path:id_nodes/1`
+**raises** `{invalid_stream_id, StreamId}` — a two-tuple, as an exit from the
+gateway worker, not a returned error. The whitelist cannot match it, so a
+permanent validation failure was retried eleven times with exponential backoff:
+roughly four minutes of a process doing nothing but sleeping. **This is a defect
+in reckon-db/reckon-gater and is not fixed here** — it only fires for a client
+that passes an invalid id, which was our bug.
+
+⚠⚠ **The stream id was ours. Blocking the island on a store write was the
+design's, and the bad id merely found it.** `CLAUDE.md` has carried the rule the
+whole time: DB I/O belongs to a dedicated worker and NEVER blocks the flow. The
+snapshot handler called the store directly, on the island's own process, with
+the clock, the trainer and the publisher all behind it in one mailbox.
+
+**Three things changed.** `roster_log_writer` is now the only process allowed to
+block on the store, and it **coalesces**: a snapshot is full state, so it drains
+its mailbox and keeps the last, which makes a slow store cost staleness rather
+than unbounded memory. `roster_writes`, `roster_write_failures` and
+`roster_writes_dropped` go out on every vitals fact, because the one thing this
+failure had no signal for was whether the lineage was being saved at all. And a
+test asks reckon-gater's own validator whether the stream id is acceptable,
+rather than restating its rule here.
+
+**What did NOT catch it.** 233 green tests, a clean dialyzer, sixteen guard
+probes, and a healthy container. Every test that touched persistence used a
+store that was never there, so the write always failed fast and the blocking
+path was never once executed.
+
+**ELI5.** A machine was told to file its paperwork in a drawer whose label was
+not a real label. Instead of saying so, the filing clerk kept trying the drawer,
+waiting a little longer each time, for four minutes. The whole factory was
+waiting behind that one clerk, and the light on the door still said OPEN.
+
 ---
 
 # D: findings about the world

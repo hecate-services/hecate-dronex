@@ -31,9 +31,22 @@
 
 -export([stream/0, snapshot/2, admitted/2, evicted/2, restore/1, restore/2]).
 
-%% One stream per island. The store is already per-island, so a second name here
-%% would be a distinction without a difference.
--define(STREAM, <<"roster">>).
+%% ⚠ A SYSTEM STREAM, AND THE FORMAT IS A CONTRACT RATHER THAN A PREFERENCE.
+%% This was `roster', which reckon-db rejects: `reckon_gater_stream_id' accepts
+%% exactly two shapes, a user stream `<prefix>-<32 lowercase hex>' or a system
+%% stream `$<namespace>:<name>'. A bare word is neither.
+%%
+%% ⚠⚠ AND IT DID NOT FAIL LIKE A VALIDATION ERROR. The rejection is RAISED from
+%% `reckon_db_stream_path:id_nodes/1' as an exit rather than returned, so
+%% `reckon_gater_retry' could not match it against its own non-retriable
+%% whitelist and retried eleven times with exponential backoff, for about four
+%% minutes, inside the island's process. See `roster_log_writer'.
+%%
+%% A SYSTEM stream rather than a user one, because this is a singleton per store
+%% and system streams exist for exactly that operational legibility. A user
+%% stream would need 32 hex digits of identity for a thing there is only ever one
+%% of, and the store is already per-island.
+-define(STREAM, <<"$dronex:roster">>).
 
 %% How far back `restore/1' will look for a snapshot before giving up and
 %% starting from nothing. Generous, because the cost is paid once at boot and the

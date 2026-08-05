@@ -42,7 +42,7 @@
 -module(dronex_facts).
 
 -export([topic/1, topics/0, namespace/0, fact_version/0]).
--export([vitals/1, bout/4]).
+-export([vitals/2, bout/4]).
 
 -define(DEFAULT_NS, <<"dronex">>).
 
@@ -105,8 +105,8 @@ ns(Str) -> list_to_binary(string:trim(Str)).
 %% `station_*' is the exception and it is read, because the door this island is
 %% actually speaking through is a property of the live connection and not of the
 %% island. It is merged in rather than passed, so a caller cannot forget it.
--spec vitals(island:island()) -> map().
-vitals(Island) ->
+-spec vitals(island:island(), map()) -> map().
+vitals(Island, Writer) ->
     maps:merge(
       #{fact_version => ?FACT_VERSION,
         island => dronex_identity:island(),
@@ -126,9 +126,24 @@ vitals(Island) ->
         rounds => island:rounds_of(Island),
         admissions => island:admissions_of(Island)},
       maps:merge(station(),
-                 maps:merge(frozen(island:benchmark_of(Island)),
-                            ablation(island:ablation_of(Island),
-                                     island:ablations_of(Island))))).
+                 maps:merge(persistence(Writer),
+                            maps:merge(frozen(island:benchmark_of(Island)),
+                                       ablation(island:ablation_of(Island),
+                                                island:ablations_of(Island)))))).
+
+%% ⚠ WHETHER THE LINEAGE IS ACTUALLY BEING SAVED, AND IT GOES OUT BECAUSE IT
+%% ONCE WAS NOT. The first deployed island wrote nothing for four minutes and
+%% looked perfectly healthy doing it: `/health' answered `ok', the container
+%% reported `healthy', and the only visible symptom was a tick that had stopped
+%% moving, which a reader would have had to be watching for.
+%%
+%% `roster_writes' rising is the island saving what it has bred.
+%% `roster_write_failures' rising is a store refusing it.
+%% `roster_writes_dropped' rising is normal: a snapshot is full state, so one
+%% superseded before it was written cost nothing but is counted anyway, because a
+%% writer that drops everything and one that drops nothing must look different.
+persistence(#{written := W, failed := F, dropped := D}) ->
+    #{roster_writes => W, roster_write_failures => F, roster_writes_dropped => D}.
 
 %% ⚠ THE THREE NUMBERS FROM `DESIGN_DRONES_THAT_TALK.md', AND THE FOURTH THAT
 %% MAKES THEM READABLE. Volume, delta and entropy each mean something specific

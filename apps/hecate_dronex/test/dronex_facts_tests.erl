@@ -22,22 +22,33 @@ the_island_id_is_never_in_a_topic_test() ->
 %% wire without somebody deciding it means something. `dronex_facts' refuses to
 %% publish what does not exist yet, and this is the guard on that refusal.
 only_what_exists_is_published_test() ->
-    Fact = with_data_dir(fun () -> dronex_facts:vitals(island:new(#{})) end),
+    Fact = with_data_dir(fun () -> dronex_facts:vitals(island:new(#{}), writer()) end),
     Keys = lists:sort(maps:keys(Fact)),
     ?assertEqual([ablation_delta_air, ablation_delta_all, ablation_delta_ground,
                   ablation_void, ablations, admissions,
                   benchmark_draws, benchmark_losses, benchmark_rungs,
                   benchmark_starts, benchmark_wins, capacity, fact_version,
-                  generation, island, island_id, roster, rounds,
-                  signal_entropy, signal_volume,
+                  generation, island, island_id, roster,
+                  roster_write_failures, roster_writes, roster_writes_dropped,
+                  rounds, signal_entropy, signal_volume,
                   station_connected, station_host, station_id, tick], Keys).
+
+%% ⚠ WHETHER THE LINEAGE IS BEING SAVED IS ON THE WIRE, because the first
+%% deployed island was not saving it and looked healthy for four minutes.
+whether_the_roster_is_being_written_is_published_test() ->
+    Fact = with_data_dir(fun () ->
+        dronex_facts:vitals(island:new(#{}), #{written => 3, failed => 1, dropped => 7})
+    end),
+    ?assertEqual(3, maps:get(roster_writes, Fact)),
+    ?assertEqual(1, maps:get(roster_write_failures, Fact)),
+    ?assertEqual(7, maps:get(roster_writes_dropped, Fact)).
 
 %% ⚠ AN ISLAND THAT HAS NEVER ABLATED PUBLISHES ZEROS WITH A ZERO COUNT, and that
 %% is the whole reason `ablations' exists. Without it a delta of zero from an
 %% instrument that has never run is indistinguishable from a delta of zero from a
 %% channel nobody depends on, and those are opposite conclusions.
 a_never_ablated_island_says_so_rather_than_reporting_a_zero_delta_test() ->
-    Fact = with_data_dir(fun () -> dronex_facts:vitals(island:new(#{})) end),
+    Fact = with_data_dir(fun () -> dronex_facts:vitals(island:new(#{}), writer()) end),
     ?assertEqual(0, maps:get(ablations, Fact)),
     ?assert(maps:get(ablation_void, Fact)),
     ?assertEqual(0, maps:get(signal_volume, Fact)),
@@ -47,7 +58,7 @@ a_never_ablated_island_says_so_rather_than_reporting_a_zero_delta_test() ->
 an_ablated_island_publishes_the_measurement_test() ->
     Report = ablation:measure([]),
     I = island:ablated(island:new(#{}), Report#{volume := 12, void := false}),
-    Fact = with_data_dir(fun () -> dronex_facts:vitals(I) end),
+    Fact = with_data_dir(fun () -> dronex_facts:vitals(I, writer()) end),
     ?assertEqual(1, maps:get(ablations, Fact)),
     ?assertNot(maps:get(ablation_void, Fact)),
     ?assertEqual(12, maps:get(signal_volume, Fact)).
@@ -55,20 +66,20 @@ an_ablated_island_publishes_the_measurement_test() ->
 %% ⚠ CHARTER.md rule 4. An island with an empty roster and an island that does
 %% not report a roster look identical unless the zero goes out.
 the_empty_roster_is_reported_rather_than_omitted_test() ->
-    Fact = with_data_dir(fun () -> dronex_facts:vitals(island:new(#{})) end),
+    Fact = with_data_dir(fun () -> dronex_facts:vitals(island:new(#{}), writer()) end),
     ?assertEqual(0, maps:get(roster, Fact)),
     ?assertEqual(240, maps:get(capacity, Fact)).
 
 the_tick_is_on_every_fact_test() ->
     I = island:run(island:new(#{}), 7),
-    Fact = with_data_dir(fun () -> dronex_facts:vitals(I) end),
+    Fact = with_data_dir(fun () -> dronex_facts:vitals(I, writer()) end),
     ?assertEqual(7, maps:get(tick, Fact)).
 
 %% ⚠ A DOOR THAT CANNOT BE READ IS REPORTED, NOT OMITTED. A key that appears only
 %% sometimes is a field a chart silently drops. There is no mesh under eunit, so
 %% this is the unreachable branch and it is the one that must not vanish.
 a_dark_mesh_still_reports_a_door_test() ->
-    Fact = with_data_dir(fun () -> dronex_facts:vitals(island:new(#{})) end),
+    Fact = with_data_dir(fun () -> dronex_facts:vitals(island:new(#{}), writer()) end),
     ?assertEqual(<<"unknown">>, maps:get(station_host, Fact)),
     ?assertEqual(false, maps:get(station_connected, Fact)),
     ?assertEqual(<<>>, maps:get(station_id, Fact)).
@@ -77,7 +88,7 @@ a_dark_mesh_still_reports_a_door_test() ->
 %% same name collide into one on the wire, and a tuple does not survive the
 %% encoder cleanly. This walks the whole fact rather than trusting the author.
 the_wire_rules_hold_test() ->
-    Fact = with_data_dir(fun () -> dronex_facts:vitals(island:new(#{})) end),
+    Fact = with_data_dir(fun () -> dronex_facts:vitals(island:new(#{}), writer()) end),
     maps:foreach(
       fun (K, V) ->
               ?assert(is_atom(K)),
@@ -85,7 +96,7 @@ the_wire_rules_hold_test() ->
       end, Fact).
 
 fact_version_is_on_the_fact_test() ->
-    Fact = with_data_dir(fun () -> dronex_facts:vitals(island:new(#{})) end),
+    Fact = with_data_dir(fun () -> dronex_facts:vitals(island:new(#{}), writer()) end),
     ?assertEqual(dronex_facts:fact_version(), maps:get(fact_version, Fact)).
 
 %%==============================================================================
@@ -103,3 +114,7 @@ with_data_dir(Fun) ->
 
 restore(Name, false) -> os:unsetenv(Name), ok;
 restore(Name, Value) -> os:putenv(Name, Value), ok.
+
+%% A writer that has not spoken yet. Zeros rather than an absent field, so a
+%% reader can tell `nothing written' from `not reporting'.
+writer() -> roster_log_writer:silent().

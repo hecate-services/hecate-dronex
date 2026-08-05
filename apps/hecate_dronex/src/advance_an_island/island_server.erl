@@ -101,7 +101,7 @@ init([]) ->
     %% start together on a node with four slow cores.
     schedule(ablate, ?DEFAULT_ABLATE_MS div 2),
     {ok, #{island => Island, sent => 0, failed => 0, sitting => false,
-           ablating => false}}.
+           ablating => false, writer => roster_log_writer:silent()}}.
 
 %% A store that is not there yet, or a log that cannot be read, is an island that
 %% starts fresh rather than an island that refuses to start. The roster depth it
@@ -113,8 +113,8 @@ restored(Island) ->
 kept(Island, {ok, R}) -> island:with_roster(Island, R);
 kept(Island, {error, _Why}) -> Island.
 
-handle_call(snapshot, _From, #{island := I} = S) ->
-    {reply, dronex_facts:vitals(I), S};
+handle_call(snapshot, _From, #{island := I, writer := W} = S) ->
+    {reply, dronex_facts:vitals(I, W), S};
 handle_call(island, _From, #{island := I} = S) ->
     {reply, I, S};
 handle_call(publishes, _From, #{sent := Sent, failed := Failed} = S) ->
@@ -124,15 +124,18 @@ handle_call(roster, _From, #{island := I} = S) ->
 handle_call(_Other, _From, S) ->
     {reply, {error, unknown_call}, S}.
 
+%% The writer's own exercise counts, pushed after every drain. Held rather than
+%% fetched: see `roster_log_writer:told/1'.
+handle_cast({roster_written, Stats}, S) -> {noreply, S#{writer := Stats}};
 handle_cast(_Msg, S) -> {noreply, S}.
 
 handle_info(tick, #{island := I} = S) ->
     schedule(tick, slot_ms()),
     {noreply, S#{island := island:run(I, ticks_per_slot())}};
-handle_info(publish, #{island := I} = S) ->
+handle_info(publish, #{island := I, writer := W} = S) ->
     schedule(publish, publish_ms()),
     {noreply, counted(dronex_mesh:publish(dronex_facts:topic(vitals),
-                                          dronex_facts:vitals(I)), S)};
+                                          dronex_facts:vitals(I, W)), S)};
 %% One breeding round, on this process. It is bounded work and the island has
 %% nothing else to do between publishes.
 handle_info(train, #{island := I} = S) ->
@@ -179,9 +182,18 @@ handle_info(ablate, S) ->
 handle_info({ablated, Report}, #{island := I} = S) ->
     {noreply, S#{island := island:ablated(I, Report), ablating := false}};
 
+%% ⚠ A CAST TO THE WRITER, NEVER THE WRITE ITSELF, AND THIS LINE WEDGED THE FIRST
+%% DEPLOYED ISLAND FOR FOUR MINUTES. It called `roster_log:snapshot/2' directly.
+%% The stream id was invalid, the store's rejection arrived as an exit rather
+%% than an error, and reckon-gater retried it eleven times with exponential
+%% backoff — all of it on this process. The clock stopped, nothing published,
+%% `/health' answered `ok' the whole time and the container stayed `healthy'.
+%%
+%% The stream id is fixed. This is the part that makes the next store problem
+%% cost staleness rather than the island. See `roster_log_writer'.
 handle_info(snapshot, #{island := I} = S) ->
     schedule(snapshot, ?DEFAULT_SNAPSHOT_MS),
-    _ = roster_log:snapshot(hecate_dronex_service:store_id(), island:roster_of(I)),
+    roster_log_writer:snapshot(hecate_dronex_service:store_id(), island:roster_of(I)),
     {noreply, S};
 
 handle_info(_Msg, S) ->
