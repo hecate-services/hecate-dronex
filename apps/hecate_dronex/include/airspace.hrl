@@ -34,7 +34,25 @@
     battery = 0 :: integer(),
     health = 0 :: integer(),
     release_heat = 0 :: non_neg_integer(),
+    launch_heat = 0 :: non_neg_integer(),
+    %% Guided interceptors remaining. Finite, which is what makes committing one
+    %% at range a gamble rather than a free action.
+    magazine = 0 :: non_neg_integer(),
     dead = false :: boolean(),
+    %% ⚠ WITHDRAWN IS NOT DEAD AND THE DIFFERENCE IS THE WHOLE POINT OF IT.
+    %% A withdrawn drone left the engagement alive and its genome goes back on
+    %% the roster; a dead one does not. Without somewhere to go, the only
+    %% alternative to fighting is dying, which is the squeeze insight 062 closed
+    %% programme P7 on: no COSTLESS restraint lever exists, so restraint is
+    %% inseparable from starvation. This is that lever.
+    withdrawn = false :: boolean(),
+    %% ⚠ HOW LONG IT HAS BEEN LOITERING AT THE EDGE, AND IT EXISTS BECAUSE A
+    %% SPEED GATE ALONE COULD BE REACHED BY CRASHING. Clamping a wall impact sets
+    %% the speed to zero, so on the very next tick a drone that had just flown
+    %% into the boundary at 17 m/s was slow, at the edge, and eligible to leave.
+    %% Withdrawal is sustained slow flight in the margin instead, which cannot be
+    %% arrived at by accident and costs two seconds of predictable flying.
+    withdraw_hold = 0 :: non_neg_integer(),
     %% Proprioception of being hurt, reset every tick. It CONFLATES being hit,
     %% striking a wall, hitting the ground and colliding with another drone, and
     %% that conflation is deliberate: a real airframe cannot cleanly tell them
@@ -52,6 +70,11 @@
 -record(munition, {
     owner :: term(),
     side :: attacker | defender,
+    %% An unguided release flies straight and is a knife-fight weapon: at 50 m/s^2
+    %% of evasion an unguided shot is unhittable beyond about 15 m. A guided
+    %% interceptor steers, which is what makes range worth anything.
+    guided = false :: boolean(),
+    target = undefined :: term(),
     x = 0 :: integer(),
     y = 0 :: integer(),
     z = 0 :: integer(),
@@ -72,9 +95,15 @@
     thrust_lat = 0 :: integer(),
     thrust_vert = 0 :: integer(),
     yaw_rate = 0 :: integer(),
-    %% Above the threshold, release. One weapon, because two is a balance problem
-    %% this repository has no means to settle.
-    release = 0 :: integer()
+    %% ⚠ TWO WEAPONS, DIFFERENT IN KIND RATHER THAN IN SIZE, and the earlier
+    %% one-weapon rule is withdrawn on arithmetic rather than on taste. At 60 m/s
+    %% a shot needs 1.7 s to cross 100 m, and a target with 50 m/s^2 of
+    %% acceleration displaces about 70 m in that time against a 2 m hit radius.
+    %% The unguided release is therefore effective inside roughly 15 m and
+    %% nowhere else, which would have made every engagement a knife fight and
+    %% left "learned to shoot at range" unreachable rather than unlearned.
+    release = 0 :: integer(),
+    launch = 0 :: integer()
 }).
 
 %% The whole world at one tick. Everything needed to produce the next one.

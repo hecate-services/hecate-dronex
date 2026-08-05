@@ -41,6 +41,7 @@
 
 -export([new/1, new/2, step/2, finished/1, winner/1]).
 -export([drones/1, munitions/1, tick_of/1, seed_of/1, drone/2, alive/1, alive/2]).
+-export([present/2, survivors/1, lock/2]).
 -export([limits/0, max_ticks/0]).
 
 %%==============================================================================
@@ -96,7 +97,26 @@
 -define(KILL_SPEED, 40960).
 
 %%==============================================================================
-%% The weapon
+%% Leaving
+%%==============================================================================
+
+%% ⚠ 5 m/s, AND THE SPEED LIMIT IS WHAT MAKES WITHDRAWAL A DECISION. A drone that
+%% reaches a LATERAL boundary slowly is extracted alive; one that arrives fast is
+%% clamped and hurt exactly as before. So the arena's edge is escape and hazard at
+%% once, depending entirely on how you approach it, and leaving costs a long slow
+%% predictable run rather than a keystroke.
+%%
+%% ⚠⚠ THERE IS NO `withdraw' ACTUATOR AND THERE WILL NOT BE ONE. CHARTER.md rule
+%% 8: no channel may name a tactic. Retreat is flying somewhere at a speed, which
+%% the existing controls already express.
+-define(WITHDRAW_SPEED, 5120).
+%% 10 m of a lateral wall, held for 2 seconds. See `withdraw_hold' in the header
+%% for why a single slow tick is not enough.
+-define(WITHDRAW_MARGIN, 204800).
+-define(WITHDRAW_TICKS, 40).
+
+%%==============================================================================
+%% The weapons
 %%==============================================================================
 
 %% 60 m/s. It travels, it expires and it can miss, so firing is committing to a
@@ -109,6 +129,26 @@
 -define(MUNITION_COST, 20000).
 -define(RELEASE_COOL, 20).
 -define(RELEASE_THRESHOLD, 1).
+
+%% THE GUIDED INTERCEPTOR. Faster, longer-legged, finite and expensive.
+%%
+%% ⚠ ITS TURN RADIUS IS DELIBERATELY WORSE THAN A DRONE'S, WHICH IS WHAT KEEPS
+%% EVASION REAL. At 80 m/s pulling 150 m/s^2 it turns in about 43 m; a drone at
+%% 35 m/s pulling 50 m/s^2 turns in about 25 m. So a target that sees it coming
+%% and turns hard at close range can beat it, and a target engaged at range
+%% cannot. That is the whole reason for having two weapons rather than one good
+%% one: the release rewards closing, the interceptor rewards seeing first.
+-define(INTERCEPTOR_SPEED, 81920).
+-define(INTERCEPTOR_TURN, 7680).
+-define(INTERCEPTOR_TTL, 150).
+-define(INTERCEPTOR_COST, 100000).
+-define(INTERCEPTOR_DAMAGE, 5000).
+-define(LAUNCH_COOL, 40).
+-define(MAGAZINE, 4).
+%% 600 m, and a 45 degree half-angle seeker. `cos(32)' is cos(45) on the binary
+%% scale, so the cone test is a dot product and never an inverse trig call.
+-define(LOCK_RANGE, 12288000).
+-define(SEEKER_COS, 23170).
 
 %%==============================================================================
 %% Building one
@@ -128,6 +168,7 @@ placed({Id, Side, X, Y, Z, Yaw}) ->
            x = X, y = Y, z = Z,
            yaw = fixed:wrap(Yaw),
            battery = ?START_BATTERY,
+           magazine = ?MAGAZINE,
            health = ?START_HEALTH}.
 
 %%==============================================================================
@@ -155,10 +196,10 @@ step(#arena{tick = T, drones = Ds, munitions = Ms} = A, Intents) ->
     Moved = [bounded(D) || D <- Flown],
     {Live, Struck} = strike(Ms, Moved),
     Collided = collide(Struck),
-    Released = [release(D, intent_for(D, Intents)) || D <- Collided],
+    Armed = [fire(D, intent_for(D, Intents), Collided) || D <- Collided],
     A#arena{tick = T + 1,
-            drones = [settle(D) || {D, _M} <- Released],
-            munitions = aged(Live) ++ [M || {_D, M} <- Released, M =/= none]}.
+            drones = [settle(Flown2) || {Flown2, _Fired} <- Armed],
+            munitions = aged(Live) ++ lists:append([Fired || {_Flown2, Fired} <- Armed])}.
 
 intent_for(#drone{id = Id}, Intents) -> maps:get(Id, Intents, #intent{}).
 
@@ -168,7 +209,15 @@ intent_for(#drone{id = Id}, Intents) -> maps:get(Id, Intents, #intent{}).
 
 %% A dead drone is inert. It keeps its last position so a frame still draws it,
 %% and it stops being a participant.
-fly(#drone{dead = true} = D, _I) -> D;
+%% @doc A drone that is dead or withdrawn is out of the engagement: it does not
+%% fly, does not collide, cannot be hit and cannot shoot. Two states, one
+%% predicate, because every stage needs the same answer and asking `dead' alone
+%% would leave a withdrawn drone still fighting.
+out(#drone{dead = true}) -> true;
+out(#drone{withdrawn = true}) -> true;
+out(#drone{}) -> false.
+
+fly(#drone{} = D, _I) when D#drone.dead; D#drone.withdrawn -> D;
 fly(#drone{} = D, #intent{} = I) -> thrusting(D, thrust(D, I), yawed(D, I)).
 
 %% Yaw first, so thrust is applied in the heading the drone commanded this tick
@@ -221,8 +270,32 @@ draw(Mag) -> Mag * fixed:isqrt(Mag) div ?DRAW_DIV.
 %% carrying and takes the damage that speed was worth. Bouncing would make the
 %% wall a free reversal, and wrapping would make the arena a torus, which is a
 %% different world.
-bounded(#drone{dead = true} = D) -> D;
-bounded(#drone{x = X, y = Y, z = Z, vx = Vx, vy = Vy, vz = Vz} = D) ->
+bounded(#drone{} = D) when D#drone.dead; D#drone.withdrawn -> D;
+bounded(#drone{} = D) -> edged(clamped(D)).
+
+%% ⚠ THE CLAMP HAPPENS FIRST AND THE EXIT IS CHECKED AFTER, so hitting a wall is
+%% never a way through one. A drone leaves by loitering slowly in the margin for
+%% two seconds, which is a controlled egress rather than an impact, and which is
+%% expensive precisely because it is slow and predictable while somebody may be
+%% shooting.
+edged(#drone{} = D) ->
+    holding(D, in_margin(D), fixed:mag3(D#drone.vx, D#drone.vy, D#drone.vz)).
+
+%% Only the four LATERAL walls are a way out. The ground and the ceiling are
+%% surfaces: landing gently in somebody else's airspace is not withdrawing from
+%% it, and neither is bumping the ceiling.
+in_margin(#drone{x = X, y = Y}) ->
+    X =< ?WITHDRAW_MARGIN orelse X >= ?ARENA_X - ?WITHDRAW_MARGIN
+        orelse Y =< ?WITHDRAW_MARGIN orelse Y >= ?ARENA_Y - ?WITHDRAW_MARGIN.
+
+holding(#drone{} = D, true, Speed) when Speed =< ?WITHDRAW_SPEED -> counted(D);
+holding(#drone{} = D, _InMargin, _Speed) -> D#drone{withdraw_hold = 0}.
+
+counted(#drone{withdraw_hold = N} = D) when N + 1 >= ?WITHDRAW_TICKS ->
+    D#drone{withdrawn = true, vx = 0, vy = 0, vz = 0};
+counted(#drone{withdraw_hold = N} = D) -> D#drone{withdraw_hold = N + 1}.
+
+clamped(#drone{x = X, y = Y, z = Z, vx = Vx, vy = Vy, vz = Vz} = D) ->
     {Nx, Sx} = stopped(X + Vx, Vx, ?ARENA_X),
     {Ny, Sy} = stopped(Y + Vy, Vy, ?ARENA_Y),
     {Nz, Sz} = stopped(Z + Vz, Vz, ?ARENA_Z),
@@ -256,25 +329,56 @@ hurt(#drone{health = H, damage_taken = T} = D, Damage) ->
 %% survivors alongside the drones it hurt.
 strike(Ms, Ds) -> lists:foldl(fun fly_one/2, {[], Ds}, Ms).
 
-fly_one(#munition{x = X, y = Y, z = Z, vx = Vx, vy = Vy, vz = Vz} = M, {Kept, Ds}) ->
+fly_one(#munition{} = M0, {Kept, Ds}) ->
+    #munition{x = X, y = Y, z = Z, vx = Vx, vy = Vy, vz = Vz} = M = steer(M0, Ds),
     Moved = M#munition{x = X + Vx, y = Y + Vy, z = Z + Vz},
     resolved(Moved, {X, Y, Z}, Ds, Kept).
+
+%% ⚠ PURE PURSUIT AT CONSTANT SPEED WITH A LATERAL ACCELERATION LIMIT, which is
+%% what a cheap seeker actually does and is beatable in exactly the way a real
+%% one is. The interceptor turns toward where the target IS, not where it will
+%% be, so a target that turns harder than 150 m/s^2 worth of radius at its own
+%% speed can walk around the outside of it.
+%%
+%% A LOST TARGET GOES BALLISTIC RATHER THAN VANISHING. If the drone it was
+%% chasing dies or withdraws mid-flight, the interceptor keeps its velocity and
+%% flies on until it expires, which is both what a real one does and the only
+%% honest thing: a munition that disappeared when its target left would let a
+%% swarm clear the sky by withdrawing one drone.
+steer(#munition{guided = false} = M, _Ds) -> M;
+steer(#munition{target = Id} = M, Ds) -> homing(M, seek(Id, Ds)).
+
+seek(Id, Ds) -> found([D || #drone{id = I} = D <- Ds, I =:= Id]).
+
+homing(#munition{} = M, undefined) -> M;
+homing(#munition{} = M, #drone{} = T) when T#drone.dead; T#drone.withdrawn -> M;
+homing(#munition{x = X, y = Y, z = Z, vx = Vx, vy = Vy, vz = Vz} = M,
+       #drone{x = Tx, y = Ty, z = Tz}) ->
+    {Wx, Wy, Wz} = fixed:at_length(Tx - X, Ty - Y, Tz - Z, ?INTERCEPTOR_SPEED),
+    {Ax, Ay, Az} = fixed:scale_to(Wx - Vx, Wy - Vy, Wz - Vz, ?INTERCEPTOR_TURN),
+    {Nx, Ny, Nz} = fixed:at_length(Vx + Ax, Vy + Ay, Vz + Az, ?INTERCEPTOR_SPEED),
+    M#munition{vx = Nx, vy = Ny, vz = Nz}.
 
 resolved(M, From, Ds, Kept) -> landed(hit(M, From, Ds), M, Ds, Kept).
 
 %% A munition that hits is spent. One that misses carries on.
 landed(none, M, Ds, Kept) -> {[M | Kept], Ds};
-landed(Id, _M, Ds, Kept) -> {Kept, [maybe_hurt(D, Id) || D <- Ds]}.
+landed(Id, M, Ds, Kept) -> {Kept, [maybe_hurt(D, Id, damage_of(M)) || D <- Ds]}.
 
-maybe_hurt(#drone{id = Id} = D, Id) -> hurt(D, ?HIT_DAMAGE);
-maybe_hurt(D, _Id) -> D.
+%% The interceptor is finite and expensive, so it hits for twice the release:
+%% two of them kill, and a full magazine is exactly enough for two drones.
+damage_of(#munition{guided = true}) -> ?INTERCEPTOR_DAMAGE;
+damage_of(#munition{guided = false}) -> ?HIT_DAMAGE.
+
+maybe_hurt(#drone{id = Id} = D, Id, Damage) -> hurt(D, Damage);
+maybe_hurt(D, _Id, _Damage) -> D.
 
 %% ⚠ THE TEST IS AGAINST THE SEGMENT THE MUNITION TRAVELLED, NOT ITS END POINT.
 %% At 60 m/s a munition covers 3 m in a tick and the hit radius is 2 m, so a
 %% point test would let it pass clean through a drone it struck squarely. That is
 %% tunnelling, it happens more often the faster the shot, and it would read as a
 %% weapon that mysteriously fails at close range.
-hit(M, From, Ds) -> nearest([D || D <- Ds, not D#drone.dead, hostile(M, D)], M, From).
+hit(M, From, Ds) -> nearest([D || D <- Ds, not out(D), hostile(M, D)], M, From).
 
 hostile(#munition{side = S}, #drone{side = S}) -> false;
 hostile(_M, _D) -> true.
@@ -317,29 +421,92 @@ aged(Ms) -> [M#munition{ttl = N - 1} || #munition{ttl = N} = M <- Ms, N > 1].
 %% Releasing
 %%==============================================================================
 
-%% Returns the drone and either a new munition or `none'.
-release(#drone{dead = true} = D, _I) -> {D, none};
-release(#drone{release_heat = H} = D, _I) when H > 0 ->
-    {D#drone{release_heat = H - 1}, none};
-release(#drone{} = D, #intent{release = R}) when R < ?RELEASE_THRESHOLD -> {D, none};
-release(#drone{battery = B} = D, _I) when B < ?MUNITION_COST -> {D, none};
-release(#drone{} = D, _I) -> fired(D).
+%% @doc Returns the drone and every munition it produced this tick.
+%%
+%% Both weapons are offered on the same tick and both may go, because they are
+%% different in kind rather than in size and a drone that has closed to knife
+%% range while holding a lock has earned both.
+fire(#drone{} = D, #intent{} = I, Ds) -> launched(released(D, I), I, Ds).
+
+released(#drone{} = D, _I) when D#drone.dead; D#drone.withdrawn -> {D, []};
+released(#drone{release_heat = H} = D, _I) when H > 0 -> {D#drone{release_heat = H - 1}, []};
+released(#drone{} = D, #intent{release = R}) when R < ?RELEASE_THRESHOLD -> {D, []};
+released(#drone{battery = B} = D, _I) when B < ?MUNITION_COST -> {D, []};
+released(#drone{} = D, _I) -> shot(D).
 
 %% ⚠ THE MUNITION INHERITS THE DRONE'S OWN VELOCITY, WHICH IS HOW A DRONE AIMS
 %% VERTICALLY AT ALL. There is no pitch here, so yaw alone would leave every shot
 %% horizontal and nothing could ever be engaged at a different altitude. Adding
 %% the launcher's velocity is what a real launch does, and it makes climbing or
 %% diving into the shot a TACTIC rather than a channel somebody had to invent.
-fired(#drone{x = X, y = Y, z = Z, yaw = Yaw, side = S, id = Id,
-             vx = Vx, vy = Vy, vz = Vz, battery = B} = D) ->
-    M = #munition{owner = Id, side = S, x = X, y = Y, z = Z,
+shot(#drone{x = X, y = Y, z = Z, yaw = Yaw, side = S, id = Id,
+            vx = Vx, vy = Vy, vz = Vz, battery = B} = D) ->
+    M = #munition{owner = Id, side = S, guided = false, x = X, y = Y, z = Z,
                   vx = Vx + ?MUNITION_SPEED * fixed:cos(Yaw) div 32768,
                   vy = Vy + ?MUNITION_SPEED * fixed:sin(Yaw) div 32768,
                   vz = Vz,
                   ttl = ?MUNITION_TTL},
-    {D#drone{battery = B - ?MUNITION_COST, release_heat = ?RELEASE_COOL}, M}.
+    {D#drone{battery = B - ?MUNITION_COST, release_heat = ?RELEASE_COOL}, [M]}.
 
-%%==============================================================================
+launched({#drone{} = D, Ms}, _I, _Ds) when D#drone.dead; D#drone.withdrawn -> {D, Ms};
+launched({#drone{launch_heat = H} = D, Ms}, _I, _Ds) when H > 0 ->
+    {D#drone{launch_heat = H - 1}, Ms};
+launched({#drone{} = D, Ms}, #intent{launch = L}, _Ds) when L < ?RELEASE_THRESHOLD ->
+    {D, Ms};
+launched({#drone{magazine = 0} = D, Ms}, _I, _Ds) -> {D, Ms};
+launched({#drone{battery = B} = D, Ms}, _I, _Ds) when B < ?INTERCEPTOR_COST -> {D, Ms};
+launched({#drone{} = D, Ms}, _I, Ds) -> committed(D, Ms, lock(D, Ds)).
+
+%% ⚠ NO LOCK, NO LAUNCH, AND NOTHING IS SPENT. A launch without a target would be
+%% a wasted interceptor a controller could not tell apart from a fired one, so
+%% pointing at something is a real precondition rather than a suggestion. The
+%% controller is told nothing extra to make this decidable: bearing, range and
+%% affiliation are already in its contact channels, so `am I locked' is something
+%% it has to learn rather than something it is handed.
+committed(#drone{} = D, Ms, undefined) -> {D, Ms};
+committed(#drone{magazine = N, battery = B} = D, Ms, TargetId) ->
+    {D#drone{magazine = N - 1, battery = B - ?INTERCEPTOR_COST,
+             launch_heat = ?LAUNCH_COOL},
+     [interceptor(D, TargetId) | Ms]}.
+
+interceptor(#drone{x = X, y = Y, z = Z, yaw = Yaw, side = S, id = Id,
+                   vx = Vx, vy = Vy, vz = Vz}, TargetId) ->
+    #munition{owner = Id, side = S, guided = true, target = TargetId,
+              x = X, y = Y, z = Z,
+              vx = Vx + ?INTERCEPTOR_SPEED * fixed:cos(Yaw) div 32768,
+              vy = Vy + ?INTERCEPTOR_SPEED * fixed:sin(Yaw) div 32768,
+              vz = Vz,
+              ttl = ?INTERCEPTOR_TTL}.
+
+%% @doc The nearest hostile inside the seeker cone and inside lock range, or
+%% `undefined'.
+%%
+%% The cone is tested by DOT PRODUCT against the nose, never by an angle, so
+%% there is no `atan2' on the match path. `fixed:along/5' says how far a
+%% direction points along a heading as a fraction of its length, and 23170 is
+%% cos(45 degrees) on the 32768 scale.
+-spec lock(#drone{}, [#drone{}]) -> term() | undefined.
+lock(#drone{} = D, Ds) ->
+    closest([{range(D, O), O} || O <- Ds, not out(O), enemy(D, O), in_cone(D, O)]).
+
+enemy(#drone{side = S}, #drone{side = S}) -> false;
+enemy(_D, _O) -> true.
+
+range(#drone{x = X, y = Y, z = Z}, #drone{x = Ox, y = Oy, z = Oz}) ->
+    fixed:mag3(Ox - X, Oy - Y, Oz - Z).
+
+in_cone(#drone{} = D, #drone{} = O) -> seen(D, O, range(D, O)).
+
+seen(_D, _O, R) when R > ?LOCK_RANGE -> false;
+seen(_D, _O, 0) -> false;
+seen(#drone{x = X, y = Y, z = Z, yaw = Yaw}, #drone{x = Ox, y = Oy, z = Oz}, R) ->
+    fixed:along(Ox - X, Oy - Y, Oz - Z, R, Yaw) >= ?SEEKER_COS.
+
+closest([]) -> undefined;
+closest(Cands) -> id_of(hd(lists:keysort(1, Cands))).
+
+id_of({_Range, #drone{id = Id}}) -> Id.
+
 %% Collisions
 %%==============================================================================
 
@@ -351,12 +518,13 @@ fired(#drone{x = X, y = Y, z = Z, yaw = Yaw, side = S, id = Id,
 %% and that is a second objective in disguise.
 collide(Ds) -> [rammed(D, Ds) || D <- Ds].
 
-rammed(#drone{dead = true} = D, _Ds) -> D;
+rammed(#drone{} = D, _Ds) when D#drone.dead; D#drone.withdrawn -> D;
 rammed(#drone{} = D, Ds) ->
     hurt(D, lists:sum([impact_damage(closing(D, O)) || O <- Ds, touching(D, O)])).
 
 touching(#drone{id = Id}, #drone{id = Id}) -> false;
 touching(_D, #drone{dead = true}) -> false;
+touching(_D, #drone{withdrawn = true}) -> false;
 touching(#drone{x = Ax, y = Ay, z = Az}, #drone{x = Bx, y = By, z = Bz}) ->
     Dx = Ax - Bx, Dy = Ay - By, Dz = Az - Bz,
     Dx * Dx + Dy * Dy + Dz * Dz =< (2 * ?DRONE_RADIUS) * (2 * ?DRONE_RADIUS).
@@ -371,6 +539,7 @@ closing(#drone{vx = Ax, vy = Ay, vz = Az}, #drone{vx = Bx, vy = By, vz = Bz}) ->
 %% Damage is applied once, here, after every stage that could cause any. See the
 %% note on `step/2'.
 settle(#drone{dead = true} = D) -> D;
+settle(#drone{withdrawn = true} = D) -> D;
 settle(#drone{health = H} = D) when H =< 0 -> D#drone{dead = true, health = 0};
 settle(#drone{} = D) -> D.
 
@@ -385,11 +554,15 @@ settle(#drone{} = D) -> D.
 %% exactly that, and calling it a fault would hide the behaviour.
 -spec finished(#arena{}) -> boolean().
 finished(#arena{tick = T}) when T >= ?MAX_TICKS -> true;
-finished(#arena{} = A) -> alive(A, attacker) =:= 0 orelse alive(A, defender) =:= 0.
+finished(#arena{} = A) -> present(A, attacker) =:= 0 orelse present(A, defender) =:= 0.
 
 %% @doc Who won, or `draw'.
 -spec winner(#arena{}) -> attacker | defender | draw | undecided.
-winner(#arena{} = A) -> decided(finished(A), alive(A, attacker), alive(A, defender)).
+%% ⚠ ON PRESENCE, NOT ON SURVIVAL, AND THE TWO ARE NOW DIFFERENT QUESTIONS. Who
+%% held the airspace and which genomes came home are separate facts: a side can
+%% withdraw intact and lose the engagement, which is exactly the trade withdrawal
+%% exists to offer. `survivors/1' answers the other one.
+winner(#arena{} = A) -> decided(finished(A), present(A, attacker), present(A, defender)).
 
 decided(false, _Att, _Def) -> undecided;
 decided(true, 0, 0) -> draw;
@@ -426,6 +599,20 @@ alive(#arena{drones = Ds}) -> length([D || D <- Ds, not D#drone.dead]).
 alive(#arena{drones = Ds}, Side) ->
     length([D || #drone{side = S, dead = false} = D <- Ds, S =:= Side]).
 
+%% @doc How many of a side are still IN the engagement: alive and not withdrawn.
+-spec present(#arena{}, attacker | defender) -> non_neg_integer().
+present(#arena{drones = Ds}, Side) ->
+    length([D || #drone{side = S} = D <- Ds, S =:= Side, not out(D)]).
+
+%% @doc Every drone that came home, whether it withdrew or fought to the end.
+%%
+%% This is the list the roster is rebuilt from, and it is why withdrawal is worth
+%% anything: CHARTER.md spends a genome when it flies and returns the survivors,
+%% so leaving alive is the difference between a lineage that continues and one
+%% that does not.
+-spec survivors(#arena{}) -> [#drone{}].
+survivors(#arena{drones = Ds}) -> [D || #drone{dead = false} = D <- Ds].
+
 -spec max_ticks() -> pos_integer().
 max_ticks() -> ?MAX_TICKS.
 
@@ -448,4 +635,10 @@ limits() ->
       kill_speed => ?KILL_SPEED,
       munition_speed => ?MUNITION_SPEED, munition_ttl => ?MUNITION_TTL,
       munition_cost => ?MUNITION_COST, release_cool => ?RELEASE_COOL,
+      interceptor_speed => ?INTERCEPTOR_SPEED, interceptor_turn => ?INTERCEPTOR_TURN,
+      interceptor_ttl => ?INTERCEPTOR_TTL, interceptor_cost => ?INTERCEPTOR_COST,
+      interceptor_damage => ?INTERCEPTOR_DAMAGE, launch_cool => ?LAUNCH_COOL,
+      magazine => ?MAGAZINE, lock_range => ?LOCK_RANGE, seeker_cos => ?SEEKER_COS,
+      withdraw_speed => ?WITHDRAW_SPEED, withdraw_margin => ?WITHDRAW_MARGIN,
+      withdraw_ticks => ?WITHDRAW_TICKS,
       max_ticks => ?MAX_TICKS}.

@@ -40,9 +40,17 @@ Charter rule 7. Every quantity below is a real quantity in SI units, carried as
 a fixed-point integer.
 
 ```
-SCALE = 1024          1 metre  = 1024 units,  resolution ~1 mm
-TICK  = 50 ms         20 Hz
+TICK      50 ms, so 20 a second
+position  1 metre    = 20480 units      resolution ~0.049 mm
+velocity  1 m/s      = 1024 units PER TICK
 ```
+
+⚠ **The position scale follows from the velocity scale rather than the other way
+round.** 20480 is 1024 times 20, chosen so that one metre per second is a whole
+number of units per tick and integration is `Pos + Vel` with **no division**. A
+divide-per-tick would truncate every position slightly toward zero and the world
+would acquire a drag nobody wrote. Hovering holds altitude to the unit because of
+this, and there is a test that says so.
 
 20 Hz is chosen against two constraints and not for a result. Real flight
 controllers run far faster, but tactics live at roughly the timescale of a
@@ -58,8 +66,13 @@ leave, which is neither a fight nor a result.
 ```
 
 A drone that reaches a wall does not bounce and is not teleported. It is
-**clamped and takes wall damage**, exactly as the sibling engine did, so the
-boundary is a hazard rather than a resource.
+**clamped and takes damage proportional to the speed the surface absorbed**, so
+the boundary is a hazard rather than a resource. Register `D.1`: a drone at full
+throttle from the middle of the arena reaches the far wall at about tick 286 and
+grinds itself to death against it by tick 300.
+
+The four LATERAL walls are also the way out, under conditions that cannot be met
+by crashing. See "Leaving alive" below.
 
 ## The flight model, and what is deliberately not in it
 
@@ -90,12 +103,17 @@ State per drone is therefore:
 
 ```
 x, y, z            fixed-point metres
-vx, vy, vz         fixed-point metres per second
+vx, vy, vz         fixed-point, units per tick
 yaw                binary angle, 0..255, 256 = full turn
-yaw_rate           signed
-battery            fixed-point watt-seconds remaining
-health             fixed-point
+battery            centijoules remaining
+health             out of 10000
+release_heat       ticks until the unguided weapon is ready
+launch_heat        ticks until the guided weapon is ready
+magazine           interceptors remaining
 dead               boolean
+withdrawn          boolean, and NOT the same as dead
+withdraw_hold      ticks spent loitering in the boundary margin
+damage_taken       this tick only, and it conflates every source
 ```
 
 Binary angles rather than radians because they wrap for free on an integer
@@ -110,9 +128,15 @@ before the cap. That makes energy a thing to spend tactically rather than a
 countdown everyone experiences identically.
 
 ```
-hover draw       a constant, paid every tick a drone is airborne
-manoeuvre draw   proportional to commanded thrust above hover
+draw per tick = T * isqrt(T) div 15        T is commanded thrust magnitude
 ```
+
+⚠ **Power goes as thrust to the three halves**, which is momentum theory for a
+rotor in hover, computed rather than approximated. Linear draw was considered and
+rejected on the arithmetic: at a 5:1 ratio between full thrust and hover, linear
+makes full throttle only five times as expensive, the battery never binds inside
+a 60 second engagement, and the whole mechanism is decoration. As built, hovering
+lasts about 9 minutes and full throttle about 46 seconds.
 
 A drone at zero battery **stops producing thrust** and falls. It is not
 teleported out and it is not declared dead; it becomes a falling object that can
@@ -125,22 +149,107 @@ engagement between two competent swarms must usually end by damage rather than
 by the turn cap, and must usually last longer than ten seconds. Any value that
 fails either is out, whatever it does to any other number.
 
-## Weapons, and why there is exactly one
+## Weapons: two, different in kind
 
-A drone can **release**, once its release is cool, along its current heading.
-One weapon, because two weapons is a balance problem and this repository has no
-means to settle one, and because the tactics under study are about position,
-attention and coordination rather than loadout.
+⚠ **Revised 2026-08-05. This document said there was exactly one weapon,
+"because two weapons is a balance problem and this repository has no means to
+settle one". Both halves of that were wrong.**
 
-A release costs battery and produces a projectile that travels, expires and can
-miss. It is not a hitscan. **A drone that fires is committing to a prediction**,
-and predicting where a manoeuvring target will be is exactly the kind of thing a
-recurrent controller can learn and a feedforward one cannot, which is one of
-several reasons the brain has memory.
+The balance claim was weak: this repository has a frozen benchmark and a
+viability discipline, so *which weapon does an evolved population actually reach
+for* is a measurement rather than an argument.
+
+The arithmetic was the real problem. At 60 m/s an unguided shot needs 1.7 s to
+cross 100 m, and a target with 50 m/s^2 of acceleration displaces about **70 m**
+in that time against a **2 m** hit radius:
+
+| range | flight time | evasion | hit radius |
+|---|---|---|---|
+| 100 m | 1.7 s | ~70 m | 2 m |
+| 50 m | 0.8 s | ~17 m | 2 m |
+| 20 m | 0.33 s | ~2.8 m | 2 m |
+| 10 m | 0.17 s | ~0.7 m | 2 m |
+
+So one unguided weapon is effective inside roughly 15 m **and nowhere else**.
+Every engagement would have been a knife fight, and "learned to engage at range"
+would have been unreachable rather than merely unlearned, which is insight 059's
+failure mode: the behaviour never appears because the budget went elsewhere, and
+from outside that is indistinguishable from a population that declined.
+
+**The release**, unguided, cheap, no magazine, effective at knife range. It
+travels, expires and can miss, so firing is committing to a prediction, and
+leading a manoeuvring target stays something this substrate can find rather than
+something it was handed. That question survives precisely because this weapon
+was kept.
+
+**The interceptor**, guided, 80 m/s, a magazine of four, expensive in battery,
+and it hits for twice as much so two of them kill.
+
+⚠ **Its turn radius is deliberately worse than a drone's.** At 80 m/s pulling
+150 m/s^2 it turns in about 43 m; a drone at 35 m/s pulling 50 m/s^2 turns in
+about 25 m. A target that sees it coming and turns hard at close quarters walks
+around the outside of it; one engaged at range cannot. That is the whole reason
+for two weapons rather than one good one: **the release rewards closing, the
+interceptor rewards seeing first.**
+
+**A launch needs a lock** and spends nothing without one: the nearest hostile
+inside a 45 degree seeker cone and 600 m. The cone is tested by dot product
+against the nose, never by an angle, so there is no `atan2` on the match path.
+Nothing tells the controller it has a lock; bearing, range and affiliation are
+already in its contact channels, so that is something to learn.
+
+Guidance is **pure pursuit at constant speed with a lateral acceleration limit**,
+which is what a cheap seeker does. A lost target leaves the interceptor
+ballistic rather than deleting it, because a munition that vanished when its
+target left would let a swarm clear the sky by withdrawing one drone.
 
 Collisions between drones cause damage to both. Ramming is not designed, it is
 what falls out of two solid objects in one volume, and a swarm that discovers it
 has discovered something.
+
+Collisions between drones cause damage to both. Ramming is not designed, it is
+what falls out of two solid objects in one volume, and a swarm that discovers it
+has discovered something.
+
+## Leaving alive
+
+⚠ **Added 2026-08-05, and the argument for it is the strongest one available.**
+
+Insight 062 closed programme P7 on a squeeze: *the only restraint available is
+decline-to-hunt, which is eat nothing, so restraint is inseparable from
+starvation, and no costless restraint lever exists.* An arena that is a closed
+box with hostile walls rebuilds that exactly. A drone that decides it is losing
+has nowhere to go, so fleeing is a slower way of dying, and "retreat" is
+unrepresentable rather than merely unchosen.
+
+**So the four lateral walls are an exit.** A drone that holds station inside a
+10 m margin, below 5 m/s, for two seconds is **withdrawn**: alive, out of the
+engagement, and its genome goes back on the roster.
+
+The sensors for the decision already exist and no new one is added: battery
+remaining, health remaining and damage taken this tick are all in the
+proprioception block. ⚠ There is no `withdraw` actuator either. Charter rule 8:
+no channel may name a tactic, and retreat is flying somewhere at a speed, which
+the existing controls already express.
+
+⚠ **It is a HOLD rather than an instant, and register `D.3` is why.** The first
+version gated on speed at the moment of crossing, and a wall impact is clamped,
+which sets the speed to zero. So flying into the boundary at 17 m/s qualified as
+a controlled departure on the very next tick, and crashing was the cheapest way
+out. The clamp now happens first and the exit is checked after, so a wall is
+never a way through a wall.
+
+⚠⚠ **And it is the design's next most likely failure mode.** If leaving is too
+cheap, the dominant strategy is take off, leave, survive, and the exhibit becomes
+nothing happening. The criterion is fixed in advance and it is set at the raid
+level rather than here: **a raid that withdraws without achieving anything must
+be worth less than one that wins.** The ground and the ceiling are deliberately
+not exits: landing gently in somebody else's airspace is not withdrawing from it.
+
+**Who held the airspace and which genomes came home are now two questions.** A
+side can withdraw intact and lose the engagement, which is the trade the
+mechanism exists to offer. `winner/1` answers the first, `survivors/1` the
+second.
 
 ## Reproducibility, and the one honest limit
 

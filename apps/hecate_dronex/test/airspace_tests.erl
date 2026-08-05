@@ -378,3 +378,175 @@ a_different_start_gives_a_different_fight_test() ->
 
 a_missing_intent_is_a_drone_that_commanded_nothing_test() ->
     ?assertEqual(run(pair(), #{}, 30), run(pair(), #{a => #intent{}}, 30)).
+
+%%==============================================================================
+%% Withdrawal
+%%==============================================================================
+
+%% An attacker already inside the western margin, hovering, and a defender in the
+%% middle.
+edge() ->
+    airspace:new([{a, attacker, 5 * ?M, 500 * ?M, 100 * ?M, 128},
+                  {b, defender, 500 * ?M, 500 * ?M, 100 * ?M, 0}]).
+
+%% ⚠ THE LEVER INSIGHT 062 COULD NOT FIND. Reaching a lateral wall slowly is an
+%% exit rather than an impact: the drone leaves alive, its genome goes home, and
+%% it is no longer in the fight.
+a_slow_drone_at_a_lateral_wall_withdraws_test() ->
+    #{gravity := G, start_health := H, withdraw_ticks := N} = airspace:limits(),
+    Creep = #{a => #intent{thrust_vert = G}},
+    After = run(edge(), Creep, N + 2),
+    Left = airspace:drone(After, a),
+    ?assert(Left#drone.withdrawn),
+    ?assertNot(Left#drone.dead),
+    ?assertEqual(H, Left#drone.health).
+
+%% ⚠ AND CRASHING INTO THE SAME WALL IS NOT A WAY THROUGH IT. Register D.3: a
+%% clamp sets the speed to zero, so a purely instantaneous speed gate let a drone
+%% arrive at 17 m/s, be stopped by the wall, and qualify as a slow controlled
+%% departure on the very next tick. Holding the margin for two seconds cannot be
+%% reached that way, and the drone here is still thrusting into the wall, so its
+%% hold keeps resetting.
+a_drone_that_crashes_into_the_wall_does_not_get_out_through_it_test() ->
+    #{max_accel := T, gravity := G, start_health := H,
+      withdraw_ticks := N} = airspace:limits(),
+    Charge = #{a => #intent{thrust_fwd = T, thrust_vert = G}},
+    After = run(edge(), Charge, N * 3),
+    Hit = airspace:drone(After, a),
+    ?assertNot(Hit#drone.withdrawn),
+    ?assert(Hit#drone.health < H).
+
+%% And the hold is a HOLD: interrupting it resets the clock, so a drone cannot
+%% accumulate a departure across a fight it kept leaving and rejoining.
+an_interrupted_hold_starts_again_test() ->
+    #{gravity := G, max_accel := T, withdraw_ticks := N} = airspace:limits(),
+    Hover = #{a => #intent{thrust_vert = G}},
+    Dash = #{a => #intent{thrust_fwd = T, thrust_vert = G}},
+    Nearly = run(edge(), Hover, N - 5),
+    ?assertNot((airspace:drone(Nearly, a))#drone.withdrawn),
+    Broken = run(Nearly, Dash, 3),
+    ?assertEqual(0, (airspace:drone(Broken, a))#drone.withdraw_hold).
+
+%% The ground is a surface, not a door. Landing gently in somebody else's
+%% airspace is not withdrawing from it.
+the_ground_is_not_a_way_out_test() ->
+    After = run(one(#{z => 1 * ?M}), idle(), 40),
+    ?assertNot((d(After))#drone.withdrawn),
+    ?assertEqual(0, (d(After))#drone.z).
+
+%% A withdrawn drone is out of the engagement, so a side that has all withdrawn
+%% has conceded the airspace even though every one of its genomes came home.
+withdrawing_concedes_the_airspace_but_keeps_the_genome_test() ->
+    #{gravity := G, withdraw_ticks := N} = airspace:limits(),
+    Creep = #{a => #intent{thrust_vert = G}, b => #intent{thrust_vert = G}},
+    After = run(edge(), Creep, N + 2),
+    ?assert(airspace:finished(After)),
+    ?assertEqual(defender, airspace:winner(After)),
+    ?assertEqual(0, airspace:present(After, attacker)),
+    %% but both genomes are alive and go back on their rosters
+    ?assertEqual(2, length(airspace:survivors(After))),
+    ?assertEqual(1, airspace:alive(After, attacker)).
+
+%%==============================================================================
+%% The guided interceptor
+%%==============================================================================
+
+%% ⚠ THE ARITHMETIC THAT MADE A SECOND WEAPON NECESSARY, ASSERTED RATHER THAN
+%% ARGUED. An unguided shot needs 1.7 s to cross 100 m; a target pulling 50 m/s^2
+%% displaces about 70 m in that time against a 2 m hit radius. This is the
+%% comparison that decides which weapon is worth carrying at which range.
+an_unguided_shot_cannot_reach_an_evading_target_test() ->
+    #{munition_speed := S, max_accel := A, hit_radius := R} = airspace:limits(),
+    Ticks = 100 * ?M div S,
+    Displacement = A * Ticks * Ticks div 2,
+    ?assert(Displacement > 20 * R).
+
+a_launch_needs_a_lock_and_spends_nothing_without_one_test() ->
+    #{magazine := N, start_battery := B} = airspace:limits(),
+    %% b is behind a, well outside the forward seeker cone.
+    Behind = airspace:new([{a, attacker, 500 * ?M, 500 * ?M, 100 * ?M, 0},
+                           {b, defender, 400 * ?M, 500 * ?M, 100 * ?M, 0}]),
+    After = airspace:step(Behind, #{a => #intent{launch = 1}}),
+    ?assertEqual(undefined, airspace:lock(airspace:drone(Behind, a),
+                                          airspace:drones(Behind))),
+    ?assertEqual(N, (airspace:drone(After, a))#drone.magazine),
+    ?assertEqual(B, (airspace:drone(After, a))#drone.battery),
+    ?assertEqual([], airspace:munitions(After)).
+
+a_target_ahead_is_locked_test() ->
+    ?assertEqual(b, airspace:lock(airspace:drone(pair(), a), airspace:drones(pair()))).
+
+a_launch_spends_a_round_and_starts_its_own_cooldown_test() ->
+    #{magazine := N, launch_cool := Cool, interceptor_cost := C,
+      start_battery := B} = airspace:limits(),
+    After = airspace:step(pair(), #{a => #intent{launch = 1}}),
+    Shooter = airspace:drone(After, a),
+    ?assertEqual(N - 1, Shooter#drone.magazine),
+    ?assertEqual(Cool, Shooter#drone.launch_heat),
+    ?assertEqual(B - C, Shooter#drone.battery),
+    ?assertEqual(1, length(airspace:munitions(After))).
+
+%% ⚠ THE PROPERTY THE WHOLE SECOND WEAPON EXISTS FOR. The target is 200 m away
+%% and running: an unguided shot has no chance at that range, and a guided one
+%% closes.
+a_guided_interceptor_runs_a_fleeing_target_down_test() ->
+    #{max_accel := T, gravity := G, start_health := H} = airspace:limits(),
+    Far = airspace:new([{a, attacker, 300 * ?M, 500 * ?M, 100 * ?M, 0},
+                        {b, defender, 500 * ?M, 500 * ?M, 100 * ?M, 0}]),
+    Chase = #{a => #intent{launch = 1, thrust_vert = G},
+              b => #intent{thrust_fwd = T, thrust_vert = G}},
+    After = run(Far, Chase, 90),
+    ?assert((airspace:drone(After, b))#drone.health < H).
+
+%% And it is beatable, which is what stops it being an auto-kill. The
+%% interceptor turns in about 43 m at 80 m/s; a drone turns in about 25 m at
+%% 35 m/s, so a hard turn at close quarters walks around the outside of it.
+the_interceptor_turns_worse_than_a_drone_test() ->
+    #{interceptor_speed := Is, interceptor_turn := It,
+      max_accel := Dt, drag_div := Div} = airspace:limits(),
+    Ds = fixed:isqrt(Dt * Div),
+    ?assert(Is * Is div It > Ds * Ds div Dt).
+
+%% A munition whose target leaves keeps flying rather than vanishing. Otherwise a
+%% swarm could clear the sky by withdrawing one drone.
+a_lost_target_leaves_the_interceptor_ballistic_test() ->
+    A0 = pair(),
+    Fired = airspace:step(A0, #{a => #intent{launch = 1}}),
+    Gone = Fired#arena{drones = [gone_if(D, b) || D <- airspace:drones(Fired)]},
+    After = airspace:step(Gone, #{}),
+    ?assertEqual(1, length(airspace:munitions(After))).
+
+gone_if(#drone{id = Id} = D, Id) -> D#drone{withdrawn = true};
+gone_if(D, _Id) -> D.
+
+both_weapons_may_go_on_one_tick_test() ->
+    After = airspace:step(pair(), #{a => #intent{release = 1, launch = 1}}),
+    ?assertEqual(2, length(airspace:munitions(After))),
+    ?assertEqual(1, length([M || M <- airspace:munitions(After), M#munition.guided])).
+
+%% An empty magazine refuses, spends nothing and starts no cooldown, exactly as a
+%% missing lock does. Set directly rather than fired dry over hundreds of ticks,
+%% because a long run would also be measuring whether the target survived.
+an_empty_magazine_refuses_test() ->
+    #{start_battery := B} = airspace:limits(),
+    A0 = pair(),
+    Dry = A0#arena{drones = [empty_if(D, a) || D <- airspace:drones(A0)]},
+    After = airspace:step(Dry, #{a => #intent{launch = 1}}),
+    ?assertEqual(0, (airspace:drone(After, a))#drone.magazine),
+    ?assertEqual(B, (airspace:drone(After, a))#drone.battery),
+    ?assertEqual([], airspace:munitions(After)).
+
+empty_if(#drone{id = Id} = D, Id) -> D#drone{magazine = 0};
+empty_if(D, _Id) -> D.
+
+%% ⚠ THE SEEKER HAS A RANGE AND IT IS SHORTER THAN THE ARENA. Two drones at
+%% opposite ends are 800 m apart against a 600 m lock, so nothing happens. This
+%% is the fixture error that made the first magazine test fail, kept as a test
+%% because the range is a rule of the game rather than a detail.
+a_target_beyond_lock_range_is_not_locked_test() ->
+    #{lock_range := R} = airspace:limits(),
+    Far = airspace:new([{a, attacker, 100 * ?M, 500 * ?M, 100 * ?M, 0},
+                        {b, defender, 900 * ?M, 500 * ?M, 100 * ?M, 0}]),
+    ?assert(800 * ?M > R),
+    ?assertEqual(undefined, airspace:lock(airspace:drone(Far, a),
+                                          airspace:drones(Far))).

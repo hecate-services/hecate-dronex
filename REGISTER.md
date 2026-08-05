@@ -185,6 +185,35 @@ flew into the far wall of the room. Because nobody let go of the throttle, it
 kept pushing against the wall until it broke. The measurement was fine. The room
 is just smaller than the test was patient.
 
+## D.3: a speed gate on an exit can be reached by crashing into it
+
+Withdrawal was first written as *reach a lateral wall below 5 m/s and you leave
+alive*. A test meant to confirm the opposite case, that arriving fast is still an
+impact, found the drone **withdrawn**.
+
+The mechanism was sound and the interaction was not. A wall impact is clamped,
+and clamping sets that axis's velocity to zero. So a drone that flew into the
+boundary at 17 m/s was, on the very next tick, sitting at the edge with one
+tick's worth of acceleration behind it, which is below the gate. **Crashing was
+the cheapest way to qualify as a controlled departure.**
+
+The fix is that withdrawal is now a **hold**: slow, inside a 10 m margin, for two
+seconds, with the clamp applied first and the exit checked after. That cannot be
+arrived at by accident, and it makes leaving cost what it should, which is two
+seconds of slow predictable flying at the edge of the map while somebody may be
+shooting at you.
+
+**The general shape, which is what makes this worth an entry:** a gate on an
+instantaneous quantity is a gate on a quantity that some other rule may be
+setting to a convenient value. The clamp and the exit were each correct alone.
+
+**ELI5.** The rule was "if you are moving slowly when you reach the fence, you
+may step over it and go home". Someone sprinted at the fence and bounced off it.
+For a moment afterwards they were standing still next to the fence, which is
+exactly what the rule asks for, so they were allowed home. The rule now says you
+have to walk slowly near the fence for a while first. You cannot do that by
+accident, and you certainly cannot do it by running into it.
+
 ## D.2: the model settles on the analytic terminal velocity exactly
 
 At full thrust against quadratic drag the speed converges to `sqrt(max_accel *

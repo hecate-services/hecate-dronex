@@ -64,6 +64,11 @@ available on a real airframe from an IMU, a barometer and a battery monitor.
 | 7 | yaw rate, signed |
 | 8 | damage taken since the last tick |
 
+⚠ **Channels 1, 6 and 8 are the self-diagnosis a drone needs to decide it is
+losing**, and they are why withdrawal needed a mechanism rather than a sensor:
+the information to choose retreat was already here, and what was missing was
+anywhere to go and any payoff for going there.
+
 Channel 8 is the only proprioception of being shot, and it **conflates** being
 hit, hitting a wall and colliding with another drone. That is stated as a
 limitation rather than fixed: a real airframe cannot cleanly tell those apart
@@ -103,7 +108,7 @@ where you are tells you whose it is.
 
 ## The actuator channels
 
-Nine.
+Ten.
 
 | # | channel |
 |---|---|
@@ -111,8 +116,22 @@ Nine.
 | 2 | thrust lateral, body frame |
 | 3 | thrust vertical |
 | 4 | yaw rate command |
-| 5 | release, above a threshold |
-| 6 to 9 | the four transmitted comms channels |
+| 5 | **release**, above a threshold. Unguided, cheap, knife range |
+| 6 | **launch**, above a threshold. Guided interceptor, needs a lock, magazine of four |
+| 7 to 10 | the four transmitted comms channels |
+
+⚠ **Two weapons rather than one, and the earlier rule is withdrawn on
+arithmetic.** An unguided shot at 60 m/s needs 1.7 s to cross 100 m and a target
+pulling 50 m/s^2 displaces about 70 m in that time against a 2 m hit radius, so
+one unguided weapon is a knife-fight weapon and nothing else. The release rewards
+closing; the interceptor rewards seeing first. Argued in
+[DESIGN_THE_AIRSPACE.md](DESIGN_THE_AIRSPACE.md).
+
+⚠ **There is no `withdraw` actuator**, although a drone can leave the engagement
+alive. Charter rule 8: no channel may name a tactic. Retreating is flying
+somewhere at a speed, which channels 1 to 4 already express, and the decision to
+do it rests on battery, health and damage, which the proprioception block already
+reports.
 
 Thrust is commanded in the **body frame** because that is what an airframe
 takes. A world-frame velocity command would be a autopilot the export target
@@ -127,7 +146,7 @@ the same contract a real flight controller offers.
 A `network_evaluator` network from `faber_tweann`, with **CfC hidden neurons**.
 
 ```erlang
-network_evaluator:create_cfc_feedforward(41, [24], 9, tanh_table, ...)
+network_evaluator:create_cfc_feedforward(41, [24], 10, tanh_table, ...)
 ```
 
 **Memory is not a garnish here, it is close to a prerequisite.** Three of the
@@ -178,7 +197,7 @@ stored, flown, published and exported is the quantized value dequantized back.
 Otherwise the id published for a fight identifies something slightly different
 from the thing that flew.
 
-At `{41, [24], 9}` that is 24 x 42 + 9 x 25 = 1233 weights, so about 2.5 KB at
+At `{41, [24], 10}` that is 24 x 42 + 10 x 25 = 1258 weights, so about 2.5 KB at
 16 bits each. A twelve-drone sortie is about 30 KB of genomes.
 
 ⚠ **One shape for both sides, and it is not negotiable for a convenience.**

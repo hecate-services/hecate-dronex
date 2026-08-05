@@ -39,7 +39,7 @@
 %% Trigonometry on binary angles
 -export([sin/1, cos/1, wrap/1]).
 %% Arithmetic
--export([isqrt/1, clamp/3, mag3/3, scale_to/4]).
+-export([isqrt/1, clamp/3, mag3/3, scale_to/4, at_length/4, along/5]).
 
 %% 20480 units per metre. See the module doc for why this and not a power of two.
 -define(PER_METRE, 20480).
@@ -135,3 +135,35 @@ shortened(X, Y, Z, Max, Mag) when Mag =< Max -> {X, Y, Z};
 shortened(_X, _Y, _Z, _Max, 0) -> {0, 0, 0};
 shortened(X, Y, Z, Max, Mag) ->
     {X * Max div Mag, Y * Max div Mag, Z * Max div Mag}.
+
+%% @doc Set a 3-vector to exactly `Len', lengthening it if it is short.
+%%
+%% Distinct from `scale_to/4', which only ever shortens. A guided munition holds
+%% a constant speed and steers, so after every turn its velocity has to be put
+%% back to exactly that speed rather than merely capped: capping alone would let
+%% a steering correction bleed speed away, and an interceptor that slows down
+%% every time it turns is a weapon that punishes the target for manoeuvring in
+%% the wrong direction.
+-spec at_length(integer(), integer(), integer(), non_neg_integer()) ->
+    {integer(), integer(), integer()}.
+at_length(X, Y, Z, Len) -> stretched(X, Y, Z, Len, mag3(X, Y, Z)).
+
+stretched(_X, _Y, _Z, _Len, 0) -> {0, 0, 0};
+stretched(X, Y, Z, Len, Mag) -> {X * Len div Mag, Y * Len div Mag, Z * Len div Mag}.
+
+%% @doc How far a vector points along a heading, as a fraction of its own length,
+%% scaled by 32768. One means dead ahead, zero means abeam, minus one behind.
+%%
+%% ⚠ THIS IS HOW A CONE IS TESTED WITHOUT AN INVERSE TRIGONOMETRIC FUNCTION, and
+%% there is no `atan2' anywhere in this repository for exactly that reason. The
+%% dot product of a unit heading with a unit direction IS the cosine of the angle
+%% between them, so `is it within 45 degrees of my nose' becomes a comparison
+%% against `cos(32)' and stays exact integer arithmetic.
+%%
+%% The heading is horizontal, because yaw is the only attitude a drone has.
+-spec along(integer(), integer(), integer(), integer(), 0..255) -> integer().
+along(Dx, Dy, Dz, _Len, _Yaw) when Dx =:= 0, Dy =:= 0, Dz =:= 0 -> 0;
+along(Dx, Dy, _Dz, Len, Yaw) -> projected(Dx * cos(Yaw) + Dy * sin(Yaw), Len).
+
+projected(_Dot, 0) -> 0;
+projected(Dot, Len) -> Dot div Len.
