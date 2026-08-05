@@ -70,13 +70,19 @@ its swarm goes quiet to it, which is a cost nobody had to design.
 ```
 comms range      300 m
 latency          1 tick (50 ms)
-channels         4 out, 4 friendly in, 4 hostile in
+channels         4 out, and 12 in over three banks
 ```
 
 ### The enemy hears you
 
-Two banks in, friendly and hostile, so a drone knows which side a transmission
-came from but not which drone.
+Three banks in, so a drone knows which **kind** of source a transmission came
+from but never which individual.
+
+| bank | carries |
+|---|---|
+| friendly air | the sum of friendly drone transmissions in range |
+| hostile air | the sum of hostile drone transmissions in range |
+| **ground** | the sum of static-sensor-network transmissions in range, whoever owns them |
 
 **This is what makes it tactics rather than telemetry.** Signalling becomes a
 trade between coordinating with your own side and disclosing to the other, and
@@ -90,17 +96,44 @@ into one, so that a transmission's origin is not given, is what would make
 transmitting something misleading a strategy. That is the richer version and it
 is also much harder to get anywhere from, so it is named here and not built.
 
+### The ground has a voice, and it is not a privileged input
+
+The defending island's static sensor network transmits its tracks on this same
+channel rather than being wired into a defender's inputs directly. The full
+argument is in
+[DESIGN_THE_STATIC_DEFENCE.md](DESIGN_THE_STATIC_DEFENCE.md); the short form is
+that a privileged input would give defenders a different input width, and one
+genome shape across both sides is what the roster rests on.
+
+What it buys here is that the ground network is a **participant in the
+signalling game** rather than an oracle above it. A defending drone has to learn
+what the cue means. An attacker hears it, so a network that talks reveals that
+it has detected something, and an attacker can learn to hear that it has been
+seen.
+
+⚠ **The ground gets its own bank rather than sharing the friendly one, and the
+argument is the instrument.** Sharing would mean muting comms mutes cueing too,
+and *drones coordinating with each other* and *drones being cued from the
+ground* would stop being separable. They are different findings.
+
 ## The instrument, in the same commit as the channel
 
 ⚠ **This is not a follow-up and it is not optional.** Without it, "the drones
 coordinate" is an impression produced by watching, and a rising fitness in a
 population that has a channel says nothing about whether the channel is why.
 
-**The ablation.** Replay a published fight, unchanged in every other respect,
-with both incoming banks forced to zero. The delta in the outcome is the
-measurement. It is cheap because the replay machinery exists anyway, it is
-exact because the engine is deterministic, and it is impossible to add to
-history later.
+**The ablation, three ways.** Replay a published fight, unchanged in every other
+respect, with banks forced to zero:
+
+```
+mute the two air banks  -> did drone-to-drone coordination matter
+mute the ground bank    -> did cueing matter
+mute all three          -> the joint effect, and therefore the interaction
+```
+
+The delta in the outcome is the measurement. It is cheap because the replay
+machinery exists anyway, it is exact because the engine is deterministic, and it
+is impossible to add to history later.
 
 Three numbers are published from every island:
 

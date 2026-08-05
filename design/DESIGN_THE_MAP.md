@@ -71,6 +71,19 @@ The sibling draws a hex disc because its world is a hex disc. This one draws
 | a drone | a mark, coloured by side, sized by altitude |
 | a trail | a short fading tail, which is how velocity becomes visible on a still frame |
 | the roster | a halo or bar per island, so an island ground down by attention visibly thins |
+| **sensor coverage** | a soft footprint per static sensor, so **blind corridors are visible** |
+| **a confirmed track** | the moment the defender knows, marked on the timeline |
+| **the ground bank transmitting** | pulses from the ground, so *the network has seen them* is watched rather than read |
+
+⚠ **Coverage is what finally makes two islands look different at a glance.**
+Until now an island was a generic box with different genomes in it. With a
+static defence network it has geography, and an attack either threads the gaps or
+fails to. That is the single most watchable thing this exhibit can show and it
+comes from [DESIGN_THE_STATIC_DEFENCE.md](DESIGN_THE_STATIC_DEFENCE.md).
+
+⚠ **A raid away from home has no coverage to draw**, because an island's sensors
+defend its own airspace only. So the same two islands look different depending on
+which way the arc is pointing, and that is correct rather than a rendering bug.
 
 ## The arc is the thing this map has that no sibling map had
 

@@ -15,11 +15,12 @@ commitment gets relitigated if new information arrives.
 | [DESIGN_THE_AIRSPACE.md](DESIGN_THE_AIRSPACE.md) | continuous fixed-point 3D rather than a lattice, the flight model, the battery, hits, and what makes a fight reproducible |
 | [DESIGN_THE_DRONE.md](DESIGN_THE_DRONE.md) | the body, the sensor channels, the actuator channels, the brain, the genome on the wire, and the perception boundary |
 | [DESIGN_DRONES_THAT_TALK.md](DESIGN_DRONES_THAT_TALK.md) | an uninterpreted channel, range and latency, permutation-invariant aggregation, interception, and the ablation that makes coordination measurable |
+| [DESIGN_THE_STATIC_DEFENCE.md](DESIGN_THE_STATIC_DEFENCE.md) | ground sensors as an island's terrain: coverage with holes, cueing over the comms channel rather than by privileged input, home advantage as the asymmetry, and what of the counter-UAS code actually ports |
 | [DESIGN_THE_ROSTER_AND_THE_RAID.md](DESIGN_THE_ROSTER_AND_THE_RAID.md) | the lineage loop: a finite roster, local training against a widening opponent set, the frozen benchmark, what a raid costs and what it returns |
 | [DESIGN_WHAT_CROSSES_THE_MESH.md](DESIGN_WHAT_CROSSES_THE_MESH.md) | topics, realms, the raid request and reply, the frame budget, and the wire rules each of which was earned by something that broke |
 | [DESIGN_THE_MAP.md](DESIGN_THE_MAP.md) | the archipelago, the airspace volume, raid arcs, drawn signals, the replay player, and the bug that has to be fixed first |
 | [DESIGN_WHAT_WE_TAKE_FROM_FABER.md](DESIGN_WHAT_WE_TAKE_FROM_FABER.md) | the dependency boundary, module by module, with the float determinism split and a record of the survey error that produced it |
-| [DESIGN_THE_SECOND_ACT.md](DESIGN_THE_SECOND_ACT.md) | what the counter-UAS line leaves behind, what is retired, and where the swap point moved |
+| [DESIGN_THE_SECOND_ACT.md](DESIGN_THE_SECOND_ACT.md) | what of the counter-UAS line comes forward, what is retired, what stays deferred, and the two seams the swap point now sits on |
 
 ## What goes here, and what does not
 

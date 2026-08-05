@@ -47,7 +47,7 @@ one day replace the simulated one without anything downstream changing. See
 
 ## The sensor channels
 
-Thirty-seven, in three blocks. Every one is a physical quantity, normalised to
+Forty-one, in three blocks. Every one is a physical quantity, normalised to
 roughly minus one to one.
 
 **Proprioception, 8 channels.** What a drone knows about itself, all of it
@@ -89,8 +89,17 @@ never where it will be. Solving intercept is strategy and it is withheld, so
 "learned to lead a target" stays a thing this substrate can find rather than a
 thing it was handed.
 
-**Comms, 8 channels.** Four friendly, four hostile. Their whole design is
+**Comms, 12 channels.** Four friendly air, four hostile air, four **ground**.
+Their whole design is
 [DESIGN_DRONES_THAT_TALK.md](DESIGN_DRONES_THAT_TALK.md).
+
+The ground bank carries the defending island's static sensor network, which
+transmits its tracks rather than being wired into a privileged input. That is
+what keeps attackers and defenders on **one genome shape and one roster**, and
+it is argued in
+[DESIGN_THE_STATIC_DEFENCE.md](DESIGN_THE_STATIC_DEFENCE.md). An attacking drone
+hears the defender's network on the same bank, because you hear a radio and
+where you are tells you whose it is.
 
 ## The actuator channels
 
@@ -118,7 +127,7 @@ the same contract a real flight controller offers.
 A `network_evaluator` network from `faber_tweann`, with **CfC hidden neurons**.
 
 ```erlang
-network_evaluator:create_cfc_feedforward(37, [24], 9, tanh_table, ...)
+network_evaluator:create_cfc_feedforward(41, [24], 9, tanh_table, ...)
 ```
 
 **Memory is not a garnish here, it is close to a prerequisite.** Three of the
@@ -169,8 +178,14 @@ stored, flown, published and exported is the quantized value dequantized back.
 Otherwise the id published for a fight identifies something slightly different
 from the thing that flew.
 
-At `{37, [24], 9}` that is 24 x 38 + 9 x 25 = 1137 weights, so about 2.3 KB at
-16 bits each. A twelve-drone sortie is under 30 KB of genomes.
+At `{41, [24], 9}` that is 24 x 42 + 9 x 25 = 1233 weights, so about 2.5 KB at
+16 bits each. A twelve-drone sortie is about 30 KB of genomes.
+
+⚠ **One shape for both sides, and it is not negotiable for a convenience.**
+Giving a defender extra channels for a ground cue would mean two genome shapes,
+two rosters and two populations that cannot be drawn from one pool. A sortie is
+a draw from the roster rather than an assembly of declared roles, and a captured
+genome has to be usable by its captor. That is why cueing goes over comms.
 
 **A foreign genome is validated and rejected, never repaired.** Clamping a
 stranger's weight into range changes the genome, which changes what actually

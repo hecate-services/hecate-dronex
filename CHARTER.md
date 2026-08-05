@@ -3,10 +3,12 @@
 **This exists so a swarm bred on one machine can attack a swarm bred on another,
 and so the controller that wins can leave the simulator and fly.**
 
-Opened 2026-08-05. It replaces this repository's counter-UAS airspace-fusion
-line, which is not deleted and not abandoned: it is the second act, and what
-survives of it is stated in
-[DESIGN_THE_SECOND_ACT.md](design/DESIGN_THE_SECOND_ACT.md).
+Opened 2026-08-05. This repository's counter-UAS airspace-fusion line is neither
+deleted nor deferred: **its detection layer becomes an island's static defence
+network**, which is what makes attacking harder than defending. See
+[DESIGN_THE_STATIC_DEFENCE.md](design/DESIGN_THE_STATIC_DEFENCE.md) for the
+design and [DESIGN_THE_SECOND_ACT.md](design/DESIGN_THE_SECOND_ACT.md) for what
+of that line is retired and what stays deferred.
 
 **This is the front door. It states what this track is committed to.**
 [`design/`](design/) says why, one document per topic, each carrying its own
@@ -63,9 +65,17 @@ One node runs one island. An island holds:
 - a **frozen benchmark** it never trains against, which is the only number on
   this island that may be called improvement
 - an **airspace**, where fights happen
+- a **static defence network**: ground sensors with real coverage and real
+  blind spots, which transmit what they detect
 
 An island **hosts the fights it is attacked in**. It spends its own CPU and its
 own airframes, and what it gets for that is the attacker's genomes.
+
+**You fight at home with your network, and away without it.** An island's
+sensors defend its own airspace only, so raiding means giving up the thing that
+makes you strong. That is the asymmetry the whole game turns on, and it is why
+attack and defence can become good at different things rather than converging on
+one behaviour.
 
 ## What is committed to
 
@@ -74,23 +84,27 @@ own airframes, and what it gets for that is the attacker's genomes.
 | **The airspace is continuous, not a lattice.** Fixed-point 3D, gravity, thrust, drag and a battery. No hexes, no cells, no stepping | [DESIGN_THE_AIRSPACE.md](design/DESIGN_THE_AIRSPACE.md) |
 | **A drone is a body, a fixed sensor suite and an evolved brain.** The perception boundary is a shape the compiler checks, not a comment | [DESIGN_THE_DRONE.md](design/DESIGN_THE_DRONE.md) |
 | **Drones talk, and what the signal means is evolved.** Range-limited, one tick late, permutation-invariant, and the enemy hears it | [DESIGN_DRONES_THAT_TALK.md](design/DESIGN_DRONES_THAT_TALK.md) |
+| **An island is a place with coverage and blind spots.** Ground sensors are terrain, they cue by transmitting rather than by privileged input, and you fight at home with them and away without | [DESIGN_THE_STATIC_DEFENCE.md](design/DESIGN_THE_STATIC_DEFENCE.md) |
 | **A genome is spent when it flies.** The roster is finite, raids cost airframes, and rebuilding costs ticks | [DESIGN_THE_ROSTER_AND_THE_RAID.md](design/DESIGN_THE_ROSTER_AND_THE_RAID.md) |
 | **The defender hosts, and keeps what attacked it.** Requests come in on the fleet realm, facts go out on a public one | [DESIGN_WHAT_CROSSES_THE_MESH.md](design/DESIGN_WHAT_CROSSES_THE_MESH.md) |
 | **A raid is a recording, published once and played locally.** The site draws frames it was handed and computes nothing | [DESIGN_THE_MAP.md](design/DESIGN_THE_MAP.md) |
 | **The world is ours, the neural substrate is a library.** What is in this repo and what is `faber_tweann`, and why the line falls there | [DESIGN_WHAT_WE_TAKE_FROM_FABER.md](design/DESIGN_WHAT_WE_TAKE_FROM_FABER.md) |
-| **The counter-UAS line is the second act.** What is kept, what is retired, and where the swap point moved to | [DESIGN_THE_SECOND_ACT.md](design/DESIGN_THE_SECOND_ACT.md) |
+| **The counter-UAS line comes forward, minus its machinery.** What is retired, what stays deferred, and the two seams the swap point now sits on | [DESIGN_THE_SECOND_ACT.md](design/DESIGN_THE_SECOND_ACT.md) |
 
 ## What is given, and what must emerge
 
 **Given**, said out loud because it is scaffolding: the flight physics, the
 sensor channels and their meaning, the actuator channels, the comms channel
 width and its range, the battery economy, the arena, the scripted drills, the
-start geometries, the roster capacity, and the fact that raids happen at all.
+start geometries, the roster capacity, the ground sensor model and that a
+defence network exists at all, and the fact that raids happen.
 
 **Emerges:** every tactic. What a signal means. Whether signalling is used at
-all. Formation, if there is one. Whether a swarm splits, screens, baits or
-converges. Whether islands specialise into attackers and defenders. Which
-lineages spread across the archipelago and which die at home.
+all. **Whether a cue from the ground is used, and whether an attacker learns to
+hear that it has been seen.** Approach paths through gaps in coverage.
+Formation, if there is one. Whether a swarm splits, screens, baits or converges.
+Whether islands specialise into attackers and defenders. Which lineages spread
+across the archipelago and which die at home.
 
 ⚠ **Nothing in the sensor list names a tactic.** There is no "am I flanking"
 channel and there will not be one. The first bespoke channel is a tactic
@@ -103,7 +117,9 @@ sibling's rule 8.
 |---|---|
 | **frozen benchmark score** | did this island get better. The ONLY improvement number |
 | **signal volume per engagement** | was anything ever transmitted. Zero invalidates any claim about coordination |
-| **comms ablation delta** | replay the same fight with both channel banks zeroed. Without this, "they coordinate" is an impression |
+| **comms ablation delta, three ways** | replay the same fight with the air banks muted, the ground bank muted, and all three muted. Without this, "they coordinate" and "they were cued" are one impression |
+| **detection latency and leakage** | how far in did an attacker get before it was tracked, and how often did a sortie cross uncued |
+| **raid success rate, home against away** | the asymmetry, measured. It is also the viability gate: if attacking never works, nothing crosses and the archipelago is four experiments again |
 | **roster depth and generation** | how deep the lineage is, and how ground down |
 | **opponent-set composition** | how much of what this island trains against came from somewhere else |
 | **foreign lineage share** | how much of the archipelago's genetic material has crossed at least one border |
@@ -116,6 +132,11 @@ that means nothing, because the exam is changing underneath it. Insight 054 is
 exactly this failure. The benchmark is a fixed set of scripted drills over a
 fixed set of start geometries, never trained against, run on a timer and
 published from the first commit.
+
+⚠⚠ **And it is an away game, always: no sensors, no cueing, ground bank forced
+to zero.** Otherwise an island that improved its **fortifications** would show a
+rising benchmark, and that number would not be about its drones at all. The
+defence network is measured separately and the two are never added together.
 
 ## The rules this track runs under
 
@@ -178,8 +199,15 @@ noun has to carry that or the physics will drift back to the ground.
 | 5 | the trainer and the roster, persisted | **BUILD** | |
 | 6 | comms, with the ablation instrument in the same commit | **BUILD** | the instrument is not a follow-up. Without it the channel is decoration |
 | 7 | the raid protocol, and the defender keeping what attacked it | **BUILD** | |
-| 8 | the map | **BUILD** | |
-| 9 | ONNX export of a champion, flown against the simulator through the exported artifact | **BUILD** | this is what makes the framing true rather than aspirational, and it is a test rather than a claim |
+| 8 | **static defence phase 1**: one non-cooperative modality, fixed placement, fixed confirmation threshold, the ground bank, the three-way ablation | **BUILD** | the smallest thing that makes the asymmetry real. It lands before the map so coverage is drawn from the start rather than retrofitted |
+| 9 | the map | **BUILD** | |
+| 10 | **static defence phase 2**: the confirmation threshold evolves | **BUILD** | one integer, and it is the genuine counter-drone tradeoff: cue at ghosts and waste battery, or see too late |
+| 11 | **static defence phase 3**: placement evolves, is persisted, is published, is drawn | **BUILD** | this is what makes islands visibly different places |
+| 12 | ONNX export of a champion, flown against the simulator through the exported artifact | **BUILD** | this is what makes the framing true rather than aspirational, and it is a test rather than a claim |
+
+⚠ **Items 8, 10 and 11 are staged deliberately**, because the static defence
+roughly doubles the surface of the build and only phase 1 is needed for the game
+to be a game.
 
 **No claim is scheduled.** If one is ever wanted, it goes in `claims/` with a
 pre-registration, and the four measurement rules from 053 to 056 apply.
@@ -203,6 +231,12 @@ pre-registration, and the four measurement rules from 053 to 056 apply.
 - **What a defender owes an attacker.** Today the defender reports the outcome
   and is believed. The engine is exactly replayable by design, so the attacker
   can check; nothing yet requires it to.
+- **Whether the home advantage leaves room to attack.** Stated as a viability
+  criterion rather than assumed: a competent attacking swarm must win a
+  non-trivial fraction of raids against a competent defence. If it cannot,
+  islands turtle, no genomes cross, and the one idea dies while the exhibit
+  still looks busy. Network strength is set on that measurement, whole sweep
+  published.
 
 ## What carries across from the siblings
 

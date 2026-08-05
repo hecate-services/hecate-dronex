@@ -97,6 +97,19 @@ An island that is popular gets ground down by attention, which is a real cost
 and is not compensated with a made-up reward. What the defender gets is in the
 next section, and it is worth more than airframes.
 
+**And there is a second price, which is the home advantage given up.** An
+island's static sensor network defends its own airspace only, so a raiding swarm
+flies into somebody else's volume with no ground support at all. Choosing to
+attack means choosing to fight without the thing that makes you strong. The full
+design is in [DESIGN_THE_STATIC_DEFENCE.md](DESIGN_THE_STATIC_DEFENCE.md).
+
+⚠ **Which is also the design's most likely failure mode.** If home advantage is
+overwhelming, every island turtles, no genomes cross, and the charter's one idea
+dies while the exhibit still looks busy. The viability criterion is fixed in
+advance: **a competent attacking swarm must win a non-trivial fraction of raids
+against a competent defence**, and network strength is set on that with the whole
+sweep published.
+
 ## What the defender gets, and it is the best part
 
 **The attacker's genomes.**
@@ -179,6 +192,14 @@ opponent set will show a rising local fitness that measures the exam rather than
 the population. Every foreign genome captured changes the training exam. Without
 a frozen one there is no honest sentence to write about whether anything got
 better.
+
+⚠ **It is an away game, always: no sensors, no cueing, ground bank forced to
+zero.** This is the same failure a second time and it would have been easy to
+miss. If the benchmark ran at home, an island that improved its **fortifications**
+would show a rising benchmark score, and that score would not be about its drones
+at all. It would be a number reporting progress while measuring something other
+than the thing it names. The defence network gets its own separate published
+number and the two are never added together.
 
 **Graded, not pass/fail.** 054's specific finding is that a benchmark too weak
 to stretch the population saturates and then reports nothing, having been blind

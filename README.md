@@ -31,6 +31,11 @@ that raids happen. Everything else is found.
 - **A raid is how diversity crosses the mesh, not how fitness is assigned.** The
   defender keeps the genomes that attacked it and trains against them
   afterwards. Selection stays local, against an opponent set that raids widen.
+- **You fight at home with your sensor network, and away without it.** An island
+  has ground sensors with real coverage and real blind corridors. They cue the
+  defending swarm by **transmitting**, on the same uninterpreted channel the
+  drones use, so a defender has to learn what a cue means and an attacker can
+  learn to hear that it has been seen.
 
 ⚠ **To raid is to publish your swarm.** A raid hands your controllers to whoever
 you attacked, permanently and by design, because that is the mechanism the whole
@@ -44,8 +49,11 @@ A closed simulation and an evolutionary substrate. It ingests no live airspace
 data, decodes no Remote-ID, and has no interface that accepts a real sensor feed.
 The only things that cross the mesh are a genome, a result and a recording.
 
-The repository previously held a counter-UAS airspace-fusion line. It is not
-deleted: it is the second act, and what survives of it is stated in
+The repository previously held a counter-UAS airspace-fusion line. Its detection
+layer is not deleted and not deferred: it **is** the static defence network
+above, described in
+[design/DESIGN_THE_STATIC_DEFENCE.md](design/DESIGN_THE_STATIC_DEFENCE.md). What
+of that line is retired, and what stays deferred, is in
 [design/DESIGN_THE_SECOND_ACT.md](design/DESIGN_THE_SECOND_ACT.md).
 
 ## Layer position

@@ -168,4 +168,57 @@ to open every drawer before saying what is not in the toolbox.
 
 # I: findings about the work
 
-*None yet.*
+## I.1: a docstring that calls itself a skeleton was read after it was cited
+
+Deciding what to keep from the counter-UAS line, I wrote that its correlation
+logic was "genuinely the algorithm you want" and worth porting as a pure
+function. Then I opened it.
+
+`on_contact_observed_correlate_track` says of itself, in its first paragraph:
+*"Correlation here is the SKELETON minimum: one confirmed track per drone id,
+single-sensor passthrough."* The body confirms it: `TrackId = <<"track-",
+DroneId/binary>>`. **The correlation is string concatenation on the drone's
+own self-reported identity.** There is no association by predicted position, no
+gate, no evidence accumulation and no track-lost. It works because Remote-ID
+hands you the identity, and it is meaningless for any sensor that does not.
+`maybe_confirm_track` beside it is a one-shot idempotence guard, not an
+accumulator.
+
+**Cost:** nothing, because it was caught inside one turn. **What it would have
+cost:** an item in the order of work sized as a port that was actually a design,
+discovered at implementation time.
+
+This is the third instance of one pattern, after the two in `INHERITED-7`.
+Notably the file **announced its own status in the place a reader would look
+first**, so this was not even a case of having to read code. It was a case of
+citing a module without opening it.
+
+**The rule, sharpened:** before writing that an existing thing can be reused,
+open it and quote the line that says so. If the quote cannot be produced, the
+claim is not yet made.
+
+**ELI5.** Someone said the old kitchen had a bread oven worth keeping, without
+going in. Inside there was a hand-written sign on it reading "this is not really
+an oven, it is a box with a light bulb in it". The sign had been there the whole
+time, on the front, at eye height. The lesson is not about ovens. It is that
+saying you can reuse a thing means walking over and looking at it.
+
+## I.2: an inherited scope decision was carried a day too long
+
+The counter-UAS line was written up as a deferred second act: contracts kept,
+nothing exercised. Raf's proposal to make it the island's **static defence
+network** is better for a reason already written into this repository's own
+charter, rule 4: *a capacity that was never exercised is not evidence of
+anything.*
+
+The deferral had been inherited from the framing of the previous session rather
+than argued fresh. It survived a whole design pass because it looked settled.
+Two things fell out of reversing it within the day: the fight stops being
+symmetric, which is the shape P7 found sterile, and the sensor-model behaviour
+becomes load-bearing instead of shelved.
+
+**ELI5.** They decided to keep an old workshop locked up in case it was useful
+later, wrote that down, and then everything after that treated it as decided.
+The better answer was to open it and use half of it now. What made the mistake
+last a day was not that it was hard to see. It was that it had already been
+written down once, and written down looks like decided.
