@@ -1,0 +1,130 @@
+%% @doc What a raid refuses, and why each refusal exists.
+-module(dronex_raid_tests).
+
+-include_lib("eunit/include/eunit.hrl").
+
+-define(CAP, 16).
+
+genome() ->
+    {G, _S} = breed:random(rand:seed_s(exsss, {5, 5, 5})),
+    G.
+
+sortie(G) -> #{id => drone_genome:id(G), genome => drone_genome:pack(G)}.
+
+request(Sorties) -> dronex_raid:request(<<"attacker-id">>, <<"raid-1">>, Sorties, 42).
+
+%%==============================================================================
+%% The fingerprint
+%%==============================================================================
+
+the_fingerprint_is_stable_and_32_bytes_test() ->
+    ?assertEqual(32, byte_size(dronex_raid:fingerprint())),
+    ?assertEqual(dronex_raid:fingerprint(), dronex_raid:fingerprint()).
+
+%% ⚠ `REFUSED' ON ITS OWN IS USELESS. Two islands that cannot fight need to know
+%% WHICH of physics, genome shape, senses or runtime differs, and a hash cannot
+%% say. These are the parts an operator reads after a refusal.
+the_parts_name_everything_that_could_silently_change_an_outcome_test() ->
+    P = dronex_raid:fingerprint_parts(),
+    ?assertEqual(lists:sort([arch, comms, erts, genes, otp, physics, senses, topology]),
+                 lists:sort(maps:keys(P))),
+    %% The physics are the whole limits map, not a chosen subset: CHARTER.md
+    %% rule 2 says physics ship with the image, so ANY constant differing must
+    %% make two images unable to fight.
+    ?assertEqual(airspace:limits(), maps:get(physics, P)),
+    %% A run is only a pure function of its seed within one OTP release.
+    ?assert(byte_size(maps:get(otp, P)) > 0),
+    ?assert(byte_size(maps:get(arch, P)) > 0).
+
+%% And the fingerprint actually depends on those parts: change one and it moves.
+the_fingerprint_moves_when_a_part_does_test() ->
+    P = dronex_raid:fingerprint_parts(),
+    Real = crypto:hash(sha256, term_to_binary(P)),
+    Drifted = crypto:hash(sha256, term_to_binary(P#{otp => <<"27">>})),
+    ?assertEqual(Real, dronex_raid:fingerprint()),
+    ?assertNotEqual(Real, Drifted).
+
+%%==============================================================================
+%% What a defender refuses
+%%==============================================================================
+
+a_well_formed_raid_is_accepted_test() ->
+    ?assertEqual(ok, dronex_raid:validate_request(request([sortie(genome())]), ?CAP)).
+
+a_protocol_mismatch_is_reported_before_anything_else_test() ->
+    R = (request([sortie(genome())]))#{protocol := 99},
+    ?assertMatch({error, {protocol_mismatch, 99, _}}, dronex_raid:validate_request(R, ?CAP)).
+
+%% ⚠ THE ONE THAT MATTERS MOST, because a mismatched engine does not crash: it
+%% produces a plausible fight that is comparable to nothing. A sibling shipped
+%% exactly that with the site on one engine commit and the service on another.
+an_engine_mismatch_refuses_test() ->
+    R = (request([sortie(genome())]))#{fingerprint := crypto:hash(sha256, <<"other build">>)},
+    ?assertMatch({error, {engine_mismatch, _, _}}, dronex_raid:validate_request(R, ?CAP)).
+
+a_missing_fingerprint_is_not_a_pass_test() ->
+    R = maps:remove(fingerprint, request([sortie(genome())])),
+    ?assertEqual({error, no_fingerprint}, dronex_raid:validate_request(R, ?CAP)).
+
+%%==============================================================================
+%% The genomes, which is the only per-entrant check
+%%==============================================================================
+
+%% ⚠ THE WHOLE RAID REFUSES ON ONE BAD GENOME. A wrong-width genome is padded in
+%% silence by the evaluator and a short output falls back to a null command, so
+%% the alternative is one entrant flying badly inside a result that looks real.
+one_bad_genome_refuses_the_whole_raid_test() ->
+    Good = sortie(genome()),
+    Bad = #{id => <<"whatever">>, genome => <<"not a genome">>},
+    ?assertMatch({error, {unpackable, 1, _}},
+                 dronex_raid:validate_request(request([Good, Bad]), ?CAP)),
+    %% And the index is the second entrant, not the first: a refusal that cannot
+    %% say which one sends the sender through all of them.
+    ?assertMatch({error, {unpackable, 0, _}},
+                 dronex_raid:validate_request(request([Bad, Good]), ?CAP)).
+
+%% ⚠ AN ID IS THE HASH OF THE PACKED GENOME, which is why the packed form travels
+%% rather than a term. If a sender could name a genome anything, the defender's
+%% opponent set and the raid record would disagree about what flew.
+a_genome_may_not_be_called_something_it_is_not_test() ->
+    S = (sortie(genome()))#{id := <<"a name I chose">>},
+    ?assertMatch({error, {id_mismatch, 0, <<"a name I chose">>, _}},
+                 dronex_raid:validate_request(request([S]), ?CAP)).
+
+%% Somebody else's for loop must not run here.
+an_oversized_or_empty_sortie_refuses_test() ->
+    G = sortie(genome()),
+    ?assertEqual({error, empty_sortie}, dronex_raid:validate_request(request([]), ?CAP)),
+    Many = lists:duplicate(?CAP + 1, G),
+    ?assertMatch({error, {sortie_too_large, _, ?CAP}},
+                 dronex_raid:validate_request(request(Many), ?CAP)).
+
+%%==============================================================================
+%% Shape
+%%==============================================================================
+
+a_request_survives_a_round_trip_test() ->
+    R = request([sortie(genome())]),
+    ?assertMatch({ok, _}, dronex_raid:decode_request(R)),
+    ?assertEqual({error, malformed_request}, dronex_raid:decode_request(#{})),
+    ?assertEqual({error, malformed_request}, dronex_raid:decode_request(not_a_map)).
+
+a_reply_survives_a_round_trip_test() ->
+    G = genome(),
+    Reply = dronex_raid:reply(<<"raid-1">>, attacker,
+                              [{drone_genome:id(G), survived, drone_genome:pack(G)}]),
+    ?assertMatch({ok, _}, dronex_raid:decode_reply(Reply)),
+    ?assertEqual({error, malformed_reply}, dronex_raid:decode_reply(#{})),
+    %% An error from the transport passes through as itself rather than being
+    %% relabelled: `no_healthy_station' must not become `malformed_reply'.
+    ?assertEqual({error, timeout}, dronex_raid:decode_reply({error, timeout})),
+    Old = Reply#{protocol := 0},
+    ?assertMatch({error, {protocol_mismatch, 0, _}}, dronex_raid:decode_reply(Old)).
+
+%% ⚠ ADDRESSED TO AN ISLAND, BECAUSE THERE IS NO DIRECTORY. An attacker learns an
+%% island_id from the public realm, which is the only place islands become
+%% visible to each other, and calls it on the FLEET realm — which is why a
+%% stranger holding the public tag cannot start a fight.
+a_raid_is_addressed_to_one_island_test() ->
+    ?assertEqual(<<"dronex.raid.abc">>, dronex_raid:procedure(<<"abc">>)),
+    ?assertNotEqual(dronex_raid:procedure(<<"a">>), dronex_raid:procedure(<<"b">>)).

@@ -270,6 +270,53 @@ waiting behind that one clerk, and the light on the door still said OPEN.
 
 # D: findings about the world
 
+## D.11: the Lamarckian arm was designed against a capability faber does not have
+
+`DESIGN_THE_ROSTER_AND_THE_RAID.md` describes a fork in what a returning veteran
+carries, and says **both are built, arm L is the default, and the choice is a
+runtime dial**:
+
+| arm | what is stored |
+|---|---|
+| **W** | the weights it took off with. Surviving is *evidence about* a genome |
+| **L** | the weights it came home with. What it learned in the fight is heritable |
+
+It names `evaluate_with_plasticity/3` as the mechanism. **That function does not
+exist**, in faber or anywhere else.
+
+⚠ **And the near miss is the interesting part.** `faber_tweann` DOES ship
+`plasticity.erl`, `plasticity_hebbian.erl` and `plasticity_modulated.erl`, so a
+directory listing says the capability is there — which is exactly the shape of
+INHERITED-7, where a listing was read instead of a module and the answer was
+wrong twice. Reading it this time:
+
+    plasticity:apply_to_network(Module, Weights, Activations, Reward)
+    weight_spec() :: {Weight, DeltaWeight, LearningRate, ParamList}
+
+Those are **genotype-shaped** weights, one tuple per synapse carrying its own
+learning rate. This repository's genome is a flat `[integer()]` quantized vector
+driving `network_evaluator`, which offers `evaluate_with_state/2` and nothing
+else. The two are not the same object, and the boundary test that forbids the
+genotype path is deliberate.
+
+**So arm L is not a dial, it is a build**, and a sizeable one: per-synapse
+learning rates would have to enter the genome (changing its width, and therefore
+every persisted genome and the engine fingerprint), activations would have to be
+captured per tick, and the rule applied and converted back each frame.
+
+**What shipped instead.** Arm W, described as the only arm rather than as a
+choice. `raid:settle/3` says so where it returns the genome that took off. The
+survivor-weights field still travels on the wire, because a wire format that
+changes when a dial turns costs a protocol version, and a redundant field costs
+bytes.
+
+**ELI5.** The plan said the soldiers would come home changed by what they learned
+and that we would simply choose whether to keep the change. It turns out nothing
+about the way these soldiers are built lets them change during a fight at all.
+The box on the shelf labelled "learning" holds a different kind of soldier
+entirely. So they come home exactly as they left, and what we learn is which
+ones came home.
+
 ## D.1: the arena's walls kill a drone flying flat out, and that is the physics
 
 A test meant to check terminal velocity ran a drone at full forward thrust for

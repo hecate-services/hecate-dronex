@@ -49,8 +49,7 @@ sigma() -> ?SIGMA.
 %% kind of thing that makes a type checker useless by degrees.
 -spec random(rand:state()) -> {drone_genome:genome(), rand:state()}.
 random(S) ->
-    {In, Hidden, Out} = drone_genome:topology(),
-    Layers = [In] ++ Hidden ++ [Out],
+    Layers = drone_genome:layers(),
     {Genes, S1} = draws(drone_genome:gene_count(Layers), S, []),
     {{Layers, Genes}, S1}.
 

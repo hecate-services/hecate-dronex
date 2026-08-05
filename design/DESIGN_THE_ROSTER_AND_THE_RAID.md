@@ -141,7 +141,17 @@ this is a real fork rather than a detail.
 | **W** | the weights it took off with | Weismannian. The raid is a second, harsher exam: surviving is **evidence about** a genome, not a change to it |
 | **L** | the weights it came home with | **Lamarckian inheritance**. What the drone learned in the fight is heritable |
 
-**Both are built, arm L is the default, and the choice is a runtime dial.**
+⚠ **CORRECTED 2026-08-05: arm L is not built, because this engine cannot do it.**
+`evaluate_with_plasticity/3` does not exist. faber ships `plasticity.erl`, but it
+operates on genotype-shaped `{Weight, Delta, LearningRate, Params}` tuples rather
+than on the flat quantized vector this genome is, and the genotype path is the
+one the faber boundary test deliberately forbids. Arm L would mean per-synapse
+learning rates entering the genome — changing its width, every persisted genome
+and the engine fingerprint — plus per-tick activation capture. That is a build,
+not a dial. **Arm W is the only arm, and it is described as such rather than as a
+choice.** See REGISTER D.11.
+
+~~Both are built, arm L is the default, and the choice is a runtime dial.~~
 Lamarckian evolution is a real and well studied family that often outperforms
 its alternative in practice, and it is what the track was described as wanting.
 Making it a dial rather than an assumption means the question *is the learning

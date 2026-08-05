@@ -66,6 +66,7 @@
 -export([pack/1, unpack/1, id/1]).
 %% The contract a host enforces before running anything
 -export([validate/1, limits/0, weight_count/1, tau_count/1, gene_count/1, topology/0]).
+-export([layers/0]).
 %% The float boundary
 -export([quantize/1, dequantize/1, scale/0, split/2, to_tau/1]).
 
@@ -94,6 +95,20 @@ scale() -> ?SCALE.
 %% @doc The topology every drone in this archipelago carries.
 -spec topology() -> {pos_integer(), [pos_integer()], pos_integer()}.
 topology() -> {drone_senses:channels(), ?HIDDEN, drone_pilot:outputs()}.
+
+%% @doc The topology as the FLAT layer list every counting function here takes.
+%%
+%% ⚠ `topology/0' RETURNS A TUPLE AND `gene_count/1' TAKES A LIST, which is a
+%% trap this repository fell into twice before it was given a name: the flattening
+%% `[In] ++ Hidden ++ [Out]' was written out inline in `breed' and again in
+%% `limits/0', and passing the tuple straight to `gene_count/1' does not fail
+%% politely — `length/1' raises `badarg' on a tuple, from two calls down, and the
+%% stack points at the counting function rather than at the caller that got the
+%% shape wrong.
+-spec layers() -> [pos_integer()].
+layers() ->
+    {In, Hidden, Out} = topology(),
+    [In] ++ Hidden ++ [Out].
 
 %% @doc How many weights a topology needs: bias plus inputs, per neuron.
 -spec weight_count([pos_integer()]) -> pos_integer().
@@ -152,7 +167,7 @@ id(G) -> binary:encode_hex(crypto:hash(sha256, pack(G)), lowercase).
 -spec limits() -> map().
 limits() ->
     {In, Hidden, Out} = topology(),
-    Layers = [In] ++ Hidden ++ [Out],
+    Layers = layers(),
     #{inputs => In, hidden => Hidden, outputs => Out,
       weights => weight_count(Layers), taus => tau_count(Layers),
       genes => gene_count(Layers),

@@ -1,0 +1,212 @@
+%% @doc What a raid looks like on the wire, and what it refuses. PURE.
+%%
+%% THIS EXISTS SO TWO ISLANDS CAN FIGHT WITHOUT EITHER OF THEM TRUSTING THE OTHER.
+%%
+%% ==========================================================================
+%% ⚠ THE WHOLE RAID REFUSES, NEVER ONE ENTRANT
+%% ==========================================================================
+%%
+%% `DESIGN_WHAT_CROSSES_THE_MESH.md' is explicit and the reason is worth keeping
+%% next to the code: a genome with a wrong-width input layer does NOT crash. The
+%% evaluator pads a short input in silence and a short output vector falls back
+%% to a null command, so a mismatched entrant flies badly and produces a result
+%% that looks exactly like a real one. There is no error to notice.
+%%
+%% So every genome is validated BEFORE the engagement starts, never during, and a
+%% single failure refuses the whole raid. A refused raid is a fact; a raid with
+%% one silently crippled drone in it is a lie.
+%%
+%% ==========================================================================
+%% ⚠⚠ AND THE ENGINE FINGERPRINT IS THE SAME ARGUMENT ONE LEVEL UP
+%% ==========================================================================
+%%
+%% Two islands on different builds produce results comparable to nothing. The
+%% sibling shipped precisely that — the site pinned one engine commit and the
+%% service pinned another — and the only thing between it and drawing a fight
+%% nobody fought was a turn-count self-check.
+%%
+%% What goes into the fingerprint is everything that would change an outcome
+%% without changing an interface:
+%%
+%%   the PHYSICS      every constant `airspace:limits/0' reports. CHARTER.md
+%%                    rule 2 says physics ships with the image, so two images
+%%                    with different constants must not be able to fight
+%%   the GENOME SHAPE topology, weight count, tau count. A genome that is a
+%%                    valid vector of the wrong length is the failure above
+%%   the SENSES       channel count and comms width, which decide what an
+%%                    input vector even means
+%%   the RUNTIME      OTP release, ERTS version and system architecture. The
+%%                    architecture string carries the libc, and a run is only a
+%%                    pure function of its seed within ONE OTP release: `rand'
+%%                    is documented as free to change its algorithms between
+%%                    them, which is exactly the kind of difference that shows
+%%                    up as a plausible fight rather than as an error
+-module(dronex_raid).
+
+-export([fingerprint/0, fingerprint_parts/0]).
+-export([request/4, reply/3, decode_request/1, decode_reply/1]).
+-export([validate_request/2, protocol_version/0, procedure/1]).
+
+-export_type([sortie/0, fate/0]).
+
+%% Bumped when the SHAPE of these maps changes. Distinct from the fingerprint,
+%% which changes when the WORLD changes: two islands can share a protocol
+%% version and still be unable to fight.
+-define(PROTOCOL_VERSION, 1).
+
+%% A raid is addressed to one island by its identity, because there is no
+%% directory. An attacker learns an island_id from the public realm — the only
+%% place islands become visible to each other — and calls this procedure on the
+%% FLEET realm, which is why a stranger cannot start a fight.
+-define(PROC_PREFIX, <<"dronex.raid.">>).
+
+-type sortie() :: #{id := binary(), genome := binary()}.
+-type fate() :: survived | lost.
+
+-spec protocol_version() -> pos_integer().
+protocol_version() -> ?PROTOCOL_VERSION.
+
+%% @doc The procedure a defender advertises, and an attacker calls.
+-spec procedure(binary()) -> binary().
+procedure(IslandId) when is_binary(IslandId) ->
+    <<?PROC_PREFIX/binary, IslandId/binary>>.
+
+%%==============================================================================
+%% The fingerprint
+%%==============================================================================
+
+%% @doc 32 bytes over everything that would change an outcome silently.
+-spec fingerprint() -> binary().
+fingerprint() -> crypto:hash(sha256, term_to_binary(fingerprint_parts())).
+
+%% @doc The parts, so a mismatch can be explained rather than merely reported.
+%%
+%% ⚠ EXPORTED BECAUSE `REFUSED' IS USELESS ON ITS OWN. Two islands that cannot
+%% fight need to know WHICH of physics, genome shape, senses or runtime differs,
+%% and a hash cannot say. This is what an operator reads after a refusal.
+-spec fingerprint_parts() -> map().
+fingerprint_parts() ->
+    #{physics => airspace:limits(),
+      topology => drone_genome:topology(),
+      genes => drone_genome:gene_count(drone_genome:layers()),
+      senses => drone_senses:channels(),
+      comms => drone_senses:comms_width(),
+      otp => list_to_binary(erlang:system_info(otp_release)),
+      erts => list_to_binary(erlang:system_info(version)),
+      arch => list_to_binary(erlang:system_info(system_architecture))}.
+
+%%==============================================================================
+%% The request
+%%==============================================================================
+
+%% @doc What an attacker sends. The genomes are already packed: `drone_genome:pack/1'
+%% is the canonical form the id is the hash of, so what travels is byte for byte
+%% what the id names.
+-spec request(binary(), binary(), [sortie()], non_neg_integer()) -> map().
+request(IslandId, RaidId, Sorties, Tick) ->
+    #{protocol => ?PROTOCOL_VERSION,
+      fingerprint => fingerprint(),
+      attacker => IslandId,
+      raid_id => RaidId,
+      tick => Tick,
+      sortie => [#{id => Id, genome => G} || #{id := Id, genome := G} <- Sorties]}.
+
+-spec decode_request(term()) -> {ok, map()} | {error, term()}.
+decode_request(#{protocol := V, fingerprint := F, attacker := A,
+                 raid_id := R, sortie := S} = Req)
+  when is_integer(V), is_binary(F), is_binary(A), is_binary(R), is_list(S) ->
+    {ok, Req#{tick => maps:get(tick, Req, 0)}};
+decode_request(_Malformed) ->
+    {error, malformed_request}.
+
+%%==============================================================================
+%% What a defender refuses, and in which order
+%%==============================================================================
+
+%% @doc Everything checked before a single tick is simulated.
+%%
+%% ⚠ THE ORDER IS THE ERROR MESSAGE. Protocol first, because a version mismatch
+%% explains every later failure and reporting a genome error to an island running
+%% a different protocol would send it looking in the wrong place. Fingerprint
+%% next, for the same reason one level down. Genomes last, because they are the
+%% only check that is per-entrant and the only one worth naming an index for.
+-spec validate_request(map(), pos_integer()) -> ok | {error, term()}.
+validate_request(#{protocol := V}, _Cap) when V =/= ?PROTOCOL_VERSION ->
+    {error, {protocol_mismatch, V, ?PROTOCOL_VERSION}};
+validate_request(#{fingerprint := F} = Req, Cap) ->
+    engine_checked(F =:= fingerprint(), F, Req, Cap);
+validate_request(_Req, _Cap) ->
+    {error, no_fingerprint}.
+
+engine_checked(false, Theirs, _Req, _Cap) ->
+    {error, {engine_mismatch, Theirs, fingerprint()}};
+engine_checked(true, _Theirs, #{sortie := S}, Cap) ->
+    sized(length(S), Cap, S).
+
+%% ⚠ A CAP, AND IT IS NOT POLITENESS. A raid arrives from a stranger and every
+%% entrant costs an unpack, a validation and a controller. Without a bound, one
+%% call decides how much work this island does, and the honest name for that is
+%% somebody else's for loop running here.
+sized(0, _Cap, _S) -> {error, empty_sortie};
+sized(N, Cap, _S) when N > Cap -> {error, {sortie_too_large, N, Cap}};
+sized(_N, _Cap, S) -> every_genome(S, 0).
+
+%% ⚠ EVERY ONE, AND THE INDEX TRAVELS WITH THE ERROR. This is the only per-entrant
+%% check, so it is the only one where "which" is answerable, and a refusal that
+%% cannot say which genome was wrong sends the sender looking through all of them.
+every_genome([], _I) -> ok;
+every_genome([#{id := Id, genome := Packed} | Rest], I) when is_binary(Id), is_binary(Packed) ->
+    unpacked(drone_genome:unpack(Packed), Id, Packed, Rest, I);
+every_genome([_Malformed | _Rest], I) ->
+    {error, {malformed_entrant, I}}.
+
+unpacked({error, Why}, _Id, _Packed, _Rest, I) -> {error, {unpackable, I, Why}};
+unpacked({ok, G}, Id, Packed, Rest, I) -> flyable(drone_genome:validate(G), G, Id, Packed, Rest, I).
+
+flyable({error, Why}, _G, _Id, _Packed, _Rest, I) -> {error, {invalid_genome, I, Why}};
+flyable(ok, G, Id, Packed, Rest, I) -> named(drone_genome:id(G), Id, Packed, Rest, I).
+
+%% ⚠ THE ID MUST BE THE HASH OF WHAT ARRIVED. An id is `sha256' of the packed
+%% genome, and this is the whole reason the packed form travels rather than a
+%% term: if a sender could name a genome anything, the defender's opponent set
+%% and the raid record would disagree about what actually flew, and nothing
+%% downstream could tell.
+named(Id, Id, _Packed, Rest, I) -> every_genome(Rest, I + 1);
+named(Real, Claimed, _Packed, _Rest, I) -> {error, {id_mismatch, I, Claimed, Real}}.
+
+%%==============================================================================
+%% The reply
+%%==============================================================================
+
+%% @doc What the defender sends back: the outcome, and what happened to each
+%% attacking genome.
+%%
+%% ⚠ SURVIVOR WEIGHTS TRAVEL EVEN THOUGH TODAY THEY CANNOT DIFFER. The design
+%% names an arm L in which weights change during an engagement and come home
+%% altered, and this engine has no such thing: `network_evaluator' offers
+%% `evaluate_with_state/2' and nothing else, and faber's `plasticity' module
+%% works on genotype-shaped `{Weight, Delta, LearningRate, Params}' tuples rather
+%% than on the flat vector this genome is. See REGISTER D.11.
+%%
+%% The field is sent anyway so that the WIRE SHAPE does not depend on a runtime
+%% dial. Under arm W it is the genome that took off, which the attacker already
+%% has, and a redundant field costs bytes; a wire format that changes when a dial
+%% turns costs a protocol version.
+-spec reply(binary(), attacker | defender | draw, [{binary(), fate(), binary()}]) -> map().
+reply(RaidId, Outcome, Fates) ->
+    #{protocol => ?PROTOCOL_VERSION,
+      raid_id => RaidId,
+      outcome => Outcome,
+      fate => [#{id => Id, fate => F, genome => G} || {Id, F, G} <- Fates]}.
+
+-spec decode_reply(term()) -> {ok, map()} | {error, term()}.
+decode_reply(#{protocol := V, raid_id := R, outcome := O, fate := F} = Reply)
+  when is_integer(V), is_binary(R), is_atom(O), is_list(F) ->
+    settled(V =:= ?PROTOCOL_VERSION, Reply, V);
+decode_reply({error, _} = E) ->
+    E;
+decode_reply(_Malformed) ->
+    {error, malformed_reply}.
+
+settled(true, Reply, _V) -> {ok, Reply};
+settled(false, _Reply, V) -> {error, {protocol_mismatch, V, ?PROTOCOL_VERSION}}.
