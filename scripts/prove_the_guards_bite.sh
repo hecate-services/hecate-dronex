@@ -3,7 +3,7 @@
 #
 # ⚠ WHY THIS EXISTS. Register INHERITED-3: a guard never seen to fail is not
 # known to be a guard. A green suite proves the code passes its tests; it does
-# not prove the tests would notice if the code stopped being right. Twelve of the
+# not prove the tests would notice if the code stopped being right. Thirteen of the
 # assertions in this repository are boundaries rather than behaviour, and a
 # boundary that cannot be shown to bite is a comment with a function's syntax.
 #
@@ -31,6 +31,7 @@ ISLAND=apps/hecate_dronex/src/advance_an_island/island.erl
 FIXED=apps/hecate_dronex/src/fly_the_airspace/fixed.erl
 AIRSPACE=apps/hecate_dronex/src/fly_the_airspace/airspace.erl
 SENSES=apps/hecate_dronex/src/pilot_a_drone/drone_senses.erl
+PILOT=apps/hecate_dronex/src/pilot_a_drone/drone_pilot.erl
 GENOME=apps/hecate_dronex/src/pilot_a_drone/drone_genome.erl
 
 FAILURES=0
@@ -60,7 +61,7 @@ restore() {
     rm -rf _build/test
 }
 
-trap 'restore "$SVC" "$MESH" "$FACTS" "$ISLAND" "$FIXED" "$AIRSPACE" "$SENSES" "$GENOME"' EXIT
+trap 'restore "$SVC" "$MESH" "$FACTS" "$ISLAND" "$FIXED" "$AIRSPACE" "$SENSES" "$GENOME" "$PILOT"' EXIT
 
 # Run one perturbation. $1 is the name, $2 the file, $3 a perl one-liner that
 # breaks it, $4 the eunit module that must go red.
@@ -233,11 +234,19 @@ probe "the sensor cone becomes all-round vision" "$SENSES" \
   's/-define\(CONE_COS, 16384\)\./-define(CONE_COS, -32768)./' \
   drone_senses_tests
 
+# 13. The genome must fully specify the controller, or a genome sent to another
+#     island flies a different drone there and a raid means nothing. Register
+#     `D.5': the CfC time constants were left to the process-global generator for
+#     an afternoon and the only symptom was a benchmark that would not repeat.
+probe "the time constants fall back to the generator" "$PILOT" \
+  's/    network_evaluator:set_neuron_meta\(Weighted, meta\(Hidden, Out, Taus\)\)\./    _Unused = meta(Hidden, Out, Taus),\n    Weighted./' \
+  drone_pilot_tests
+
 echo
 rebar3 compile >/dev/null 2>&1
 
 if [ "$FAILURES" -eq 0 ]; then
-    echo "All twelve guards bit."
+    echo "All thirteen guards bit."
     exit 0
 fi
 

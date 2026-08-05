@@ -75,11 +75,33 @@ admitted(ok, Genome) -> {ok, #{net => from_genome(Genome)}}.
 %% prerequisite here: a signal that cannot be held is a reflex, a contact that
 %% leaves the cone cannot be tracked without state, and leading a target needs to
 %% know where it was.
+%% ⚠ THE TIME CONSTANTS ARE SET EXPLICITLY, AND FORGETTING TO WAS A DEFECT.
+%% Register `D.5': `create_cfc_feedforward/5' draws a per-neuron `tau' from the
+%% process-global generator and `set_weights/2' leaves it alone, so a genome
+%% built twice produced two different controllers. The benchmark was not
+%% reproducible, a champion could not be rebuilt from its own genome, and a
+%% genome sent to another island would have flown a different drone there.
 -spec from_genome(drone_genome:genome()) -> term().
-from_genome({Layers, Weights}) ->
+from_genome({Layers, Genes}) ->
     {In, Hidden, Out} = shape(Layers),
+    {Weights, Taus} = drone_genome:split(Layers, Genes),
     Net = network_evaluator:create_cfc_feedforward(In, Hidden, Out, tanh, undefined),
-    network_evaluator:set_weights(Net, drone_genome:dequantize(Weights)).
+    Weighted = network_evaluator:set_weights(Net, drone_genome:dequantize(Weights)),
+    network_evaluator:set_neuron_meta(Weighted, meta(Hidden, Out, Taus)).
+
+%% One entry per neuron per layer, hidden layers recurrent and the output layer
+%% not. The shape mirrors what `get_neuron_meta/1' returns, because anything else
+%% is silently ignored.
+meta(Hidden, Out, Taus) -> layers(Hidden, Taus) ++ [[standard() || _ <- lists:seq(1, Out)]].
+
+layers([], _Taus) -> [];
+layers([Width | Rest], Taus) ->
+    {Mine, Left} = lists:split(Width, Taus),
+    [[cfc(T) || T <- Mine] | layers(Rest, Left)].
+
+cfc(Q) -> #{neuron_type => cfc, tau => drone_genome:to_tau(Q), state_bound => 1.0}.
+
+standard() -> #{neuron_type => standard, tau => 1.0, state_bound => 1.0}.
 
 shape(Layers) -> {hd(Layers), lists:sublist(Layers, 2, length(Layers) - 2),
                   lists:last(Layers)}.

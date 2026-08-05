@@ -9,9 +9,31 @@
 %% THE FORMAT
 %% ==========================================================================
 %%
-%%     {Layers, Weights}   Layers  :: [pos_integer()], layer widths in order
-%%                         Weights :: [integer()], bias-then-weights per neuron,
-%%                                    neurons in order, layers in order
+%%     {Layers, Genes}   Layers :: [pos_integer()], layer widths in order
+%%                       Genes  :: [integer()], and it is TWO blocks:
+%%                                   weight_count(Layers) weights, bias-then-
+%%                                   weights per neuron, neurons in order,
+%%                                   layers in order
+%%                                 then tau_count(Layers) time constants, one
+%%                                   per HIDDEN neuron
+%%
+%% ==========================================================================
+%% ⚠ THE TIME CONSTANTS ARE IN THE GENOME, AND LEAVING THEM OUT WAS A DEFECT
+%% ==========================================================================
+%%
+%% Register `D.5'. `network_evaluator:create_cfc_feedforward/5' draws a per-neuron
+%% `tau' from the process-global generator, and `set_weights/2' does NOT touch it:
+%% two networks built from the same genome came out with tau 0.625 and 0.359.
+%%
+%% So the genome did not specify the controller. Three things broke at once: the
+%% benchmark was not reproducible, a champion could not be rebuilt from its own
+%% genome, and, worst, **a genome sent to another island would fly a different
+%% drone there**, which is the one property this whole format exists to provide.
+%%
+%% Carrying them here fixes all three and makes the time constants EVOLVE, which
+%% is what a learnable time constant was supposed to mean. One vector, one
+%% mutation operator, and the memory's timescale is selected along with
+%% everything else.
 %%
 %% ⚠ NO FLOATS AND NO MAPS ANYWHERE IN IT. `term_to_binary' is NOT canonical over
 %% maps, so a content hash of a genome carrying one is not stable between two
@@ -43,9 +65,9 @@
 %% The wire
 -export([pack/1, unpack/1, id/1]).
 %% The contract a host enforces before running anything
--export([validate/1, limits/0, weight_count/1, topology/0]).
+-export([validate/1, limits/0, weight_count/1, tau_count/1, gene_count/1, topology/0]).
 %% The float boundary
--export([quantize/1, dequantize/1, scale/0]).
+-export([quantize/1, dequantize/1, scale/0, split/2, to_tau/1]).
 
 -export_type([genome/0]).
 
@@ -80,6 +102,27 @@ weight_count(Layers) -> lists:sum(pairs(Layers)).
 pairs([In, Out | Rest]) -> [Out * (In + 1) | pairs([Out | Rest])];
 pairs(_Shorter) -> [].
 
+%% @doc One time constant per hidden neuron. The output layer is not recurrent.
+-spec tau_count([pos_integer()]) -> non_neg_integer().
+tau_count(Layers) when length(Layers) < 3 -> 0;
+tau_count(Layers) -> lists:sum(lists:sublist(Layers, 2, length(Layers) - 2)).
+
+%% @doc Everything a genome carries: weights then time constants.
+-spec gene_count([pos_integer()]) -> pos_integer().
+gene_count(Layers) -> weight_count(Layers) + tau_count(Layers).
+
+%% @doc Cut a genome's gene list into its two blocks.
+-spec split([pos_integer()], [integer()]) -> {[integer()], [integer()]}.
+split(Layers, Genes) -> lists:split(weight_count(Layers), Genes).
+
+%% @doc A quantized gene to a CfC time constant.
+%%
+%% Linear onto [0.05, 1.0). The floor is not zero because a tau of zero is a
+%% neuron with no memory at all AND a division waiting to happen; the ceiling is
+%% one because a leak rate at or above it is not a leak.
+-spec to_tau(integer()) -> float().
+to_tau(Q) -> 0.05 + 0.95 * (Q + 32768) / 65536.
+
 %%==============================================================================
 %% The wire
 %%==============================================================================
@@ -109,7 +152,10 @@ id(G) -> binary:encode_hex(crypto:hash(sha256, pack(G)), lowercase).
 -spec limits() -> map().
 limits() ->
     {In, Hidden, Out} = topology(),
+    Layers = [In] ++ Hidden ++ [Out],
     #{inputs => In, hidden => Hidden, outputs => Out,
+      weights => weight_count(Layers), taus => tau_count(Layers),
+      genes => gene_count(Layers),
       weight_min => ?WEIGHT_MIN, weight_max => ?WEIGHT_MAX,
       max_weights => ?MAX_WEIGHTS, scale => ?SCALE}.
 
@@ -133,11 +179,11 @@ shaped(Layers, Weights, {_In, _H, Out}) ->
     tail_checked(lists:last(Layers) =:= Out, Layers, Weights).
 
 tail_checked(false, _Layers, _Weights) -> {error, wrong_output_width};
-tail_checked(true, Layers, Weights) -> sized(Layers, Weights, weight_count(Layers)).
+tail_checked(true, Layers, Genes) -> sized(Layers, Genes, gene_count(Layers)).
 
 sized(_L, _W, N) when N > ?MAX_WEIGHTS -> {error, too_many_weights};
-sized(_L, Weights, N) when length(Weights) =/= N -> {error, wrong_weight_count};
-sized(_L, Weights, _N) -> ranged(Weights).
+sized(_L, Genes, N) when length(Genes) =/= N -> {error, wrong_weight_count};
+sized(_L, Genes, _N) -> ranged(Genes).
 
 ranged(Weights) -> in_range(lists:all(fun usable/1, Weights)).
 

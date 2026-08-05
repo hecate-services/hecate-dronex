@@ -185,6 +185,117 @@ flew into the far wall of the room. Because nobody let go of the throttle, it
 kept pushing against the wall until it broke. The measurement was fine. The room
 is just smaller than the test was patient.
 
+## D.6: the guided interceptor dominates, and it has now flattened two instruments
+
+Eight random controllers over 16 starts, against the six-rung ladder:
+
+```
+null      0  0  0  0  0  0
+seed 1   16 16 16 16 16 15     sweeps
+seed 2    0  0  0  2  2  0     floor
+seed 3   16 15 16 15 15 16     sweeps
+seed 4   13 13 13  8  2  0     a clean curve
+seed 5    2  1  3  0  0  0     near floor
+seed 6    0  0  0  1  1  0     floor
+seed 7   16 16 16 16 16 15     sweeps
+seed 8    0  0  0  0  0  0     floor
+```
+
+Seed 4 shows the instrument has real resolution in the middle. The bimodality of
+the rest is a property of RANDOM controllers, which either happen to fly or
+happen to crash, and is not by itself a fault.
+
+⚠ **What is a fault is that three of eight random controllers beat the hardest
+rung 15 or 16 times out of 16.** A benchmark a random genome can max is
+saturated before training starts, which is insight 054's failure exactly.
+
+**The likeliest cause, stated as a hypothesis rather than a measurement:** four
+homing interceptors per drone, two hits killing, against a target that does not
+specifically evade a missile. An engagement then turns on who launches first
+rather than on how anybody flies. This is the SECOND instrument the interceptor
+has flattened: `D.4`'s first ladder graded on movement, and a homing weapon does
+not care much whether a passive target hovers or circles.
+
+**Not acted on, deliberately.** The interceptor was a design decision two turns
+ago and its constants have never been swept; charter rule 3 says a constant is
+chosen on viability with the whole sweep published, and quietly weakening it here
+to make a number look better is exactly what that rule forbids. It is also the
+third change to the game in one sitting, and `CLAUDE.md` caps that at two.
+
+**ELI5.** They built a test track with easy corners and hard corners, to see how
+well people could drive. Then they gave everyone a car that steers itself. Most
+people got round every corner, including the hard ones, and the track stopped
+telling you anything about drivers. The track is fine. The question is whether
+the cars should steer themselves.
+
+## D.5: the genome did not specify the controller
+
+`network_evaluator:create_cfc_feedforward/5` draws a per-neuron **time constant**
+from the process-global generator, and `set_weights/2` does not touch it. Two
+networks built from the same genome came out with tau 0.625 and 0.359.
+
+Found because the benchmark gave different numbers on two consecutive runs of the
+same script on the same genomes.
+
+**Three things were broken at once, and only one of them was visible:**
+
+- the benchmark was not reproducible, which is what surfaced it
+- a champion could not be rebuilt from its own genome, so selection at item 5
+  would have been partly on unrecorded noise
+- ⚠ **a genome sent to another island would have flown a different drone there**,
+  which is the single property the whole wire format exists to provide, and the
+  one that makes a raid mean anything
+
+The fix is that the time constants are **in the genome**, one per hidden neuron,
+appended after the weights, and `drone_pilot:from_genome/1` sets them explicitly.
+That also makes them evolve, which is what a learnable time constant was supposed
+to mean in the first place.
+
+**The general shape:** a library that returns a fully-formed object from a
+constructor plus a setter is telling you the setter covers the constructor. It
+covered the weights. The test that now exists asks the only question that
+mattered: does the same genome build the same controller, twice.
+
+**ELI5.** They thought a recipe fully described a cake. It described the
+ingredients, but the oven temperature was whatever the last person left it at,
+and the recipe never mentioned it. The cakes came out different every time and
+nobody could work out why, because everyone was staring at the ingredients. Worse,
+posting the recipe to a friend was pointless: their oven was set to something
+else entirely.
+
+## D.4: the first ladder did not grade, and its order was guessed wrong
+
+The frozen benchmark's six drills were hoverer, climber, orbiter, evader, jinker,
+chaser: six behaviours that differed only in how they **moved**, and only the last
+of which could shoot. Over 48 starts, two random controllers scored:
+
+```
+11  8 10 13 11 12
+32 36 34 31 33 23
+```
+
+**Five of the six rungs were one rung repeated.** Only the chaser separated
+anything, so the instrument was blind across most of its range, which is precisely
+what insight 054 predicts of a benchmark that is not graded. It was measured
+before anything had been bred against it, which is the only reason it could still
+be changed at all.
+
+The axis that measurably separates is whether the opponent **shoots**. The ladder
+now runs three unarmed rungs then three armed ones.
+
+⚠ **And the order was wrong a second time, for a reason worth keeping.** The
+armed rungs were written sniper, chaser, duellist, on the assumption that a
+stationary shooter is the easiest of them. It is the **hardest**: 3 and 2 wins out
+of 48 against 22 and 8 for the chaser. **Closing costs aim, and a drill that only
+shoots never pays it.** The rungs are now in the order the measurement put them
+in.
+
+**ELI5.** They built a set of six practice opponents, meant to get harder as you
+went. Then they played them and found that five of the six were about equally
+easy, so the practice set could not tell a beginner from someone decent. They also
+found the one they had called easiest, a player who stands still and shoots, was
+actually the hardest, because everyone else has to aim while running.
+
 ## D.3: a speed gate on an exit can be reached by crashing into it
 
 Withdrawal was first written as *reach a lateral wall below 5 m/s and you leave

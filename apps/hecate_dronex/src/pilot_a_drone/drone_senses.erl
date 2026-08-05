@@ -32,7 +32,7 @@
 -include("airspace.hrl").
 
 -export([sense/3, channels/0, contacts/0, contact_width/0, comms_width/0]).
--export([range/0, cone_cos/0]).
+-export([range/0, cone_cos/0, contact/2, nearest_hostile/1, self_reading/1]).
 
 %% 8 proprioception + 3 contacts x 7 + 12 comms.
 -define(PROPRIOCEPTION, 8).
@@ -208,3 +208,51 @@ scaled(N) -> clampf(N / 32768.0, -1.0, 1.0).
 clampf(V, Lo, _Hi) when V < Lo -> Lo;
 clampf(V, _Lo, Hi) when V > Hi -> Hi;
 clampf(V, _Lo, _Hi) -> V.
+
+%%==============================================================================
+%% Reading a vector back
+%%==============================================================================
+
+%% @doc Contact `N' of a sensed vector, or `undefined' for an empty slot.
+%%
+%% ⚠ EXPORTED SO THE SCRIPTED DRILLS SEE EXACTLY WHAT AN EVOLVED CONTROLLER SEES,
+%% AND THAT IS A FAIRNESS PROPERTY RATHER THAN A CONVENIENCE. A drill written
+%% against the arena directly would know where its opponent is when a genome
+%% cannot, including behind it, and every benchmark number would be measured
+%% against an opponent with better eyes. Making the drills read the same vector
+%% makes the limit structural.
+-spec contact([float()], pos_integer()) -> map() | undefined.
+contact(V, N) when N >= 1, N =< ?CONTACTS ->
+    slot(lists:sublist(V, ?PROPRIOCEPTION + (N - 1) * ?CONTACT_WIDTH + 1,
+                       ?CONTACT_WIDTH)).
+
+%% Range zero is the empty marker: a real contact is at least one unit away,
+%% because `visible/2' drops anything at distance zero.
+%%
+%% ⚠ `+0.0' RATHER THAN `0.0', because from OTP 27 a bare `0.0' pattern no longer
+%% also matches `-0.0'. Nothing here produces a negative zero today, and writing
+%% the intent explicitly is what stops that being a silent assumption.
+slot([_C, _S, _E, _F, +0.0, _Cl, _A]) -> undefined;
+slot([C, S, E, F, R, Cl, A]) ->
+    #{bearing_cos => C, bearing_sin => S, elevation => E, flat => F,
+      range => R, closing => Cl, affiliation => A}.
+
+%% @doc The nearest visible hostile in a sensed vector, or `undefined'.
+%%
+%% Contacts arrive sorted by range, so the first hostile slot is the nearest one.
+-spec nearest_hostile([float()]) -> map() | undefined.
+nearest_hostile(V) -> first_hostile([contact(V, N) || N <- lists:seq(1, ?CONTACTS)]).
+
+first_hostile([#{affiliation := A} = C | _Rest]) when A < 0.0 -> C;
+first_hostile([_Other | Rest]) -> first_hostile(Rest);
+first_hostile([]) -> undefined.
+
+%% @doc The eight proprioception channels of a sensed vector, by name.
+%%
+%% Exported so a drill can read its own state without indexing into the vector.
+%% A magic index is a number that silently means something else the day a channel
+%% is inserted, and the proprioception block is the one most likely to grow.
+-spec self_reading([float()]) -> map().
+self_reading([Bat, Speed, Climb, Alt, Edge, Health, Yaw, Damage | _Rest]) ->
+    #{battery => Bat, speed => Speed, climb => Climb, altitude => Alt,
+      edge => Edge, health => Health, yaw_rate => Yaw, damage => Damage}.

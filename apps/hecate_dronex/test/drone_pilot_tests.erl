@@ -34,11 +34,49 @@ topology() ->
     {In, Hidden, Out} = drone_genome:topology(),
     [In] ++ Hidden ++ [Out].
 
-zeros() -> {topology(), lists:duplicate(drone_genome:weight_count(topology()), 0)}.
+zeros() -> {topology(), lists:duplicate(drone_genome:gene_count(topology()), 0)}.
 
 the_weight_count_is_bias_plus_inputs_per_neuron_test() ->
     ?assertEqual(24 * 42 + 10 * 25, drone_genome:weight_count([41, 24, 10])),
     ?assertEqual(1258, drone_genome:weight_count(topology())).
+
+%% ⚠ ONE TIME CONSTANT PER HIDDEN NEURON, CARRIED IN THE GENOME. Register `D.5':
+%% left out, they are drawn from the process-global generator at construction, so
+%% the genome did not specify the controller and a genome sent to another island
+%% would have flown a different drone there.
+the_genome_carries_a_time_constant_per_hidden_neuron_test() ->
+    ?assertEqual(24, drone_genome:tau_count([41, 24, 10])),
+    ?assertEqual(0, drone_genome:tau_count([41, 10])),
+    ?assertEqual(1258 + 24, drone_genome:gene_count(topology())).
+
+%% ⚠⚠ AND THE PROPERTY THAT MAKES A RAID POSSIBLE AT ALL: the same genome must
+%% build the same controller, twice, here or anywhere. This is the test that
+%% would have caught `D.5' on the day the CfC brain landed.
+the_same_genome_builds_the_same_controller_test() ->
+    G = random_genome(99),
+    A = drone_pilot:from_genome(G),
+    B = drone_pilot:from_genome(G),
+    ?assertEqual(network_evaluator:get_weights(A), network_evaluator:get_weights(B)),
+    ?assertEqual(network_evaluator:get_neuron_meta(A),
+                 network_evaluator:get_neuron_meta(B)).
+
+%% And a different genome builds a different one, so the equality above is not
+%% trivially true of everything.
+a_different_genome_builds_a_different_controller_test() ->
+    A = drone_pilot:from_genome(random_genome(1)),
+    B = drone_pilot:from_genome(random_genome(2)),
+    ?assertNotEqual(network_evaluator:get_neuron_meta(A),
+                    network_evaluator:get_neuron_meta(B)).
+
+%% Time constants land in [0.05, 1.0): a tau of zero is a neuron with no memory
+%% and a division waiting to happen, and at or above one a leak rate is not a
+%% leak. The endpoints are asserted rather than the middle, because a mapping is
+%% wrong at its ends or it is not wrong at all.
+time_constants_are_bounded_test() ->
+    [?assert(T >= 0.05 andalso T < 1.0)
+     || Q <- [-32768, -1, 0, 1, 32767], T <- [drone_genome:to_tau(Q)]],
+    ?assertEqual(0.05, drone_genome:to_tau(-32768)),
+    ?assert(drone_genome:to_tau(32767) > 0.99).
 
 %% ⚠ THE PACKED FORM IS CANONICAL, WHICH IS WHY THERE ARE NO MAPS AND NO FLOATS
 %% IN IT. `term_to_binary` is not canonical over maps, so a genome carrying one
@@ -184,7 +222,7 @@ arena() ->
 random_genome(Seed) ->
     S0 = rand:seed_s(exsss, {Seed, Seed, Seed}),
     {Ws, _} = lists:foldl(fun draw/2, {[], S0},
-                          lists:seq(1, drone_genome:weight_count(topology()))),
+                          lists:seq(1, drone_genome:gene_count(topology()))),
     {topology(), drone_genome:quantize(Ws)}.
 
 draw(_N, {Acc, S}) ->
