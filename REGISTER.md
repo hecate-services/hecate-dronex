@@ -552,6 +552,56 @@ waiting behind that one clerk, and the light on the door still said OPEN.
 
 # D: findings about the world
 
+## D.12: height buys silence, and the picture said the opposite
+
+Asked whether coverage should be a dome, the answer was yes, and checking it
+turned up a claim written in three places that was simply false.
+
+A station tests **slant** range — the straight line from a mast on the ground to
+a drone in the air — so its detection volume is a hemisphere and its radius at
+altitude z is sqrt(R² - z²): 350 m on the floor, 180 m at the 300 m ceiling. The
+code comments said the ring placement "leaves a genuine hole overhead". It does
+not. Directly above the centre mast, the ceiling is 300 m away and the reach is
+350: **covered**. The claim was written from the mental image of a searchlight
+pointing sideways and never checked against the one line of arithmetic that
+decides it.
+
+What is true is more interesting. Measured over the published placement, five
+stations, 1000 m arena:
+
+| altitude | covered | covered by 2+ stations |
+|---|---|---|
+| floor | 84% | 46% |
+| ceiling | 42% | 8% |
+
+**Climbing roughly halves the chance of being seen and very nearly removes the
+chance of being seen twice**, and the second number is the sharper edge. Stations
+that agree confirm a target in about half the ticks a single station needs,
+because a real target is reported at the same place by several masts while each
+mast invents its own ghosts at its own position. The network is silent until a
+track is confirmed. So height does not merely delay detection, it delays being
+spoken about — and what the ground says is the only thing a defending swarm can
+act on.
+
+This is the first genuine tactic in the game that nobody designed. It was not put
+there; it fell out of slant range meeting a ceiling, and it was invisible for as
+long as coverage was drawn as a disc on the floor. A floor disc claims the
+coverage at the ceiling equals the coverage at ground level, which overstates it
+by a factor of two.
+
+⚠ It also sets up the viability sweep, which now has a second dial nobody had
+noticed: **the ceiling is a coverage parameter.** Raising it weakens every
+station without moving one.
+
+**ELI5.** Someone put five floodlights on the ground to light up a field, and
+drew a map with five circles on it showing what was lit. The map was wrong in a
+way that mattered: a floodlight standing on the ground lights a dome, not a
+cylinder, so the higher you go the smaller the lit patch gets. Standing on the
+grass you are in the light almost everywhere. Up at roof height, less than half
+the field is lit, and the places lit by two lamps at once — where you are seen
+quickly and certainly — have nearly vanished. The way past the lights was always
+to go high, and the map had been hiding it.
+
 ## D.11: the Lamarckian arm was designed against a capability faber does not have
 
 `DESIGN_THE_ROSTER_AND_THE_RAID.md` describes a fork in what a returning veteran

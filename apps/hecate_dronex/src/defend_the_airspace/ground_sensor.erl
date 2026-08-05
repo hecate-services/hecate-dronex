@@ -72,9 +72,23 @@
 %%
 %% ⚠ FIXED, AND THAT IS THE PHASE. Placement evolves at phase 3 and that is what
 %% will finally make two islands visibly different places. A ring is chosen over
-%% a grid because it leaves a genuine hole overhead and genuine gaps between
-%% adjacent sensors, and holes are the entire point: the counterplay to a network
-%% is the approach path, not suppression.
+%% a grid because it leaves genuine gaps, and gaps are the entire point: the
+%% counterplay to a network is the approach path, not suppression.
+%%
+%% ⚠ AND THE GAP THAT MATTERS IS ALTITUDE, NOT THE VOLUME OVERHEAD. This comment
+%% used to claim "a genuine hole overhead" and that was simply wrong: a station
+%% tests SLANT range from the ground, so directly above the centre mast the
+%% ceiling is 300 m away and 350 m is the reach — covered. What is true is that a
+%% station's radius at altitude z is sqrt(R² - z²), which is 350 m on the floor
+%% and 180 m at the ceiling. Measured over this placement:
+%%
+%%   on the floor    84% of the arena covered, 46% by two stations or more
+%%   at the ceiling  42% covered,               8% by two stations or more
+%%
+%% Climbing roughly halves the chance of being seen and very nearly removes the
+%% chance of being seen TWICE, which is the sharper edge: agreement across
+%% stations confirms a target in about half the ticks one station needs, and the
+%% network says nothing until a track is confirmed. Height buys silence.
 -spec place(pos_integer()) -> [sensor()].
 place(N) when N > 0 ->
     %% ⚠ ASKED OF `airspace', NEVER RE-DECLARED. The arena's size belongs to the

@@ -151,9 +151,11 @@
 %% fighting a match neither can interpret.
 
 %% ⚠ HOW MANY STATIONS AN ISLAND FIELDS, AND IT IS THE DIAL THE VIABILITY SWEEP
-%% TURNS. Five: one at the centre and four on a ring, which leaves a genuine hole
-%% overhead and genuine gaps between neighbours. More would close the corridors
-%% and make attacking hopeless, which is the failure the design names as most
+%% TURNS. Five: one at the centre and four on a ring, which leaves genuine gaps
+%% between neighbours and, more to the point, thins sharply with height — 84% of
+%% the floor is covered and 42% of the ceiling, because a station tests slant
+%% range and its radius at altitude z is sqrt(R² - z²). More stations would close
+%% the corridors and make attacking hopeless, which is the failure the design names as most
 %% likely — so this number is set on the measurement, with the whole sweep
 %% published including the settings that made raiding pointless.
 -ifndef(SENSORS).
