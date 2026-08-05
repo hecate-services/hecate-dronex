@@ -231,6 +231,12 @@ coverage parameter), and the **gun's blast radius and magazine**
 over station count alone would have measured a saturated network at every point
 and reported a smooth, confident, meaningless curve.
 
+The harness is **built and unrun**: `scripts/sweep_the_defence.sh` recompiles the
+physics per arm and `scripts/is_raiding_viable.escript` measures one arm, with
+the criterion fixed above the code before any of it runs. Dials 4 and 5 are
+declared and skipped loudly rather than quietly omitted; they become live by
+adding values when the second weapon lands.
+
 It is owed rather than done because it cannot be run yet: a sweep against
 untrained rosters measures random controllers, not competence, and would answer
 a different question convincingly. It runs once the fleet's rosters have trained

@@ -52,7 +52,18 @@
 %% swarm simply leave, which is neither a fight nor a result.
 -define(ARENA_X, 20480000).
 -define(ARENA_Y, 20480000).
+%% ⚠ `-ifndef' SO THE DEFENCE SWEEP CAN RECOMPILE IT, AND NOTHING ELSE CAN.
+%% The ceiling is a COVERAGE parameter and not only a flight limit: a station
+%% tests slant range from the ground, so its radius at altitude z is
+%% sqrt(R² - z²) and raising the ceiling weakens every station without moving
+%% one (REGISTER D.12). `scripts/sweep_the_defence.sh' builds with `-D' overrides
+%% to measure the whole shape before a value is chosen, which is charter rule 3.
+%%
+%% A node still cannot touch it. Charter rule 2: the physics ship with the image
+%% or they are not physics.
+-ifndef(ARENA_Z).
 -define(ARENA_Z, 6144000).
+-endif.
 
 -define(MAX_TICKS, 1200).
 
