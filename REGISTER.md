@@ -185,6 +185,43 @@ flew into the far wall of the room. Because nobody let go of the throttle, it
 kept pushing against the wall until it broke. The measurement was fine. The room
 is just smaller than the test was patient.
 
+## I.8: a probe measured the wrong quantity three times and never once crashed
+
+`can_a_drone_dodge_an_interceptor.escript` was written to answer one question and
+gave three confident, wrong, uniform answers before it gave a right one.
+
+| | what it reported | what was wrong |
+|---|---|---|
+| 1 | 0% hits at every range | it counted KILLS. One interceptor does half a drone's health, so a single launch can never kill and the answer was necessarily zero |
+| 2 | 0% hits at every range | `element(12, D)` is `battery`, not `health`. A hand-counted record offset read 7,920,000 where it meant 10,000, so every comparison was false |
+| 3 | 100% hits at every range | the evasion was the `evader` drill, which turns away ONCE and then runs straight, which keeps a target dead centre in a pursuer's seeker for the whole flight |
+
+And the sweep script that consumed its output got it wrong twice more: once taking
+the criterion THRESHOLDS for results, because each line carries two numbers; once
+on Erlang printing `%%` as two literal percent signs, since `io:format` escapes
+with `~` and not with `%`.
+
+⚠ **Every one of those printed a plausible table and a confident verdict.** The
+first two would have been read as "the design is wrong"; the third as "the design
+is right and needs no work". None of them crashed, none looked odd, and the
+verdict line was already written to be believed.
+
+**What actually caught each one:** tracing a single engagement tick by tick, which
+showed the interceptor hitting for 5000 damage while the probe reported a miss.
+Not the summary. The trace.
+
+**Two rules earned.** A hand-copied record offset is the trap the trainer already
+hit and fixed with accessors; a script felt too small to bother and was not. And a
+script that parses another script's prose is a mirror of its formatting, so the
+producer now emits one machine-readable line and the consumer reads only that.
+
+**ELI5.** Someone was asked to find out whether a goalkeeper can save a penalty.
+First they counted only the shots that broke the net, and reported that no shot
+ever gets past. Then they read the wrong column of the scoresheet and reported it
+again. Then they tested it with a goalkeeper who runs away from the ball, and
+reported that no penalty is ever saved. Every report was neat, confident and
+wrong, and nothing went visibly wrong at any point.
+
 ## I.7: a parameter that is ignored makes a type checker useless by degrees
 
 `breed:random/2` took a generator and a second argument it never read, declared
@@ -205,6 +242,106 @@ said the box must contain a positive number. Everyone wrote zero, and everything
 worked, because no human ever read that box. Then they bought a machine to check
 the forms, and it refused to process anything after that line, and reported four
 problems with the parts that were fine.
+
+## D.10: no setting of the interceptor is both viable and playable
+
+The sweep D.6 asked for, with the criterion fixed before it ran:
+
+> long range (300 m) hit rate at least 50%, close range (50 m) at most 40%, and a
+> gap of at least 40 points between them.
+
+That is the design's own claim, that a target which turns hard up close can beat
+the interceptor and one engaged at range cannot. The whole sweep, after `D.8` gave
+the seeker a field of view:
+
+```
+speed   turn   radius   rad/s    close%  long%   gap   viable
+80m/s   7680    42 m    1.875      100    100      0   false      <- shipped
+80m/s   3840    85 m    0.937      100    100      0   false
+80m/s   1280   256 m    0.312       50    100     50   false
+80m/s    960   341 m    0.234        0    100    100   TRUE
+80m/s    640   512 m    0.156        0    100    100   TRUE
+60m/s    960   192 m    0.312       50    100     50   false
+60m/s    800   230 m    0.260        0    100    100   TRUE
+120m/s  1280   576 m    0.208      100    100      0   false
+160m/s  1280  1024 m    0.156      100    100      0   false
+```
+
+**The criterion can be met, below about 0.26 rad/s. Meeting it makes the game
+unplayable.** At 640 a bred population ran 160 rounds and never left the floor:
+
+```
+round   0     0  0  1  0  0  0
+round 160     0  0  2  0  0  0
+```
+
+against 120 rounds reaching `6,5,6,6,6,5` at the shipped value.
+
+⚠ **The criterion measured the wrong situation, and that is the finding.** It
+launched from a shooter holding station, already pointed at its target. That is
+not how a controller uses the weapon. The setting that makes an interceptor fair
+against a perfect launch makes it useless in the hands of an imperfect one, and
+nothing in between satisfies both.
+
+⚠⚠ **Speed makes it worse, which is the opposite of what the arithmetic
+predicted.** A faster missile is less agile at the same acceleration and should be
+easier to out-turn. It is not: at close range what decides a break turn is TIME OF
+FLIGHT. At 160 m/s a 50 m shot arrives in a third of a second, in which a drone
+turns 25 degrees, which breaks nothing.
+
+**So the constant was reverted to the original and the defect is documented rather
+than half-fixed.** `CLAUDE.md` caps this kind of iteration at two rounds; that cap
+is spent, and a value chosen to make one number look right while breaking another
+is exactly what charter rule 3 forbids. **D.6 stands open and it is a design
+question, not a tuning one.**
+
+**ELI5.** A guided missile in the game always hit, which made everything else
+pointless. They worked out that making it clumsy enough to dodge is possible, and
+tried it. Now nobody could hit anything with it at all, and the players stopped
+getting better because there was nothing to get better at. There is no setting of
+"how clumsy" that makes it both dodgeable and useful, so the problem is not the
+dial. It is that the missile only has one dial.
+
+## D.9: turn radius is the wrong quantity for a turning fight
+
+`DESIGN_THE_AIRSPACE.md` argued the interceptor was beatable because **its turn
+radius is worse than a drone's**: 42 m against 25 m. The number was right and the
+quantity was wrong.
+
+A turning fight is decided by **angular rate**, which is `a / v` and not `v / r`.
+The missile turned at **1.875 rad/s** against the drone's **1.43**, so it
+out-turned the thing it was chasing. A larger radius at a much higher speed is
+still a faster turn in the sense that matters.
+
+Measured before this was noticed: 100% hit rate at every range from 30 m to
+450 m, and a sweep of the turn acceleration across five values, down to a radius
+twenty-one times a drone's, did not move it by a single point.
+
+**ELI5.** Two cars going round a roundabout. One is bigger and needs a wider
+circle, so you would think the small one gets round first. But the big one is
+going four times as fast, so it comes round sooner anyway. Comparing the circles
+told them the wrong thing; what mattered was how quickly each one got all the way
+round.
+
+## D.8: a seeker that never loses lock is not a seeker
+
+The guided interceptor steered toward its target for ever, with no field of view
+of its own. In a bounded arena, a pursuer faster than its quarry that never loses
+track **always reconnects**, however badly it overshoots.
+
+It now looks forward from its own nose, 120 degrees, and a target that goes
+beam-on or gets behind it breaks the lock for good. That is what a real seeker
+does and it is a correctness fix rather than a balance one, which is why it was
+kept when the balance change was reverted.
+
+⚠ **It did not fix `D.6` on its own**, and the honest reading of what it did is in
+`D.10`. What it did do is open the top of the frozen ladder: a bred population now
+reaches `5,6,6,5,0,0` after 120 rounds instead of `6,5,6,6,6,5`, so the two
+hardest rungs have headroom again.
+
+**ELI5.** The homing missile could see in every direction at once and never lost
+sight of what it was chasing, so dodging just delayed it. Real ones look out of
+the front only, and if you get behind one it has no idea where you went.
 
 ## D.7: breeding works, and the frozen ladder is beaten inside 120 rounds
 

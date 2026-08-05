@@ -185,12 +185,30 @@ was kept.
 **The interceptor**, guided, 80 m/s, a magazine of four, expensive in battery,
 and it hits for twice as much so two of them kill.
 
-⚠ **Its turn radius is deliberately worse than a drone's.** At 80 m/s pulling
-150 m/s^2 it turns in about 43 m; a drone at 35 m/s pulling 50 m/s^2 turns in
-about 25 m. A target that sees it coming and turns hard at close quarters walks
-around the outside of it; one engaged at range cannot. That is the whole reason
-for two weapons rather than one good one: **the release rewards closing, the
-interceptor rewards seeing first.**
+⚠ **This paragraph used to claim the interceptor was beatable and it was wrong.
+Measured 2026-08-05, registers `D.8` to `D.10`.**
+
+It argued from turn RADIUS, 43 m against a drone's 25 m. A turning fight is
+decided by angular rate, which is `a / v`: the missile turns at 1.875 rad/s
+against a drone's 1.43, so it **out-turns the thing it is chasing**. It also had
+no seeker field of view, so it never lost lock, and in a bounded arena a faster
+pursuer that never loses track always reconnects.
+
+Measured: **100% hit rate at every range from 30 m to 450 m**, against a target
+running and against one breaking hard, and a sweep of the turn acceleration down
+to a radius twenty-one times a drone's did not move it by one point.
+
+The seeker now has a 120 degree field of view and loses lock for good, which is
+a correctness fix and is kept. **The balance is not fixed.** The sweep found the
+criterion can be met below about 0.26 rad/s and that meeting it makes the game
+unplayable: a bred population ran 160 rounds at that setting and never left the
+floor of the frozen ladder. Speed was swept too and makes it worse, because at
+close range a break turn is decided by time of flight rather than by agility.
+
+**So `D.6` stands open as a design question rather than a tuning one**, the
+constant is the original, and the claim below is what the design WANTS rather
+than what it currently delivers: the release rewards closing, the interceptor
+rewards seeing first.
 
 **A launch needs a lock** and spends nothing without one: the nearest hostile
 inside a 45 degree seeker cone and 600 m. The cone is tested by dot product

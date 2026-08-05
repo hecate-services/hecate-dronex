@@ -132,15 +132,63 @@
 
 %% THE GUIDED INTERCEPTOR. Faster, longer-legged, finite and expensive.
 %%
-%% ⚠ ITS TURN RADIUS IS DELIBERATELY WORSE THAN A DRONE'S, WHICH IS WHAT KEEPS
-%% EVASION REAL. At 80 m/s pulling 150 m/s^2 it turns in about 43 m; a drone at
-%% 35 m/s pulling 50 m/s^2 turns in about 25 m. So a target that sees it coming
-%% and turns hard at close range can beat it, and a target engaged at range
-%% cannot. That is the whole reason for having two weapons rather than one good
-%% one: the release rewards closing, the interceptor rewards seeing first.
+%% ⚠ ITS ANGULAR RATE IS WHAT KEEPS EVASION REAL, AND THE FIRST VERSION COMPARED
+%% THE WRONG QUANTITY. Register `D.9'. It said the turn RADIUS is worse than a
+%% drone's, 43 m against 25 m, and concluded a target could turn inside it. A
+%% turning fight is decided by ANGULAR rate, which is `a / v': at 80 m/s pulling
+%% 150 m/s^2 the missile turned at 1.875 rad/s against a drone's 1.43, so it
+%% out-turned its own target and hit 100% of the time at every range from 30 m to
+%% 450 m.
+%%
+%% ⚠⚠ THE VALUE BELOW IS THE ORIGINAL AND IT IS KNOWN TO BE WRONG. Register
+%% `D.10'. The sweep found the criterion CAN be met, at about 0.26 rad/s or
+%% below, and that meeting it makes the game unplayable: at 640 units a bred
+%% population ran 160 rounds and never left the floor of the frozen ladder,
+%% where at 7680 it had climbed most of the way in 120.
+%%
+%% The criterion measured the weapon against a shooter that holds station and is
+%% already pointed at its target. That is not how a controller uses it, and the
+%% setting that makes the weapon fair against a perfect launch makes it useless
+%% in the hands of an imperfect one.
+%%
+%% So no value of this constant is both viable and playable, which is a fact
+%% about the DESIGN and not about the number. `CLAUDE.md' caps this kind of
+%% iteration at two rounds, that cap is spent, and the honest state is the
+%% original value with the defect documented rather than a half-fix that looks
+%% deliberate. Speed was swept too and makes it worse rather than better, because
+%% at close range what decides a break turn is TIME OF FLIGHT and not agility.
+%% The whole sweep is published in `scripts/sweep_the_interceptor.sh'.
+%% ⚠ THESE THREE ARE `-ifndef' SO A SWEEP CAN RECOMPILE THEM, AND NOTHING ELSE
+%% CAN. `scripts/sweep_the_interceptor.sh' builds this module with `-D' overrides
+%% to measure the whole shape before a value is chosen, which is charter rule 3:
+%% a constant is chosen on viability and the whole sweep is published.
+%%
+%% A node still cannot touch them. Charter rule 2: the physics ship with the
+%% image or they are not physics, and a compile-time define is the strongest
+%% available way of saying that while leaving a sweep possible.
+-ifndef(INTERCEPTOR_SPEED).
 -define(INTERCEPTOR_SPEED, 81920).
+-endif.
+-ifndef(INTERCEPTOR_TURN).
 -define(INTERCEPTOR_TURN, 7680).
+-endif.
+-ifndef(INTERCEPTOR_TTL).
 -define(INTERCEPTOR_TTL, 150).
+-endif.
+%% ⚠ THE SEEKER HAS A FIELD OF VIEW, AND LEAVING IT OUT WAS THE DEFECT REGISTER
+%% `D.8' RECORDS. Without one the interceptor steers toward its target for ever,
+%% and in a bounded arena a pursuer that is faster than its quarry ALWAYS
+%% reconnects: measured, it hit 100% of the time at every range from 30 m to
+%% 450 m, and a sweep of the turn rate across five values down to a 512 m radius
+%% did not move that by a single point.
+%%
+%% A real seeker looks forward from the missile's own nose. Go beam-on or get
+%% behind it and it has nothing to track, which is what makes hard manoeuvring a
+%% defence rather than a delay. cos(60 degrees) on the 32768 scale, matching the
+%% drone's own sensor cone.
+-ifndef(SEEKER_FOV_COS).
+-define(SEEKER_FOV_COS, 16384).
+-endif.
 -define(INTERCEPTOR_COST, 100000).
 -define(INTERCEPTOR_DAMAGE, 5000).
 -define(LAUNCH_COOL, 40).
@@ -353,12 +401,32 @@ seek(Id, Ds) -> found([D || #drone{id = I} = D <- Ds, I =:= Id]).
 
 homing(#munition{} = M, undefined) -> M;
 homing(#munition{} = M, #drone{} = T) when T#drone.dead; T#drone.withdrawn -> M;
-homing(#munition{x = X, y = Y, z = Z, vx = Vx, vy = Vy, vz = Vz} = M,
-       #drone{x = Tx, y = Ty, z = Tz}) ->
+homing(#munition{} = M, #drone{} = T) -> tracked(M, T, in_view(M, T)).
+
+%% ⚠ LOCK IS LOST FOR GOOD, NOT REGAINED WHEN THE TARGET WANDERS BACK INTO VIEW.
+%% A seeker that re-acquired would make evasion a delay rather than a defence,
+%% which is the behaviour this whole mechanism exists to remove. Ballistic
+%% afterwards, which is also what a real one does.
+tracked(#munition{} = M, _T, false) -> M#munition{target = undefined};
+tracked(#munition{x = X, y = Y, z = Z, vx = Vx, vy = Vy, vz = Vz} = M,
+        #drone{x = Tx, y = Ty, z = Tz}, true) ->
     {Wx, Wy, Wz} = fixed:at_length(Tx - X, Ty - Y, Tz - Z, ?INTERCEPTOR_SPEED),
     {Ax, Ay, Az} = fixed:scale_to(Wx - Vx, Wy - Vy, Wz - Vz, ?INTERCEPTOR_TURN),
     {Nx, Ny, Nz} = fixed:at_length(Vx + Ax, Vy + Ay, Vz + Az, ?INTERCEPTOR_SPEED),
     M#munition{vx = Nx, vy = Ny, vz = Nz}.
+
+%% Is the target inside the cone around where the munition is actually going?
+%% A dot product against its own velocity, so there is no inverse trig here
+%% either. Speed is constant by construction, which is what makes the divisor
+%% exact.
+in_view(#munition{x = X, y = Y, z = Z, vx = Vx, vy = Vy, vz = Vz},
+        #drone{x = Tx, y = Ty, z = Tz}) ->
+    Dx = Tx - X, Dy = Ty - Y, Dz = Tz - Z,
+    facing(Vx * Dx + Vy * Dy + Vz * Dz, fixed:mag3(Dx, Dy, Dz)).
+
+%% A target at zero range is a hit this tick, not a lock question.
+facing(_Dot, 0) -> true;
+facing(Dot, R) -> Dot * 32768 div (?INTERCEPTOR_SPEED * R) >= ?SEEKER_FOV_COS.
 
 resolved(M, From, Ds, Kept) -> landed(hit(M, From, Ds), M, Ds, Kept).
 
@@ -640,6 +708,7 @@ limits() ->
       interceptor_ttl => ?INTERCEPTOR_TTL, interceptor_cost => ?INTERCEPTOR_COST,
       interceptor_damage => ?INTERCEPTOR_DAMAGE, launch_cool => ?LAUNCH_COOL,
       magazine => ?MAGAZINE, lock_range => ?LOCK_RANGE, seeker_cos => ?SEEKER_COS,
+      seeker_fov_cos => ?SEEKER_FOV_COS,
       withdraw_speed => ?WITHDRAW_SPEED, withdraw_margin => ?WITHDRAW_MARGIN,
       withdraw_ticks => ?WITHDRAW_TICKS,
       max_ticks => ?MAX_TICKS}.
