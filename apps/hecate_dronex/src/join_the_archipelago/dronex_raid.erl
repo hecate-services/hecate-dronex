@@ -44,7 +44,7 @@
 -module(dronex_raid).
 
 -export([fingerprint/0, fingerprint_parts/0]).
--export([request/4, reply/3, decode_request/1, decode_reply/1]).
+-export([request/4, accepted/1, decode_request/1, decode_reply/1]).
 -export([validate_request/2, protocol_version/0, procedure/1]).
 
 -export_type([sortie/0, fate/0]).
@@ -178,35 +178,35 @@ named(Real, Claimed, _Packed, _Rest, I) -> {error, {id_mismatch, I, Claimed, Rea
 %% The reply
 %%==============================================================================
 
-%% @doc What the defender sends back: the outcome, and what happened to each
-%% attacking genome.
+%% @doc The whole of what the defender says synchronously: yes, I have taken your
+%% raid, and a defence is already in the air.
 %%
-%% ⚠ SURVIVOR WEIGHTS TRAVEL EVEN THOUGH TODAY THEY CANNOT DIFFER. The design
-%% names an arm L in which weights change during an engagement and come home
-%% altered, and this engine has no such thing: `network_evaluator' offers
-%% `evaluate_with_state/2' and nothing else, and faber's `plasticity' module
-%% works on genotype-shaped `{Weight, Delta, LearningRate, Params}' tuples rather
-%% than on the flat vector this genome is. See REGISTER D.11.
+%% ⚠ THE CALL IS A HANDSHAKE AND NOTHING MORE. It used to carry the outcome and
+%% every genome's fate, which meant the caller was blocked for the length of an
+%% engagement and `dronex_mesh:call/2' needed a 120-second timeout with a comment
+%% explaining that five seconds would report failure for a raid going perfectly.
+%% A call whose timeout has to cover the callee's real work is doing two jobs.
 %%
-%% The field is sent anyway so that the WIRE SHAPE does not depend on a runtime
-%% dial. Under arm W it is the genome that took off, which the attacker already
-%% has, and a redundant field costs bytes; a wire format that changes when a dial
-%% turns costs a protocol version.
--spec reply(binary(), attacker | defender | draw, [{binary(), fate(), binary()}]) -> map().
-reply(RaidId, Outcome, Fates) ->
-    #{protocol => ?PROTOCOL_VERSION,
-      raid_id => RaidId,
-      outcome => Outcome,
-      fate => [#{id => Id, fate => F, genome => G} || {Id, F, G} <- Fates]}.
+%% ⚠⚠ WHAT IT IS STILL FOR IS ADMISSION CONTROL, AND THAT IS WHY IT IS NOT
+%% PUB/SUB. Two attackers both see an island open, both muster, both send. Only a
+%% synchronous answer can turn one of them away BEFORE it has committed a party,
+%% and a committed party is the entire price of a raid. Every refusal is
+%% instant — wrong protocol, wrong engine, bad genome, nobody left to field — so
+%% the timeout can go back to being a real one.
+%%
+%% The outcome arrives later, as a fact, on `dronex/raid_settled'.
+-spec accepted(binary()) -> map().
+accepted(RaidId) ->
+    #{protocol => ?PROTOCOL_VERSION, raid_id => RaidId, accepted => true}.
 
 -spec decode_reply(term()) -> {ok, map()} | {error, term()}.
-decode_reply(#{protocol := V, raid_id := R, outcome := O, fate := F} = Reply)
-  when is_integer(V), is_binary(R), is_atom(O), is_list(F) ->
-    settled(V =:= ?PROTOCOL_VERSION, Reply, V);
+decode_reply(#{protocol := V, raid_id := R, accepted := true} = Reply)
+  when is_integer(V), is_binary(R) ->
+    handshook(V =:= ?PROTOCOL_VERSION, Reply, V);
 decode_reply({error, _} = E) ->
     E;
 decode_reply(_Malformed) ->
     {error, malformed_reply}.
 
-settled(true, Reply, _V) -> {ok, Reply};
-settled(false, _Reply, V) -> {error, {protocol_mismatch, V, ?PROTOCOL_VERSION}}.
+handshook(true, Reply, _V) -> {ok, Reply};
+handshook(false, _Reply, V) -> {error, {protocol_mismatch, V, ?PROTOCOL_VERSION}}.

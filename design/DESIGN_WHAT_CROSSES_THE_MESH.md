@@ -138,32 +138,71 @@ availability topics at all.
 
 ## The raid protocol
 
+⚠ **REVISED 2026-08-05: the call is a handshake and the outcome is a fact.** It
+used to carry the winner and every genome's fate back as the RPC reply, which
+meant the caller was blocked for the length of an engagement and
+`dronex_mesh:call/2` needed a 120-second timeout with a comment explaining that
+five seconds would report failure for a raid going perfectly. **A call whose
+timeout has to cover the callee's real work is doing two jobs.**
+
 ```
 attacker                                            defender
 --------                                            --------
+                                     island_opened_for_battle  (fleet realm)
+  learn who can be fought  <-----------------------  lease, every 30s
+    filter: fingerprint, roster depth               carries both
+
 pick N from roster, remove them
   |
-  |  raid_requested   (fleet realm)
+  |  raid_requested   (CALL, fleet realm)
   |    attacker island_id, raid_id,
   |    N packed genomes, engine fingerprint
   '------------------------------------------------->
                                           validate every genome
                                           refuse the WHOLE raid on any failure
                                           pick M from own roster, remove them
-                                          run the engagement
+  <--------------------------------------------------'
+  |  accepted    (reply, sub-second)                  |
+  |                                          ┌────────────────┐
+  party is committed                         │ the engagement │
+  and waits for a fact                       └────────────────┘
+                                                     |
                                           keep the attacker's genomes
                                                      |
-  <--------------------------------------------------'
-  |  raid_settled    (reply)
-  |    outcome, per-genome fate, survivor weights
-  |
-  survivors return to the roster
-  the dead do not
+                                  dronex/raid_settled  (fleet realm)
+  <-------------------------------------------------'
+  |    raid_id, outcome, per-genome fate
+  survivors return, the dead do not
                                                      |
                                      dronex/raid  (public realm)
                                        the whole engagement, with frames
                                                      '--------> everybody
 ```
+
+**Why the challenge is still a CALL and not a fact.** Admission control needs a
+serialisation point. Two attackers both see an island open, both muster, both
+send; only a synchronous answer can turn one of them away **before** it has
+committed a party, and a committed party is the entire price of a raid. Every
+refusal is instant — wrong protocol, wrong engine, bad genome, nobody left to
+field — so the timeout is a real one again.
+
+**Why the settlement is a fact and not a reply.** The defender is never holding
+somebody else's call open while it works; a settlement that is missed can be
+waited for rather than lost; and it is the same truth the recording already
+carries, so it is published once rather than returned once and published again.
+
+**Why it is not the recording itself.** `dronex/raid` carries frames, of the
+order of 150 KB. An attacker needs six genome fates, a few hundred bytes.
+Settling off the public recording would make every island in the archipelago
+download every fight to learn the outcome of its own — the same waste as
+subscribing to `vitals` to learn who exists.
+
+⚠ **Nothing fails any more, so silence needs a clock.** With the outcome
+arriving as a fact, a raid that is never settled produces no error at all. The
+attacker sweeps its outstanding parties and writes off anything older than five
+minutes — generous against a measured six-against-six of well under a second.
+That is the cost of raiding into the dark, paid deliberately by a timer this
+island owns rather than inherited from somebody else's transport error.
 
 **Every foreign genome is validated before the engagement starts, never during.**
 A genome that fails validation makes the **whole raid refuse** rather than one

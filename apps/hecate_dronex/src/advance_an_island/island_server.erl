@@ -71,6 +71,14 @@
 -define(ANNOUNCE_MS, 30000).
 -define(OPEN_FOR_MS, 300000).
 
+%% ⚠ LONGER THAN ANY HONEST ENGAGEMENT AND SHORTER THAN A RAID INTERVAL. A
+%% defender validates, musters, fights up to 1200 ticks and publishes; measured,
+%% a six-against-six is a fraction of a second. Five minutes is generous enough
+%% that a slow node is never punished, and short enough that an island is not
+%% still holding parties out when its next raid comes round.
+-define(SETTLE_BY_MS, 300000).
+-define(SWEEP_MS, 60000).
+
 %% Often enough that a mesh coming up late costs a minute rather than a
 %% deployment, rare enough that re-asserting is not chatter.
 -define(DEFAULT_MESH_CHECK_MS, 60000).
@@ -143,6 +151,7 @@ init([]) ->
     %% is a map overwrite at the pool and a re-register at the station.
     schedule(mesh_check, 0),
     schedule(announce, ?ANNOUNCE_MS),
+    schedule(sweep_raids, ?SWEEP_MS),
     {ok, #{island => Island, sent => 0, failed => 0, sitting => false,
            ablating => false, writer => roster_log_writer:silent(),
            open_islands => #{}, away => #{},
@@ -163,12 +172,13 @@ advertise_self() ->
 %% FOUGHT, which is a smaller fact and a different question. Presence stays on
 %% `vitals' for the site, which needs the islands that are closed too.
 listen_for_neighbours() ->
-    both(dronex_mesh:subscribe(dronex_facts:topic(opened), self()),
-         dronex_mesh:subscribe(dronex_facts:topic(closed), self())).
+    all_of([dronex_mesh:subscribe_between_islands(dronex_facts:topic(T), self())
+            || T <- [opened, closed, settled]]).
 
-both({ok, _} = Ok, {ok, _}) -> Ok;
-both({error, _} = E, _Other) -> E;
-both(_Ok, {error, _} = E) -> E.
+all_of(Results) -> first_error([E || {error, _} = E <- Results], Results).
+
+first_error([E | _], _All) -> E;
+first_error([], [Ok | _]) -> Ok.
 
 %% Re-asserted every tick. The transition is logged, so a mesh that comes up late
 %% says so once rather than every minute for ever.
@@ -253,9 +263,13 @@ handle_cast({published, Outcome}, S) -> {noreply, counted(Outcome, S)};
 handle_cast({defended, Survivors, Party, Raiders, Meta}, #{island := I} = S) ->
     {noreply, S#{island := island:defended(I, Survivors, Party, Raiders, Meta)}};
 %% A raid this island sent has come home, or has failed to.
-handle_cast({returned, Party, Fates}, #{island := I, away := A} = S) ->
-    {noreply, S#{island := island:returned(I, Party, Fates),
-                 away := maps:remove(maps:get(raid_id, Fates, undefined), A)}};
+%% The handshake answered. Accepted means the party is committed and waits for a
+%% settlement fact; refused means it never engaged and comes straight home.
+handle_cast({handshook, RaidId, Party, accepted}, #{away := A} = S) ->
+    {noreply, S#{away := A#{RaidId => {erlang:monotonic_time(millisecond), Party}}}};
+handle_cast({handshook, RaidId, Party, refused}, #{island := I, away := A} = S) ->
+    {noreply, S#{island := island:returned(I, Party, #{fates => refused}),
+                 away := maps:remove(RaidId, A)}};
 handle_cast(_Msg, S) -> {noreply, S}.
 
 handle_info(tick, #{island := I} = S) ->
@@ -343,6 +357,18 @@ handle_info(mesh_check, S) ->
     schedule(mesh_check, ?DEFAULT_MESH_CHECK_MS),
     {noreply, listening(advertising(S))};
 
+%% ⚠ THE ONLY THING THAT WRITES A PARTY OFF NOW. With the outcome arriving as a
+%% fact rather than as a return value, nothing fails: a settlement that never
+%% comes is silence, and silence needs a clock. The party left the roster when it
+%% was mustered, so this is where the cost of raiding into the dark is finally
+%% paid — deliberately, by a timer this island owns, rather than inherited from
+%% somebody else's transport error.
+handle_info(sweep_raids, #{island := I, away := A} = S) ->
+    schedule(sweep_raids, ?SWEEP_MS),
+    Now = erlang:monotonic_time(millisecond),
+    Late = [{R, P} || {R, {At, P}} <- maps:to_list(A), Now - At > ?SETTLE_BY_MS],
+    {noreply, S#{island := written_off(Late, I), away := maps:without([R || {R, _} <- Late], A)}};
+
 handle_info(announce, S) ->
     schedule(announce, ?ANNOUNCE_MS),
     {noreply, handle_announcement(S)};
@@ -353,6 +379,11 @@ handle_info(raid, #{island := I} = S) ->
 
 handle_info(_Msg, S) ->
     {noreply, S}.
+
+written_off([], I) -> I;
+written_off([{RaidId, Party} | Rest], I) ->
+    logger:warning("[island] raid ~p never settled, party written off", [RaidId]),
+    written_off(Rest, island:returned(I, Party, #{fates => []})).
 
 %% What the server knows about itself, as opposed to what the island knows about
 %% its world. Kept in one place so a new field is one line rather than three.
@@ -381,15 +412,23 @@ capable(#{advertising := A, listening := L}) -> A andalso L.
 %% Re-announced while open, because it is a lease. Announced once on the way
 %% down, because closing should cost seconds rather than the lease.
 announced_state(true, _Was, I, S) ->
-    counted(dronex_mesh:publish(dronex_facts:topic(opened), dronex_facts:opened(I)), S);
+    counted(dronex_mesh:publish_between_islands(dronex_facts:topic(opened),
+                                                dronex_facts:opened(I)), S);
 announced_state(false, true, _I, S) ->
     logger:info("[island] closed for battle"),
-    counted(dronex_mesh:publish(dronex_facts:topic(closed), dronex_facts:closed()), S);
+    counted(dronex_mesh:publish_between_islands(dronex_facts:topic(closed),
+                                                dronex_facts:closed()), S);
 announced_state(false, false, _I, S) ->
     S.
 
 %% Who else can be fought, and when they last said so. Anything that is not a
 %% vitals fact from somebody else is ignored rather than guessed at.
+%% A settlement names a raid this island may have out. Matched on `raid_id'
+%% rather than on who sent it, because the id is what the attacker issued and is
+%% the only thing that ties a fact to a party.
+noted(#{raid_id := RaidId, fate := Fates}, #{island := I, away := A} = S)
+  when is_binary(RaidId), is_list(Fates) ->
+    home(maps:take(RaidId, A), Fates, I, S);
 %% An `opened' carries what a caller needs to skip a pointless raid; a `closed'
 %% carries only who. Anything else is ignored rather than guessed at.
 noted(#{island_id := Id, fingerprint := F, roster := R}, S) when is_binary(Id) ->
@@ -398,6 +437,16 @@ noted(#{island_id := Id}, #{open_islands := O} = S) when is_binary(Id) ->
     S#{open_islands := maps:remove(Id, O)};
 noted(_Other, S) ->
     S.
+
+%% ⚠ A SETTLEMENT FOR A RAID THIS ISLAND DOES NOT HAVE OUT IS IGNORED, NOT
+%% GUESSED AT. Every island on the fleet realm hears every settlement, so most of
+%% them are somebody else's; and a duplicate for a party already settled must not
+%% re-admit genomes that have since been evicted or bred over.
+home(error, _Fates, _I, S) ->
+    S;
+home({Party, A}, Fates, I, S) ->
+    Settled = #{fates => [{Id, F} || #{id := Id, fate := F} <- Fates]},
+    S#{island := island:returned(I, element(2, Party), Settled), away := A}.
 
 opened_by(true, _Id, _Meta, S) -> S;
 opened_by(false, Id, Meta, #{open_islands := O} = S) ->
@@ -535,7 +584,9 @@ mustered({I2, Party}, Target, S) ->
     RaidId = new_raid_id(),
     Back = self(),
     _ = spawn(fun () -> away(Target, RaidId, Party, Back) end),
-    S#{island := I2, away := maps:put(RaidId, Party, maps:get(away, S))}.
+    %% Not recorded as outstanding until the handshake says accepted: a raid
+    %% nobody took must not sit in the sweep waiting to be written off.
+    S#{island := I2}.
 
 %% Off-process, start to finish: compose the request, make the call, and cast the
 %% settlement back. Nothing here touches the island's state.
@@ -544,29 +595,25 @@ away(Target, RaidId, Party, Back) ->
                  genome => drone_genome:pack(roster:entry_genome(E))} || E <- Party],
     Request = dronex_raid:request(dronex_identity:island_id(), RaidId, Sorties, 0),
     Reply = dronex_mesh:call(dronex_raid:procedure(Target), Request),
-    gen_server:cast(Back, {returned, Party, settlement(RaidId, Reply)}).
+    gen_server:cast(Back, {handshook, RaidId, Party, accepted(RaidId, Reply)}).
 
-%% ⚠ A RAID THAT COULD NOT BE DELIVERED IS A TOTAL LOSS, AND THAT IS DELIBERATE.
-%% The party left the roster the moment it was mustered. Putting it back when the
-%% call fails would make raiding free whenever the mesh is flaky, and an island
-%% would learn to raid into the dark. The cost of attacking is paid on take-off.
-settlement(RaidId, {ok, Reply}) -> decoded(RaidId, dronex_raid:decode_reply(Reply));
-settlement(RaidId, {error, Why}) ->
-    logger:warning("[island] raid ~p vanished into the dark: ~p", [RaidId, Why]),
-    #{raid_id => RaidId, fates => []}.
+%% ⚠ ONLY TWO ANSWERS NOW, AND NEITHER OF THEM IS AN OUTCOME. Accepted means the
+%% party is committed and the result will arrive as a fact. Anything else means
+%% it never engaged, so it never left the ground.
+accepted(RaidId, {ok, Reply}) -> decoded(RaidId, dronex_raid:decode_reply(Reply));
+accepted(RaidId, {error, Why}) ->
+    logger:warning("[island] raid ~p was not accepted: ~p", [RaidId, Why]),
+    refused.
 
-decoded(RaidId, {ok, #{fate := Fates}}) ->
-    #{raid_id => RaidId, fates => [{Id, F} || #{id := Id, fate := F} <- Fates]};
+decoded(_RaidId, {ok, _Accepted}) -> accepted;
 %% ⚠⚠ A REFUSAL IS NOT A LOSS, AND THE DIFFERENCE IS WHETHER ANYBODY ANSWERED.
-%% Silence means the party flew somewhere and never came back, and the price is
-%% paid. An explicit refusal — a mismatched engine, a bad genome, a defender at
-%% its floor — means the engagement never started and the party never left the
-%% ground. Charging for it would price a protocol disagreement the same as a
-%% massacre, and an island on a stale build would bleed its whole roster into
-%% neighbours that kept politely saying no.
+%% An explicit refusal — mismatched engine, bad genome, a defender at its floor —
+%% means the engagement never started. Charging for it would price a protocol
+%% disagreement the same as a massacre, and an island on a stale build would
+%% bleed its whole roster into neighbours that kept politely saying no.
 decoded(RaidId, {error, Why}) ->
     logger:warning("[island] raid ~p was refused, party stays home: ~p", [RaidId, Why]),
-    #{raid_id => RaidId, fates => refused, why => Why}.
+    refused.
 
 new_raid_id() -> string:lowercase(binary:encode_hex(crypto:strong_rand_bytes(16))).
 
@@ -588,13 +635,28 @@ answered({ok, Req}, Island) -> checked(dronex_raid:validate_request(Req, raid:pa
 checked({error, Why}, _Req, _Island) -> {error, Why};
 checked(ok, Req, Island) -> defended(gen_server:call(Island, {defend, Req}, 30000), Req, Island).
 
+%% ⚠ THE CALL RETURNS HERE, BEFORE A SINGLE TICK IS SIMULATED. Validation and
+%% mustering are the whole of the synchronous part, and both are fast. The fight
+%% runs in a process of its own and its outcome travels as a fact, so the caller
+%% is never waiting on somebody else's engagement and the defender is never
+%% holding a call open while it works.
 defended({error, Why}, _Req, _Island) -> {error, Why};
 defended({ok, Defenders, Index}, Req, Island) ->
     Raiders = [{Id, G} || #{id := Id, genome := P} <- maps:get(sortie, Req),
                           {ok, G} <- [drone_genome:unpack(P)]],
-    hosted(defence:compose(Defenders, Raiders, Index), Defenders, Raiders, Req, Island).
+    _ = spawn(fun () -> hosted(defence:compose(Defenders, Raiders, Index),
+                               Defenders, Raiders, Req, Island) end),
+    dronex_raid:accepted(maps:get(raid_id, Req)).
 
-hosted({error, Why}, _D, _R, _Req, _Island) -> {error, Why};
+%% ⚠ NOBODY IS WAITING ON THIS, so its only job is to be honest afterwards. The
+%% settlement goes to the attacker as a small fact between islands; the recording
+%% goes to everybody on the public realm. Two audiences, two sizes, two realms.
+hosted({error, Why}, _D, _R, Req, Island) ->
+    %% The attacker was told yes and its party is committed, so a defender-side
+    %% failure still owes it an answer. Total loss is the truth: nothing flew.
+    logger:warning("[island] accepted raid ~p then could not host it: ~p",
+                   [maps:get(raid_id, Req), Why]),
+    gen_server:cast(Island, {published, settle(Req, draw, [])});
 hosted({ok, Arena, Controllers, Pairs}, Defenders, Raiders, Req, Island) ->
     Result = engagement:run(Arena, Controllers, #{frames => true}),
     Fates = defence:fates(maps:get(attackers, Pairs), Result),
@@ -602,15 +664,19 @@ hosted({ok, Arena, Controllers, Pairs}, Defenders, Raiders, Req, Island) ->
     Meta = #{from => maps:get(attacker, Req), raid => maps:get(raid_id, Req),
              tick => maps:get(tick, Req, 0)},
     gen_server:cast(Island, {defended, Survivors, Defenders, Raiders, Meta}),
-    %% ⚠ COUNTED, NOT DISCARDED, AND IT WAS DISCARDED FIRST. This runs in
-    %% macula's process, so the island's own publish counters cannot see it
-    %% unless it is sent back. Thrown away, a raid fact that never leaves looks
-    %% exactly like a raid that never happened — and the first thing the raid
-    %% diagnostic did was watch the public realm for four minutes while both
-    %% islands were demonstrably raiding, and see nothing at all.
-    gen_server:cast(Island, {published, publish_raid(Result, Fates, Meta)}),
-    dronex_raid:reply(maps:get(raid_id, Req), defence:outcome(Result),
-                      [{Id, F, <<>>} || {Id, F} <- Fates]).
+    %% ⚠ COUNTED, NOT DISCARDED, AND IT WAS DISCARDED FIRST. This runs off the
+    %% island's process, so its publish counters cannot see it unless it is sent
+    %% back. Thrown away, a raid fact that never leaves looks exactly like a raid
+    %% that never happened — and the first thing the raid diagnostic did was
+    %% watch the public realm for four minutes while both islands were
+    %% demonstrably raiding, and see nothing at all.
+    gen_server:cast(Island, {published, settle(Req, defence:outcome(Result), Fates)}),
+    gen_server:cast(Island, {published, publish_raid(Result, Fates, Meta)}).
+
+settle(Req, Outcome, Fates) ->
+    dronex_mesh:publish_between_islands(
+      dronex_facts:topic(settled),
+      dronex_facts:settled(maps:get(raid_id, Req), Outcome, Fates)).
 
 publish_raid(Result, Fates, Meta) ->
     dronex_mesh:publish(dronex_facts:topic(raid), dronex_facts:raid(Result, Fates, Meta)).

@@ -48,6 +48,27 @@
 
 -export([publish/2, available/0, publish_realm/1, station/0]).
 -export([advertise/2, call/2, subscribe/2]).
+-export([publish_between_islands/2, subscribe_between_islands/2]).
+
+%% ==========================================================================
+%% ⚠ WHICH REALM A TOPIC LIVES ON IS DECIDED BY WHO IT IS FOR
+%% ==========================================================================
+%%
+%% PUBLIC — what a spectator watches. `vitals', `bout' and the raid RECORDING.
+%% Anyone may read them; the realm tag is the sha256 of its own name, so it is
+%% derived rather than issued and a stranger needs nothing from us.
+%%
+%% FLEET — what islands say TO EACH OTHER. Availability and settlement. A
+%% stranger can therefore watch every fight in the archipelago and can neither
+%% join the conversation nor start one, which is the access control the whole
+%% design rests on.
+%%
+%% ⚠⚠ SETTLEMENT IS NOT THE RECORDING, AND THE SIZE IS WHY. A raid fact carries
+%% frames — of the order of 150 KB. An island needs the FATES of six genomes to
+%% put its survivors back, which is a few hundred bytes. Settling off the public
+%% recording would make every island in the archipelago download every fight to
+%% learn the outcome of its own, which is exactly the waste that subscribing to
+%% `vitals' for presence was.
 
 %% ==========================================================================
 %% ⚠ TWO DIRECTIONS, TWO REALMS, AND THE ASYMMETRY IS THE ACCESS CONTROL
@@ -127,7 +148,17 @@ publish_realm_or_fleet() -> realm_for(os:getenv("HECATE_DRONEX_REALM")).
 
 -spec publish(binary(), map()) -> ok | {error, term()}.
 publish(Topic, Fact) when is_map(Fact) ->
-    send(Topic, Fact, endpoint()).
+    send(Topic, Fact, endpoint(), realm_for(os:getenv("HECATE_DRONEX_REALM"))).
+
+%% @doc Publish where only other islands are listening.
+-spec publish_between_islands(binary(), map()) -> ok | {error, term()}.
+publish_between_islands(Topic, Fact) when is_map(Fact) ->
+    send(Topic, Fact, endpoint(), fleet_realm()).
+
+%% @doc Watch a topic only islands speak on.
+-spec subscribe_between_islands(binary(), pid()) -> {ok, reference()} | {error, term()}.
+subscribe_between_islands(Topic, Subscriber) when is_binary(Topic), is_pid(Subscriber) ->
+    watched(Topic, Subscriber, endpoint(), fleet_realm()).
 
 %% @doc WHICH DOOR THIS ISLAND REACHES THE MESH THROUGH, read from the live
 %% connection rather than from configuration.
@@ -179,9 +210,8 @@ host_or_unknown(_) -> <<"unknown">>.
 key(Key) when is_binary(Key) -> string:lowercase(binary:encode_hex(Key));
 key(_) -> <<>>.
 
-send(_Topic, _Fact, {error, _} = E) -> E;
-send(Topic, Fact, {ok, Pool}) ->
-    send_on(Topic, Fact, Pool, realm_for(os:getenv("HECATE_DRONEX_REALM"))).
+send(_Topic, _Fact, {error, _} = E, _Realm) -> E;
+send(Topic, Fact, {ok, Pool}, Realm) -> send_on(Topic, Fact, Pool, Realm).
 
 %% ==========================================================================
 %% A STRANGER NEEDS NO SECRET, AND A SIBLING'S CODE DEMANDED ONE IT NEVER USED

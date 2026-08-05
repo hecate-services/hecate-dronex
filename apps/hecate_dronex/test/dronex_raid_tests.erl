@@ -109,11 +109,20 @@ a_request_survives_a_round_trip_test() ->
     ?assertEqual({error, malformed_request}, dronex_raid:decode_request(#{})),
     ?assertEqual({error, malformed_request}, dronex_raid:decode_request(not_a_map)).
 
-a_reply_survives_a_round_trip_test() ->
-    G = genome(),
-    Reply = dronex_raid:reply(<<"raid-1">>, attacker,
-                              [{drone_genome:id(G), survived, drone_genome:pack(G)}]),
+%% ⚠ THE CALL IS A HANDSHAKE AND CARRIES NO OUTCOME. It used to return the winner
+%% and every genome's fate, which meant the caller was blocked for a whole
+%% engagement and the timeout had to cover the callee's real work. What it is
+%% still for is ADMISSION CONTROL: two attackers both see an island open, both
+%% muster, both send, and only a synchronous answer can turn one away before it
+%% has committed a party.
+an_acceptance_survives_a_round_trip_test() ->
+    Reply = dronex_raid:accepted(<<"raid-1">>),
     ?assertMatch({ok, _}, dronex_raid:decode_reply(Reply)),
+    ?assertEqual(<<"raid-1">>, maps:get(raid_id, Reply)),
+    %% The outcome is NOT in here. It arrives later, as a fact.
+    ?assertNot(maps:is_key(fate, Reply)),
+    ?assertNot(maps:is_key(outcome, Reply)),
+
     ?assertEqual({error, malformed_reply}, dronex_raid:decode_reply(#{})),
     %% An error from the transport passes through as itself rather than being
     %% relabelled: `no_healthy_station' must not become `malformed_reply'.
@@ -128,3 +137,31 @@ a_reply_survives_a_round_trip_test() ->
 a_raid_is_addressed_to_one_island_test() ->
     ?assertEqual(<<"dronex.raid.abc">>, dronex_raid:procedure(<<"abc">>)),
     ?assertNotEqual(dronex_raid:procedure(<<"a">>), dronex_raid:procedure(<<"b">>)).
+
+%%==============================================================================
+%% The settlement, which is a fact rather than a return value
+%%==============================================================================
+
+%% ⚠ SMALL, AND SEPARATE FROM THE RECORDING BECAUSE OF WHAT THE RECORDING WEIGHS.
+%% `dronex/raid' carries frames — of the order of 150 KB. An attacker needs six
+%% genome fates to put its survivors back, which is a few hundred bytes. Settling
+%% off the public recording would make every island in the archipelago download
+%% every fight to learn the outcome of its own.
+a_settlement_carries_only_what_settles_a_roster_test() ->
+    Fact = with_data_dir(fun () ->
+        dronex_facts:settled(<<"r1">>, defender, [{<<"g1">>, survived}, {<<"g2">>, lost}])
+    end),
+    ?assertEqual(lists:sort([fact_version, fate, island, island_id, outcome, raid_id]),
+                 lists:sort(maps:keys(Fact))),
+    ?assertEqual(<<"r1">>, maps:get(raid_id, Fact)),
+    ?assertEqual(defender, maps:get(outcome, Fact)),
+    ?assertEqual([#{id => <<"g1">>, fate => survived},
+                  #{id => <<"g2">>, fate => lost}], maps:get(fate, Fact)),
+    %% No frames. That is the whole point of it being its own fact.
+    ?assertNot(maps:is_key(frames, Fact)).
+
+with_data_dir(F) ->
+    Dir = "/tmp/dronex_raid_tests_" ++ integer_to_list(erlang:unique_integer([positive])),
+    ok = filelib:ensure_dir(Dir ++ "/x"),
+    true = os:putenv("HECATE_DRONEX_DATA_DIR", Dir),
+    try F() after os:unsetenv("HECATE_DRONEX_DATA_DIR") end.

@@ -42,7 +42,7 @@
 -module(dronex_facts).
 
 -export([topic/1, topics/0, namespace/0, fact_version/0]).
--export([vitals/2, bout/4, raid/3, opened/1, closed/0]).
+-export([vitals/2, bout/4, raid/3, opened/1, closed/0, settled/3]).
 
 -define(DEFAULT_NS, <<"dronex">>).
 
@@ -91,7 +91,13 @@ topic(raid) -> leaf(<<"raid">>);
 %% deriving presence from these topics would draw the combatants and quietly omit
 %% everyone who chose not to fight.
 topic(opened) -> leaf(<<"island_opened_for_battle">>);
-topic(closed) -> leaf(<<"island_closed_for_battle">>).
+topic(closed) -> leaf(<<"island_closed_for_battle">>);
+%% ⚠ SMALL, AND SEPARATE FROM THE RECORDING BECAUSE OF WHAT THE RECORDING
+%% WEIGHS. `raid' carries frames, of the order of 150 KB. An attacker needs six
+%% genome fates to put its survivors back, which is a few hundred bytes. Settling
+%% off the public recording would make every island download every fight in the
+%% archipelago to learn the outcome of its own.
+topic(settled) -> leaf(<<"raid_settled">>).
 
 %% @doc Every topic this island publishes on.
 %%
@@ -107,7 +113,9 @@ topic(closed) -> leaf(<<"island_closed_for_battle">>).
 %% an island's own best controller against one of its drills, which is what an
 %% island actually spends its time doing.
 -spec topics() -> [binary()].
-topics() -> [topic(vitals), topic(bout), topic(raid), topic(opened), topic(closed)].
+topics() ->
+    [topic(vitals), topic(bout), topic(raid),
+     topic(opened), topic(closed), topic(settled)].
 
 leaf(Leaf) -> <<(namespace())/binary, "/", Leaf/binary>>.
 
@@ -284,6 +292,22 @@ closed() ->
     #{fact_version => ?FACT_VERSION,
       island => dronex_identity:island(),
       island_id => dronex_identity:island_id()}.
+
+%% @doc What happened to the attacker's genomes, addressed by raid.
+%%
+%% ⚠ THE ATTACKER'S SETTLEMENT ARRIVES AS A FACT RATHER THAN AS A RETURN VALUE,
+%% so the defender is never holding somebody else's call open while it fights,
+%% and a settlement that is missed can be waited for rather than lost. The
+%% attacker matches `raid_id' against the parties it has out.
+-spec settled(binary(), attacker | defender | draw,
+              [{binary(), dronex_raid:fate()}]) -> map().
+settled(RaidId, Outcome, Fates) ->
+    #{fact_version => ?FACT_VERSION,
+      island => dronex_identity:island(),
+      island_id => dronex_identity:island_id(),
+      raid_id => RaidId,
+      outcome => Outcome,
+      fate => [#{id => Id, fate => F} || {Id, F} <- Fates]}.
 
 %% @doc A raid, as a recording plus who lost what.
 %%
