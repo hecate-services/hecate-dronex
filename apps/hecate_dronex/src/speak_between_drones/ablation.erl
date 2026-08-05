@@ -142,7 +142,7 @@ entropy(Results) ->
 transmissions(false) -> [];
 transmissions(Frames) ->
     [D#drone.signal
-     || A <- Frames, D <- airspace:drones(A),
+     || {A, _Tracks} <- Frames, D <- airspace:drones(A),
         D#drone.side =:= attacker, not D#drone.dead, not D#drone.withdrawn,
         length(D#drone.signal) =:= 4].
 

@@ -271,3 +271,68 @@ the_towers_reach_the_wire_test() ->
     %% towers rather than a picture of the defence.
     #{sensor_range := R} = airspace:limits(),
     ?assertEqual(R div 20480, maps:get(ground_range, Home)).
+
+%% ⚠ WHAT THE GROUND CONFIRMED MUST REACH THE WIRE, AND IT IS NOT THE SAME LIST
+%% AS THE DRONES. A scoreline cannot tell "the raiders got through" from "the
+%% raiders were never confirmed", and those are different findings about the same
+%% defeat — one says the swarm out-flew the network, the other says the network
+%% never spoke.
+the_confirmed_picture_reaches_the_wire_test() ->
+    {ok, C} = engagement:controller(hoverer),
+    Placed = drone_starts:place(1, 1, 0),
+    [{A, _, _, _, _, _}, {B, _, _, _, _, _}] = Placed,
+    Run = fun (Net) ->
+              engagement:run(airspace:new(Placed), #{A => C, B => C},
+                             #{frames => true, network => Net})
+          end,
+    Home = Run(ground_network:home()),
+    Enc = dronex_bout:encode(#{}, Home, maps:get(frames, Home), airspace:limits()),
+    ?assertEqual([x, y, z], maps:get(track_fields, Enc)),
+    Ks = [maps:get(k, F) || F <- maps:get(frames, Enc)],
+    ?assert(lists:any(fun (K) -> K =/= [] end, Ks)),
+    [?assertEqual(0, length(K) rem 3) || K <- Ks],
+
+    %% ⚠ AND IT DOES NOT START EMPTY, WHICH IS A FINDING RATHER THAN A BUG.
+    %% This assertion was written the other way round on the assumption that a
+    %% recording would open with a silent network and show it go loud. It never
+    %% does: the drones start where several domes overlap, so tracks are
+    %% confirmed on the first frame. See REGISTER D.13 — the going-loud mechanic
+    %% does not engage at these settings, and the sweep has to move the geometry
+    %% and not only the station count.
+    ?assert(hd(Ks) =/= []),
+
+    %% Metres, like every other position on the wire.
+    #{arena_x := Ax} = airspace:limits(),
+    [?assert(V > -Ax div 20480 andalso V < 2 * (Ax div 20480))
+     || K <- Ks, V <- K],
+
+    %% An away fight confirms nothing, because it has no network to confirm with.
+    Away = Run(ground_network:none()),
+    AwayEnc = dronex_bout:encode(#{}, Away, maps:get(frames, Away), airspace:limits()),
+    ?assertEqual([], lists:append([maps:get(k, F) || F <- maps:get(frames, AwayEnc)])).
+
+%% ⚠ THE BELIEF IS NOT THE TRUTH, and a frame that merged them would erase the
+%% only thing this subsystem models. A track lags the drone it is about, and it
+%% is anonymous: nothing in the row says which aircraft it is, because a
+%% non-cooperative sensor never learns that.
+a_track_is_not_a_drone_test() ->
+    {ok, C} = engagement:controller(hoverer),
+    Placed = drone_starts:place(1, 1, 0),
+    [{A, _, _, _, _, _}, {B, _, _, _, _, _}] = Placed,
+    R = engagement:run(airspace:new(Placed), #{A => C, B => C},
+                       #{frames => true, network => ground_network:home()}),
+    Enc = dronex_bout:encode(#{}, R, maps:get(frames, R), airspace:limits()),
+    Late = lists:last(maps:get(frames, Enc)),
+    %% Three numbers per track against seven per drone: no id, no yaw, no health,
+    %% no state. There is nothing in a track to pair it with an aircraft.
+    ?assertEqual(3, length(maps:get(track_fields, Enc))),
+    ?assertEqual(7, dronex_bout:stride()),
+    ?assert(maps:get(k, Late) =/= []),
+
+    %% ⚠ AND THE COUNTS MUST DISAGREE SOMEWHERE. If the network's picture always
+    %% held exactly one track per live drone it would be ground truth wearing a
+    %% different field name, and every missed detection, every ghost and the
+    %% whole confirmation threshold would be decorative.
+    Frames = maps:get(frames, Enc),
+    Pairs = [{length(maps:get(k, F)) div 3, length(maps:get(d, F)) div 7} || F <- Frames],
+    ?assert(lists:any(fun ({T, D}) -> T =/= D end, Pairs)).

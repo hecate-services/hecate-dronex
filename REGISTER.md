@@ -552,6 +552,60 @@ waiting behind that one clerk, and the light on the door still said OPEN.
 
 # D: findings about the world
 
+## D.13: the network is never silent, so the threshold decides nothing
+
+Publishing what the towers had confirmed, tick by tick, was meant to be an
+exhibit feature. The first thing it printed was a problem.
+
+A twelve-against-twelve engagement at the standard starts:
+
+    frames 1200, first confirmed track at frame 1
+    confirmed tracks over time: 5, 7, 7, 9, 10, 10, 10, 10, 10, 10, 10, 11
+
+**Every raider is confirmed before the recording begins.** The drones start at
+about x=300 and x=700 across the middle of a 1000 m arena at 60 m altitude, which
+is inside two or three of the five 350 m domes on the first tick, and three
+stations agreeing clears the evidence threshold in one look.
+
+Four things this repository has written down stop being true in practice:
+
+- *"The network is silent until a track is confirmed."* It is silent for zero
+  ticks of a twelve hundred tick fight.
+- *"Going loud is a decision rather than a default."* There is no decision. It is
+  loud from the start of every engagement.
+- *"An attacker can learn WHEN IT HAS BEEN SEEN."* There is nothing to learn: the
+  answer is always yes, from tick one.
+- *"The confirmation threshold is the interesting number."* Set it to one or to
+  ten and nothing observable changes, because three stations report the same
+  target in the same tick.
+
+⚠ **AND IT SETS A TRAP FOR THE ABLATION.** A cue that is always present and
+always says roughly the same thing is a near-constant input, and a near-constant
+input carries almost no information no matter how useful the underlying fact is.
+The ground arm would read close to zero and the honest-sounding conclusion —
+*"cueing does not matter"* — would be wrong. The true statement would be
+*"cueing was saturated"*, and the two are indistinguishable from the number
+alone. This is the same shape as the item 6 result, where the ground arm read
+zero because no network existed; a null from a saturated instrument and a null
+from a disconnected one look identical.
+
+**What follows for the viability sweep.** The dial was named as station count.
+That is not enough. What decides whether raiding has an approach phase at all is
+**reach against the geometry the fight starts in**, and the ceiling (D.12) is a
+third. A sweep over station count alone would have measured a saturated network
+at every point and reported a smooth, confident, meaningless curve.
+
+Nothing here says the settings are wrong — a defender knowing its own airspace is
+not a bug. It says the mechanics the design is proudest of are currently inert,
+and that was invisible until the belief was drawn next to the truth.
+
+**ELI5.** Someone built a burglar alarm with a clever rule: do not shout until
+you have seen the intruder three times, so that a cat does not set it off. Then
+they installed it in a small room with five cameras, and every intruder is seen
+by three cameras the moment they step in. The clever rule never gets a chance to
+do anything, and testing whether it works by turning it up and down tells you
+nothing at all. The alarm is fine. The room is too small for the rule to matter.
+
 ## D.12: height buys silence, and the picture said the opposite
 
 Asked whether coverage should be a dome, the answer was yes, and checking it

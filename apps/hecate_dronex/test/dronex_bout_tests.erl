@@ -83,7 +83,7 @@ the_drone_state_is_three_valued_test() ->
     A0 = airspace:new([{{attacker, 1}, attacker, 500 * 20480, 500 * 20480, 100 * 20480, 0},
                        {{defender, 1}, defender, 520 * 20480, 500 * 20480, 100 * 20480, 0}]),
     Mixed = A0#arena{drones = [mark(D) || D <- airspace:drones(A0)]},
-    States = [lists:nth(7, Row) || Row <- rows(dronex_bout:frame(Mixed))],
+    States = [lists:nth(7, Row) || Row <- rows(dronex_bout:frame({Mixed, []}))],
     ?assertEqual([2, 1], States).
 
 mark(#drone{side = attacker} = D) -> D#drone{dead = true};

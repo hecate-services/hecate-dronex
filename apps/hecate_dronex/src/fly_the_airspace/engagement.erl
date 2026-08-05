@@ -35,7 +35,14 @@
                     %% of its own, and a result that did not say so would leave
                     %% the asymmetry that prices a raid readable only in a log.
                     ground := [#{x := integer(), y := integer(), z := integer()}],
-                    frames := [#arena{}] | false}.
+                    %% ⚠ A FRAME IS THE WORLD AND THE DEFENDER'S BELIEF ABOUT
+                    %% IT, which are two different things and must never be one.
+                    %% The arena is ground truth; the tracks are what the ground
+                    %% network had CONFIRMED at that tick, which lags it, misses
+                    %% some of it and occasionally invents a target that is not
+                    %% there. Merging them into the arena would erase exactly the
+                    %% gap this whole subsystem exists to model.
+                    frames := [{#arena{}, [ground_tracks:track()]}] | false}.
 
 %% @doc Build a controller from a genome or a drill kind.
 -spec controller(drone_genome:genome() | drone_drills:kind()) ->
@@ -83,7 +90,7 @@ stepped(false, A, Cs, Frames, Mute, Vol, Net) ->
     Looked = ground_network:observe(Net, airspace:drones(A), airspace:tick_of(A)),
     {Intents, Next} = commanded(A, Cs, Mute, Looked),
     Advanced = airspace:step(A, Intents),
-    loop(Advanced, Next, kept(Frames, Advanced), Mute, Vol + said(Advanced), Looked).
+    loop(Advanced, Next, kept(Frames, Advanced, Looked), Mute, Vol + said(Advanced), Looked).
 
 %% Counted after the step, so it is what was actually transmitted rather than
 %% what was commanded: the engine clamps a signal exactly as it clamps thrust.
@@ -93,8 +100,8 @@ stepped(false, A, Cs, Frames, Mute, Vol, Net) ->
 said(A) ->
     lists:sum([radio:volume(D) || D <- airspace:drones(A), not gone(D)]).
 
-kept(false, _A) -> false;
-kept(Frames, A) -> [A | Frames].
+kept(false, _A, _Net) -> false;
+kept(Frames, A, Net) -> [{A, ground_network:tracks_of(Net)} | Frames].
 
 %% ⚠ EVERY CONTROLLER IS ASKED BEFORE ANY OF THEM MOVES, which is what makes the
 %% tick simultaneous. Advancing each drone as its command arrived would let the

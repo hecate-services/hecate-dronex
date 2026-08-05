@@ -115,18 +115,37 @@ encode(Meta, Result, Frames, Limits) ->
                 metres(maps:get(arena_z, Limits))],
       %% Every second one, and the count of what was DROPPED is not needed
       %% because the tick on each frame says exactly which ones survived.
-      frames => [frame(A) || A <- decimated(Frames)]}.
+      %% ⚠ WHAT THE GROUND HAD CONFIRMED, TICK BY TICK, and it is not the same
+      %% list as `d'. A track is where the network THINKS something is: it lags
+      %% the truth, it misses targets it has not accumulated enough evidence on,
+      %% and some of them are ghosts that were never there. Drawing it beside the
+      %% drones is the only way a spectator can see the difference between "the
+      %% raiders got through" and "the raiders were never confirmed", which are
+      %% different findings that a scoreline alone cannot tell apart.
+      %%
+      %% It is also the moment the network GOES LOUD: it says nothing at all
+      %% until a track is confirmed, so a non-empty list here is the tick from
+      %% which the defenders were being cued — and from which the raiders could
+      %% hear that they had been found.
+      track_fields => [x, y, z],
+      frames => [frame(F) || F <- decimated(Frames)]}.
 
 decimated(Frames) ->
     [A || {A, N} <- lists:zip(Frames, lists:seq(0, length(Frames) - 1)),
           N rem ?EVERY =:= 0].
 
 %% @doc One frame: the tick, the drones, and the munitions in flight.
--spec frame(#arena{}) -> map().
-frame(#arena{} = A) ->
+-spec frame({#arena{}, [ground_tracks:track()]}) -> map().
+frame({#arena{} = A, Tracks}) ->
     #{t => airspace:tick_of(A),
       d => lists:append([drone_row(D) || D <- airspace:drones(A)]),
-      m => lists:append([munition_row(M) || M <- airspace:munitions(A)])}.
+      m => lists:append([munition_row(M) || M <- airspace:munitions(A)]),
+      k => lists:append([track_row(T) || T <- Tracks])}.
+
+%% No id and no confidence: a track is anonymous by construction, and a spectator
+%% that could pair a track with a drone would be shown something the network
+%% never knew.
+track_row(#{x := X, y := Y, z := Z}) -> [metres(X), metres(Y), metres(Z)].
 
 %% ⚠ `state' IS THREE-VALUED, NOT A BOOLEAN, and the third value is the point.
 %% A withdrawn drone is ALIVE and out of the fight, which is a different thing
