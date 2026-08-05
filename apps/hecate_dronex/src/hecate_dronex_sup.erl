@@ -34,4 +34,19 @@ init([]) ->
              start => {island_server, start_link, []},
              restart => permanent,
              shutdown => 5000,
-             type => worker}]}}.
+             type => worker}
+           %% ⚠ ONE LISTENER PER TOPIC, AND THEY ARE CHILDREN HERE RATHER THAN
+           %% UNDER A LISTENERS SUPERVISOR. A `*_listeners_sup' would be a
+           %% horizontal layer: a box whose only organising idea is "these are
+           %% all listeners", which is the shape this repository's rules forbid
+           %% by name. They are three workers of this island, listed with its
+           %% other workers.
+           %%
+           %% ⚠⚠ AND THEY EXIST BECAUSE ONE PROCESS HOLDING THREE SUBSCRIPTIONS
+           %% BRED SIX HUNDRED THOUSAND MESSAGES. `island_server' owned all of
+           %% them and re-armed the set whenever any one died. Fixing the
+           %% bookkeeping fixed that instance; giving each subscription its own
+           %% process removes the shape. A listener here cannot name another
+           %% subscription, so there is nothing to get out of step with.
+           | [topic_listener:child_spec(T, island_server)
+              || T <- [opened, closed, settled]]]}}.

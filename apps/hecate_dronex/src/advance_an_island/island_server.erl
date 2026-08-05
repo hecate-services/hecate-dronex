@@ -154,7 +154,7 @@ init([]) ->
     schedule(sweep_raids, ?SWEEP_MS),
     {ok, #{island => Island, sent => 0, failed => 0, sitting => false,
            ablating => false, writer => roster_log_writer:silent(),
-           open_islands => #{}, away => #{}, subs => #{},
+           open_islands => #{}, away => #{},
            advertising => false, open => false}}.
 
 %% ⚠ ADDRESSED BY IDENTITY, NEVER BY NAME. Two islands may both be called
@@ -188,14 +188,11 @@ advertise_self() ->
 %% The comment above it already said every `subscribe' returns a fresh reference
 %% and the pool keeps them all. It guarded the TIMER against multiplying them and
 %% left the death path to do it instead.
+%% ⚠ THIS PROCESS NO LONGER OWNS THE SUBSCRIPTIONS. It owned all three and
+%% re-armed the set whenever any one died, which bred 615,722 messages into its
+%% own mailbox. `topic_listener' is one process per topic; each holds a single
+%% reference and cannot name another. The island is told what arrived.
 topics_heard() -> [opened, closed, settled].
-
-subscribed(Topic, Subs) ->
-    taken(dronex_mesh:subscribe_between_islands(dronex_facts:topic(Topic), self()),
-          Topic, Subs).
-
-taken({ok, Ref}, Topic, Subs) -> Subs#{Topic => Ref};
-taken({error, _Why}, _Topic, Subs) -> Subs.
 
 %% Re-asserted every tick. The transition is logged, so a mesh that comes up late
 %% says so once rather than every minute for ever.
@@ -216,14 +213,10 @@ announced({error, _Why}, false, S) ->
 %% ⚠ ONLY THE TOPICS THAT ARE NOT ALREADY SUBSCRIBED. Every `subscribe' returns a
 %% fresh reference and the pool keeps them all, so subscribing to something twice
 %% doubles its delivery rate for ever, and nothing anywhere reports it.
-listening(#{subs := Subs} = S) ->
-    Missing = topics_heard() -- maps:keys(Subs),
-    told(Missing, lists:foldl(fun (T, Acc) -> subscribed(T, Acc) end, Subs, Missing), S).
-
-told([], Subs, S) -> S#{subs := Subs};
-told(Missing, Subs, S) ->
-    logger:info("[island] listening for ~p", [maps:keys(Subs) -- (maps:keys(Subs) -- Missing)]),
-    S#{subs := Subs}.
+%% Asked of the listeners rather than remembered here, because a copy of somebody
+%% else's state is a thing that can disagree with it — which is how the
+%% subscription bug survived its own first fix.
+listening() -> lists:all(fun topic_listener:listening/1, topics_heard()).
 
 %% A store that is not there yet, or a log that cannot be read, is an island that
 %% starts fresh rather than an island that refuses to start. The roster depth it
@@ -268,6 +261,10 @@ mustered_defence({I2, Party}, #{island := I} = S) ->
 
 %% The writer's own exercise counts, pushed after every drain. Held rather than
 %% fetched: see `roster_log_writer:told/1'.
+%% What a `topic_listener' heard. The island does not care which topic it came
+%% from: `noted/2' decides from the shape, because the shape is what says whether
+%% a fact is an opening, a closing or a settlement.
+handle_cast({heard, Fact}, S) -> {noreply, noted(Fact, S)};
 handle_cast({roster_written, Stats}, S) -> {noreply, S#{writer := Stats}};
 %% A fact published from somebody else's process still belongs in this island's
 %% counters, or `sent' and `failed' quietly stop describing everything it sends.
@@ -358,25 +355,17 @@ handle_info(snapshot, #{island := I} = S) ->
 %% would fall through to the catch-all, and this island would believe it is alone
 %% in the archipelago while its subscription sat there perfectly healthy. A
 %% sibling shipped exactly that and it cost an hour.
-handle_info({macula_event, _Ref, _Topic, Fact, _Meta}, S) ->
-    {noreply, noted(Fact, S)};
 %% ⚠ RE-ARM ONLY THE ONE THAT DIED. Dropping the dead reference and letting
 %% `listening/1' fill the gap replaces exactly one subscription; the previous
 %% version cleared a single boolean and re-subscribed all three, which is what
 %% multiplied them.
-handle_info({macula_event_gone, Ref, Why}, #{subs := Subs} = S) ->
-    Dead = [T || {T, R} <- maps:to_list(Subs), R =:= Ref],
-    logger:warning("[island] subscription to ~p gone (~p), re-arming that one",
-                   [Dead, Why]),
-    {noreply, listening(S#{subs := maps:without(Dead, Subs)})};
-
 %% ⚠ THE ONE THING THAT MAKES THIS ISLAND REACHABLE. Everything else it does is
 %% outbound and works without anybody's permission; being raided needs a live
 %% advertisement, and an advertisement is the only piece of this service that can
 %% be lost without anything going red.
 handle_info(mesh_check, S) ->
     schedule(mesh_check, ?DEFAULT_MESH_CHECK_MS),
-    {noreply, listening(advertising(S))};
+    {noreply, advertising(S)};
 
 %% ⚠ THE ONLY THING THAT WRITES A PARTY OFF NOW. With the outcome arriving as a
 %% fact rather than as a return value, nothing fails: a settlement that never
@@ -411,9 +400,7 @@ written_off([{RaidId, Party} | Rest], I) ->
 %% `listening' is derived rather than stored: it is true when every topic an
 %% island needs is subscribed, which is the only definition that cannot drift
 %% from the subscriptions themselves.
-runtime(#{subs := Subs} = S) ->
-    (maps:with([writer, advertising, open], S))#{
-        listening => topics_heard() -- maps:keys(Subs) =:= []}.
+runtime(S) -> (maps:with([writer, advertising, open], S))#{listening => listening()}.
 
 %% ⚠ AN ISLAND ANNOUNCES OPEN ONLY WHEN IT ACTUALLY IS, AND THAT IS THE POINT.
 %% `advertising' is whether the raid procedure is really registered; without that
@@ -433,8 +420,7 @@ handle_announcement(#{island := I} = S) ->
     Now = capable(S) andalso island:can_defend(I, raid:party()),
     announced_state(Now, maps:get(open, S), I, S#{open := Now}).
 
-capable(#{advertising := A, subs := Subs}) ->
-    A andalso topics_heard() -- maps:keys(Subs) =:= [].
+capable(#{advertising := A}) -> A andalso listening().
 
 %% Re-announced while open, because it is a lease. Announced once on the way
 %% down, because closing should cost seconds rather than the lease.
