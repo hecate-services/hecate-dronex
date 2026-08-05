@@ -692,7 +692,8 @@ hosted({ok, Arena, Controllers, Pairs}, Defenders, Raiders, Req, Island) ->
     Fates = defence:fates(maps:get(attackers, Pairs), Result),
     Survivors = defence:survivors(maps:get(defenders, Pairs), Result),
     Meta = #{from => maps:get(attacker, Req), raid => maps:get(raid_id, Req),
-             tick => maps:get(tick, Req, 0)},
+             tick => maps:get(tick, Req, 0),
+             defenders => length(Defenders), defenders_home => length(Survivors)},
     gen_server:cast(Island, {defended, Survivors, Defenders, Raiders, Meta}),
     %% ⚠ COUNTED, NOT DISCARDED, AND IT WAS DISCARDED FIRST. This runs off the
     %% island's process, so its publish counters cannot see it unless it is sent

@@ -371,7 +371,14 @@ raid(Result, Fates, Meta) ->
         %% spectator needs is the price the RAID paid, which is what makes an
         %% archipelago of raids readable as something other than a light show.
         raiders => length(Fates),
-        raiders_home => length([F || {_Id, F} <- Fates, F =:= survived])},
+        raiders_home => length([F || {_Id, F} <- Fates, F =:= survived]),
+        %% ⚠ THE DEFENDER'S HALF OF THE LEDGER, WHICH WAS MISSING. Only the
+        %% attacker's losses were published, so a reader could see what a raid
+        %% cost the raider and not what it cost the island that beat it. Both
+        %% sides pay on the same terms and a score that shows one of them is not
+        %% a score.
+        defenders => maps:get(defenders, Meta, 0),
+        defenders_home => maps:get(defenders_home, Meta, 0)},
       dronex_bout:encode(#{kind => raid,
                            bout => maps:get(tick, Meta, 0),
                            start_index => 0,

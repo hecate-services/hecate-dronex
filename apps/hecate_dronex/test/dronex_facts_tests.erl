@@ -47,7 +47,8 @@ an_island_that_has_never_raided_publishes_zeros_test() ->
 %% facts under the publisher would file this under the defender alone, and the
 %% attacker's half of the story would have no home, so both identities travel.
 a_raid_fact_names_both_islands_test() ->
-    Meta = #{from => <<"them">>, raid => <<"r1">>, tick => 9},
+    Meta = #{from => <<"them">>, raid => <<"r1">>, tick => 9,
+             defenders => 4, defenders_home => 3},
     Result = #{winner => defender, ticks => 40, survivors => [], withdrawn => [],
                signal_volume => 0, frames => []},
     Fact = with_data_dir(fun () ->
@@ -58,6 +59,12 @@ a_raid_fact_names_both_islands_test() ->
     ?assertEqual(<<"r1">>, maps:get(raid_id, Fact)),
     ?assertEqual(2, maps:get(raiders, Fact)),
     ?assertEqual(1, maps:get(raiders_home, Fact)),
+    %% ⚠ BOTH SIDES OF THE LEDGER. Only the attacker's losses were published at
+    %% first, so a reader could see what a raid cost the raider and not what it
+    %% cost the island that beat it. Both pay on the same terms, and a score
+    %% showing one of them is not a score.
+    ?assertEqual(4, maps:get(defenders, Fact)),
+    ?assertEqual(3, maps:get(defenders_home, Fact)),
     %% It carries the recording, like a bout, because a raid is worth watching.
     ?assertEqual(raid, maps:get(kind, Fact)).
 

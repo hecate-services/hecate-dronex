@@ -41,9 +41,24 @@
 %% every configuration in insight 062. Below it, an island stays home and breeds.
 -define(ROSTER_FLOOR, 60).
 
-%% How many leave on one sortie. Small against a roster of 240 so a raid is a
-%% cost rather than a gamble of the whole lineage.
--define(PARTY, 6).
+%% ⚠ TWELVE, WHICH IS WHAT THE DESIGN SAYS AND WHAT A SWARM LOOKS LIKE. This
+%% shipped as SIX with the justification "small against a roster of 240 so a raid
+%% is a cost rather than a gamble of the whole lineage". Six of 240 is 2.5%,
+%% which is not a cost, and six against six does not read as a swarm — it reads
+%% as a skirmish, which is what anybody watching said.
+%%
+%% `DESIGN_THE_ROSTER_AND_THE_RAID.md' says twelve leave on a sortie. Measured
+%% before changing it, so the number is affordable rather than merely braver:
+%%
+%%      6v6   0.15 s   168 KB per published recording
+%%     12v12  0.20 s   220 KB
+%%     16v16  0.30 s   365 KB
+%%
+%% against macula's 1 MiB QUIC frame cap. Twelve a side is 24 drones in the
+%% arena, five per cent of a full roster per raid paid by BOTH sides, and roughly
+%% a fifth of the transport budget. Sixteen would also fit; twelve is what the
+%% design asked for and leaves the headroom the frame budget was written to keep.
+-define(PARTY, 12).
 
 -spec floor_of() -> pos_integer().
 floor_of() -> ?ROSTER_FLOOR.
