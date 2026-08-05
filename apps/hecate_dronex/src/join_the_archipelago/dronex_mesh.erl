@@ -42,7 +42,88 @@
 %% refused if it did.
 -module(dronex_mesh).
 
+%% Longer than an engagement can take. `max_ticks' is 1200 at 20 Hz, and the
+%% defender validates a whole sortie before it starts.
+-define(RAID_TIMEOUT_MS, 120000).
+
 -export([publish/2, available/0, publish_realm/1, station/0]).
+-export([advertise/2, call/2, subscribe/2]).
+
+%% ==========================================================================
+%% ⚠ TWO DIRECTIONS, TWO REALMS, AND THE ASYMMETRY IS THE ACCESS CONTROL
+%% ==========================================================================
+%%
+%% FACTS GO OUT on the public realm, which is the sha256 of its own name and so
+%% is derived rather than issued: anybody may read an island, and a public web
+%% container never holds the fleet tag that routes sentinel sightings.
+%%
+%% RAIDS GO BOTH WAYS on the FLEET realm. That is the whole access control: a
+%% stranger watching the exhibit can see every fight and cannot start one,
+%% because starting one means calling a procedure on a realm they do not have.
+%%
+%% HEARING OTHER ISLANDS happens on the PUBLIC realm, because that is where
+%% islands become visible to each other. There is no directory and no registry;
+%% an island learns that another exists by watching it publish, which is why an
+%% island that is silent is never attacked. That is a consequence of the design
+%% rather than a protection anybody added.
+
+%% @doc Offer this island's raid procedure to the fleet.
+-spec advertise(binary(), fun((term()) -> term())) -> ok | {error, term()}.
+advertise(Procedure, Handler) when is_binary(Procedure), is_function(Handler, 1) ->
+    offered(Procedure, Handler, endpoint(), fleet_realm()).
+
+offered(_P, _H, {error, _} = E, _Realm) -> E;
+offered(_P, _H, _Pool, {error, _} = E) -> E;
+offered(Procedure, Handler, {ok, Pool}, {ok, Realm}) ->
+    try macula:advertise(Pool, Realm, Procedure, Handler, #{})
+    catch Class:Reason -> {error, {advertise_failed, Class, Reason}}
+    end.
+
+%% @doc Call another island's raid procedure.
+%%
+%% ⚠ A LONG TIMEOUT, BECAUSE THE CALLEE IS FIGHTING. The defender validates every
+%% genome, then runs a whole engagement of up to 1200 ticks before it can answer.
+%% A five-second default would report `timeout' for a raid that is going
+%% perfectly, and the attacker would count its party lost while the defender
+%% counted it beaten.
+%% ⚠ NO SEPARATE ISLAND ARGUMENT. The first version took one, validated it in a
+%% guard and never read it: `dronex_raid:procedure/1' already encodes the target,
+%% so the island was a second copy of the address that nothing compared against
+%% the first. A guard counts as a use, so the compiler said nothing — which is
+%% REGISTER I.7 exactly, where `breed:random/2' carried a parameter every caller
+%% passed zero to and dialyzer's warnings were about anything but the defect.
+-spec call(binary(), term()) -> {ok, term()} | {error, term()}.
+call(Procedure, Payload) when is_binary(Procedure) ->
+    dialled(Procedure, Payload, endpoint(), fleet_realm()).
+
+dialled(_P, _Payload, {error, _} = E, _Realm) -> E;
+dialled(_P, _Payload, _Pool, {error, _} = E) -> E;
+dialled(Procedure, Payload, {ok, Pool}, {ok, Realm}) ->
+    try macula:call(Pool, Realm, Procedure, Payload, ?RAID_TIMEOUT_MS)
+    catch Class:Reason -> {error, {call_failed, Class, Reason}}
+    end.
+
+%% @doc Watch a topic on the PUBLIC realm. The subscriber receives
+%% `{macula_event, SubRef, Topic, Payload, Meta}'.
+%%
+%% ⚠ FIVE ELEMENTS, AND A SIBLING'S FOUR-ELEMENT CLAUSE DROPPED EVERY FACT IT
+%% EVER RECEIVED. Nothing raised, nothing logged, the subscription was live and
+%% the publisher's counter read hundreds sent. Whoever matches on this shape must
+%% match all five.
+-spec subscribe(binary(), pid()) -> {ok, reference()} | {error, term()}.
+subscribe(Topic, Subscriber) when is_binary(Topic), is_pid(Subscriber) ->
+    watched(Topic, Subscriber, endpoint(), publish_realm_or_fleet()).
+
+watched(_T, _S, {error, _} = E, _Realm) -> E;
+watched(_T, _S, _Pool, {error, _} = E) -> E;
+watched(Topic, Subscriber, {ok, Pool}, {ok, Realm}) ->
+    try macula_client:subscribe(Pool, Realm, Topic, Subscriber, #{})
+    catch Class:Reason -> {error, {subscribe_failed, Class, Reason}}
+    end.
+
+%% The realm facts go out on, which is also the realm they come in on: an island
+%% hears its neighbours exactly where a spectator hears all of them.
+publish_realm_or_fleet() -> realm_for(os:getenv("HECATE_DRONEX_REALM")).
 
 -spec publish(binary(), map()) -> ok | {error, term()}.
 publish(Topic, Fact) when is_map(Fact) ->
