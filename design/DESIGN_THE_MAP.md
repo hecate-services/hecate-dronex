@@ -23,9 +23,16 @@ spectator repeated about 1,900 frames of identical work.
 **So dronex publishes frames.** The site plays a recording it was handed. It
 holds no engine, computes no physics, and cannot draw a fight nobody fought.
 
-## What has to be fixed before anything is built on it
+## What had to be fixed before anything was built on it — DONE 2026-08-05
 
-⚠ **The archipelago viewport is broken on `main` today.**
+✅ **Fixed in `beam-campus-net` `45c0fb8`, deployed and live.** All four faults
+below were real and the map had been blank since the camera landed. A test now
+sweeps every colocated hook and asserts it defines the methods it calls, because
+a hook that throws in `mounted()` fails silently: the page renders, the canvas
+is in the DOM, nothing is drawn, and no compiler or assertion says a word. That
+guard is verified to go red when `fitWorld`'s definition is removed again.
+
+The record of what was wrong, kept because this track inherits the component:
 
 Commit `64e1897` of 2026-08-04, *"The map is a viewport now: drag, zoom,
 double-click to fit"*, added a camera to the `Archipelago` colocated hook in
@@ -38,8 +45,8 @@ double-click to fit"*, added a camera to the `Archipelago` colocated hook in
 | `fit()` | reads `dataset.width` and `dataset.height`; the canvas carries `data-world-width` and `data-world-height`, so both are `NaN` |
 | `paint()` | never applies `this.cam`, so drag and zoom would move nothing even if they ran |
 
-The biotope map is therefore almost certainly blank on the live site. It is
-fixed first, because this track builds on the same component.
+The biotope map was indeed blank on the live site, and had been since
+`64e1897`. It was fixed first, because this track builds on the same component.
 
 ## The archipelago lifts unchanged
 
