@@ -13,6 +13,18 @@ scope: "Scope: detect · classify · track · alert. Defensive situational aware
 
 # DroneX: Drone Detection on the Macula Capability Mesh
 
+> ⚠ **RETAINED DESIGN RECORD, 2026-08-05. This describes the SECOND ACT.**
+>
+> This repository's active track is a virtual environment for evolving drone
+> controllers, and its swap point is at **perception and actuation** rather than
+> at **detection**. See [`../CHARTER.md`](../CHARTER.md) and
+> [`../design/DESIGN_THE_SECOND_ACT.md`](../design/DESIGN_THE_SECOND_ACT.md),
+> which names what this document leaves behind, what is retired, and why the
+> counter-UAS line is kept rather than deleted.
+>
+> Everything below is unchanged and still describes a real system. It is not
+> what is currently being built.
+
 **Status:** Draft / Concept &nbsp;·&nbsp; **Repo:** `hecate-services/hecate-dronex` &nbsp;·&nbsp; **Date:** 2026-06-09
 
 > **Scope statement.** This document covers **defensive airspace situational

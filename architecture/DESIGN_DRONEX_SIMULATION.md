@@ -13,6 +13,18 @@ scope: "Development and test harness. Drives the real fusion stack; not a flight
 
 # DroneX Simulator
 
+> ⚠ **RETAINED DESIGN RECORD, 2026-08-05. This describes the SECOND ACT.**
+>
+> The **swap point** discipline in this document survives and is the most
+> reusable idea the counter-UAS line produced. The seam it sits on has moved:
+> from a simulated sensor against a real one, to a simulated onboard sensor
+> against a characterised real one, and to the simulator against an airframe.
+> See [`../design/DESIGN_THE_SECOND_ACT.md`](../design/DESIGN_THE_SECOND_ACT.md).
+>
+> The event-sourced per-drone aggregate described here is explicitly retired:
+> it costs one store write per drone per reposition, and an island runs
+> thousands of engagements an hour at 20 Hz.
+
 **Status:** Draft / Concept &nbsp;·&nbsp; **Repo:** `hecate-services/hecate-dronex` &nbsp;·&nbsp; **Date:** 2026-06-10
 
 > Companion to [DESIGN_DRONEX_MESH.md](DESIGN_DRONEX_MESH.md). That document
