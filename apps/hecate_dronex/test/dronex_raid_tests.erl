@@ -165,3 +165,36 @@ with_data_dir(F) ->
     ok = filelib:ensure_dir(Dir ++ "/x"),
     true = os:putenv("HECATE_DRONEX_DATA_DIR", Dir),
     try F() after os:unsetenv("HECATE_DRONEX_DATA_DIR") end.
+
+%%==============================================================================
+%% ⚠ TWO WITNESSES TO ONE RAID
+%%==============================================================================
+%%
+%% Until this existed the record was one-sided: only the defender published, so a
+%% defender that went dark after accepting left the attacker six airframes poorer
+%% with nothing anywhere recording that the raid had happened.
+both_sides_witness_the_same_raid_from_their_own_side_test() ->
+    Att = with_data_dir(fun () ->
+        dronex_facts:committed(<<"r1">>, attacker, {<<"them">>, 6}) end),
+    Def = with_data_dir(fun () ->
+        dronex_facts:committed(<<"r1">>, defender, {<<"us">>, 6}) end),
+
+    %% Same raid, different claims, neither authoritative over the other.
+    ?assertEqual(<<"r1">>, maps:get(raid_id, Att)),
+    ?assertEqual(<<"r1">>, maps:get(raid_id, Def)),
+    ?assertEqual(attacker, maps:get(role, Att)),
+    ?assertEqual(defender, maps:get(role, Def)),
+    ?assertEqual(<<"them">>, maps:get(opponent_id, Att)),
+    ?assertEqual(6, maps:get(airframes, Att)),
+
+    ?assertEqual(lists:sort([airframes, fact_version, island, island_id,
+                             opponent_id, raid_id, role]),
+                 lists:sort(maps:keys(Att))).
+
+%% It is public, unlike the settlement: the settlement is addressed and must stay
+%% small, while a commitment exists to be a record and to be drawn.
+a_commitment_is_something_a_spectator_may_see_test() ->
+    ?assert(lists:member(dronex_facts:topic(committed), dronex_facts:topics())),
+    #{resources := Asked} = hecate_dronex_service:identity_spec(),
+    ?assert(lists:member(dronex_facts:topic(committed), Asked)),
+    ?assertNotEqual(dronex_facts:topic(committed), dronex_facts:topic(settled)).

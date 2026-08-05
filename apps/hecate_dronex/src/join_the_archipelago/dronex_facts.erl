@@ -42,7 +42,7 @@
 -module(dronex_facts).
 
 -export([topic/1, topics/0, namespace/0, fact_version/0]).
--export([vitals/2, bout/4, raid/3, opened/1, closed/0, settled/3]).
+-export([vitals/2, bout/4, raid/3, opened/1, closed/0, settled/3, committed/3]).
 
 -define(DEFAULT_NS, <<"dronex">>).
 
@@ -97,7 +97,11 @@ topic(closed) -> leaf(<<"island_closed_for_battle">>);
 %% genome fates to put its survivors back, which is a few hundred bytes. Settling
 %% off the public recording would make every island download every fight in the
 %% archipelago to learn the outcome of its own.
-topic(settled) -> leaf(<<"raid_settled">>).
+topic(settled) -> leaf(<<"raid_settled">>);
+%% ⚠ PUBLIC, UNLIKE THE SETTLEMENT, AND BOTH SIDES EMIT IT. The settlement is
+%% addressed and must stay small; a commitment's whole value is the record and
+%% the map. There is nothing to hide once the recording will be public anyway.
+topic(committed) -> leaf(<<"island_committed_to_battle">>).
 
 %% @doc Every topic this island publishes on.
 %%
@@ -115,7 +119,7 @@ topic(settled) -> leaf(<<"raid_settled">>).
 -spec topics() -> [binary()].
 topics() ->
     [topic(vitals), topic(bout), topic(raid),
-     topic(opened), topic(closed), topic(settled)].
+     topic(opened), topic(closed), topic(settled), topic(committed)].
 
 leaf(Leaf) -> <<(namespace())/binary, "/", Leaf/binary>>.
 
@@ -292,6 +296,35 @@ closed() ->
     #{fact_version => ?FACT_VERSION,
       island => dronex_identity:island(),
       island_id => dronex_identity:island_id()}.
+
+%% @doc Airframes are spent, and this is who spent them on what.
+%%
+%% ⚠ THE RECORD OF A RAID WAS ONE-SIDED UNTIL THIS EXISTED. Only the defender
+%% published anything — the settlement and the recording — so a defender that
+%% went dark after accepting left the attacker six airframes poorer with NOTHING
+%% anywhere recording that the raid had happened. The sweep wrote the party off
+%% in silence. Two witnesses is not redundancy: `I committed six against D' and
+%% `I committed six against A' are different claims and neither is authoritative
+%% over the other.
+%%
+%% ⚠⚠ EMITTED ON ACCEPTANCE, NOT ON MUSTER. A party that is refused comes home,
+%% so a commitment published when the genomes left the roster would name raids
+%% that never happened. Committed means accepted and the price is paid, which is
+%% the same instant on both sides.
+%%
+%% What it buys beyond the record: commitments without settlements becomes a
+%% measurable rate rather than an invisible one, a raid in flight becomes
+%% drawable before it is over, and an island being attacked by several at once
+%% becomes visible instead of merely inferable from a roster shrinking.
+-spec committed(binary(), attacker | defender, {binary(), pos_integer()}) -> map().
+committed(RaidId, Role, {Opponent, Airframes}) ->
+    #{fact_version => ?FACT_VERSION,
+      island => dronex_identity:island(),
+      island_id => dronex_identity:island_id(),
+      raid_id => RaidId,
+      role => Role,
+      opponent_id => Opponent,
+      airframes => Airframes}.
 
 %% @doc What happened to the attacker's genomes, addressed by raid.
 %%

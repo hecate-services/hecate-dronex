@@ -595,7 +595,16 @@ away(Target, RaidId, Party, Back) ->
                  genome => drone_genome:pack(roster:entry_genome(E))} || E <- Party],
     Request = dronex_raid:request(dronex_identity:island_id(), RaidId, Sorties, 0),
     Reply = dronex_mesh:call(dronex_raid:procedure(Target), Request),
-    gen_server:cast(Back, {handshook, RaidId, Party, accepted(RaidId, Reply)}).
+    Answer = accepted(RaidId, Reply),
+    _ = announce_commitment(Answer, RaidId, Target, length(Party), Back),
+    gen_server:cast(Back, {handshook, RaidId, Party, Answer}).
+
+%% Only when the raid was actually taken. A refused party never left the ground,
+%% so announcing a commitment for it would be announcing a cost nobody paid.
+announce_commitment(accepted, RaidId, Target, Airframes, Back) ->
+    gen_server:cast(Back, {published, commit(RaidId, attacker, {Target, Airframes})});
+announce_commitment(refused, _RaidId, _Target, _Airframes, _Back) ->
+    ok.
 
 %% ⚠ ONLY TWO ANSWERS NOW, AND NEITHER OF THEM IS AN OUTCOME. Accepted means the
 %% party is committed and the result will arrive as a fact. Anything else means
@@ -644,9 +653,17 @@ defended({error, Why}, _Req, _Island) -> {error, Why};
 defended({ok, Defenders, Index}, Req, Island) ->
     Raiders = [{Id, G} || #{id := Id, genome := P} <- maps:get(sortie, Req),
                           {ok, G} <- [drone_genome:unpack(P)]],
+    gen_server:cast(Island, {published, commit(maps:get(raid_id, Req), defender,
+                                               {maps:get(attacker, Req), length(Defenders)})}),
     _ = spawn(fun () -> hosted(defence:compose(Defenders, Raiders, Index),
                                Defenders, Raiders, Req, Island) end),
     dronex_raid:accepted(maps:get(raid_id, Req)).
+
+%% Published from whichever process is not the island's, so neither side's clock
+%% stops to announce that it has paid.
+commit(RaidId, Role, Against) ->
+    dronex_mesh:publish(dronex_facts:topic(committed),
+                        dronex_facts:committed(RaidId, Role, Against)).
 
 %% ⚠ NOBODY IS WAITING ON THIS, so its only job is to be honest afterwards. The
 %% settlement goes to the attacker as a small fact between islands; the recording
