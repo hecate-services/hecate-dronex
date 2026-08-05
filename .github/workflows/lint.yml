@@ -1,6 +1,23 @@
-# Structural lint and unit tests. Runs on the glibc erlang image, where macula
-# resolves a prebuilt QUIC NIF and no Rust toolchain is needed. The alpine image
-# build forces a source build instead; see the Containerfile for why.
+# Structural lint and unit tests.
+#
+# ⚠ THIS JOB NEEDS A RUST TOOLCHAIN, AND THE COMMENT HERE ONCE SAID IT DID NOT.
+#
+# That sentence was copied verbatim from a sibling service, where it was true:
+# macula resolves a PREBUILT QUIC NIF on the glibc erlang image, so nothing had
+# to be compiled. It was copied in the same commit that added `faber_tweann',
+# which has no prebuilt artifact and always builds `native/faber_nn_nifs' from
+# source. So the comment was false the moment it was written, and CI said so:
+#
+#     [faber_nn_nifs] ERROR: Rust toolchain not found.
+#     ===> Hook for compile failed!
+#
+# The library offers `FABER_TWEANN_SKIP_NIF=1' with a pure-Erlang fallback, and
+# that is deliberately NOT used here. The whole reason the dependency sits at the
+# spine rather than at the first module that needs it is to find NIF build
+# problems early, and a CI that skips the NIF tests something the image does not
+# ship. design/DESIGN_WHAT_WE_TAKE_FROM_FABER.md splits the two paths on purpose:
+# training runs on the NIF, the published fight runs on pure Erlang. Both are
+# real, so both are built.
 
 name: lint-and-test
 
@@ -21,5 +38,13 @@ jobs:
       image: erlang:28
     steps:
       - uses: actions/checkout@v4
+
+      # Same toolchain the Containerfile installs, for the same reason.
+      - name: Install Rust
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
+            | sh -s -- -y --default-toolchain stable --profile minimal
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+
       - run: rebar3 lint
       - run: rebar3 eunit

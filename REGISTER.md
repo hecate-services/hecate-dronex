@@ -203,6 +203,36 @@ an oven, it is a box with a light bulb in it". The sign had been there the whole
 time, on the front, at eye height. The lesson is not about ovens. It is that
 saying you can reuse a thing means walking over and looking at it.
 
+## I.4: a copied comment was false in the commit that copied it
+
+`.github/workflows/lint.yml` was taken from a sibling, comment and all. It said
+the job runs on the glibc erlang image *where macula resolves a prebuilt QUIC NIF
+and no Rust toolchain is needed*. True there. **False here, in the same commit,
+because that commit also added `faber_tweann`**, which has no prebuilt artifact
+and always builds `native/faber_nn_nifs` from source.
+
+CI said so immediately: `ERROR: Rust toolchain not found. ===> Hook for compile
+failed!` The image build passed in the same run, because the `Containerfile`
+installs rustup, so the failure was visible only in the job whose comment denied
+it could happen.
+
+**What makes this worth an entry rather than a shrug.** Copying a file from a
+sibling copies its ASSERTIONS about the world, and those assertions were true of
+a different dependency list. The comment was not stale in the sense of having
+aged; it was wrong on arrival, and the thing that made it wrong was three lines
+away in the same commit.
+
+The library offers `FABER_TWEANN_SKIP_NIF=1` and a pure-Erlang fallback, and
+taking it would have made CI pass without building the NIF. That was refused: the
+whole reason the dependency sits at the spine is to find NIF build problems
+early, and a CI that skips the NIF tests something the image does not ship.
+
+**ELI5.** They copied a checklist from the workshop next door. One line said "no
+need to bring a ladder, the shelves here are low". They copied it on the same day
+they installed a tall cupboard. The line was not out of date. It was wrong the
+moment it was written, and the thing that made it wrong was in the same box of
+tools they carried in.
+
 ## I.3: a restore that refreshes one build profile leaves the other perturbed
 
 `scripts/prove_the_guards_bite.sh` breaks a boundary, compiles, runs the suite,
