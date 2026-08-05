@@ -39,8 +39,8 @@ the_parts_name_everything_that_could_silently_change_an_outcome_test() ->
 %% And the fingerprint actually depends on those parts: change one and it moves.
 the_fingerprint_moves_when_a_part_does_test() ->
     P = dronex_raid:fingerprint_parts(),
-    Real = crypto:hash(sha256, term_to_binary(P)),
-    Drifted = crypto:hash(sha256, term_to_binary(P#{otp => <<"27">>})),
+    Real = crypto:hash(sha256, term_to_binary(P, [deterministic])),
+    Drifted = crypto:hash(sha256, term_to_binary(P#{otp => <<"27">>}, [deterministic])),
     ?assertEqual(Real, dronex_raid:fingerprint()),
     ?assertNotEqual(Real, Drifted).
 
@@ -198,3 +198,29 @@ a_commitment_is_something_a_spectator_may_see_test() ->
     #{resources := Asked} = hecate_dronex_service:identity_spec(),
     ?assert(lists:member(dronex_facts:topic(committed), Asked)),
     ?assertNotEqual(dronex_facts:topic(committed), dronex_facts:topic(settled)).
+
+%%==============================================================================
+%% ⚠ THE FINGERPRINT MUST BE THE SAME ON TWO MACHINES OR IT IDENTIFIES NOTHING
+%%==============================================================================
+
+%% `term_to_binary/1' does not encode a map canonically. For a map large enough
+%% to be a hashmap — `airspace:limits/0' has about thirty-five keys — entries are
+%% emitted in internal hash order, and for atom keys that order depends on the
+%% node's atom table. Two islands on the identical image produced different
+%% fingerprints and filtered each other out as incompatible engines, so no raid
+%% was ever attempted and nothing reported an error.
+%%
+%% This pins the encoding. It goes red the moment the flag is dropped, because
+%% plain and deterministic differ even on one node.
+the_fingerprint_uses_a_canonical_encoding_test() ->
+    Parts = dronex_raid:fingerprint_parts(),
+    ?assertEqual(crypto:hash(sha256, term_to_binary(Parts, [deterministic])),
+                 dronex_raid:fingerprint()),
+    %% And the two encodings really are different, so the assertion above has
+    %% something to catch rather than being true either way.
+    ?assertNotEqual(term_to_binary(Parts), term_to_binary(Parts, [deterministic])).
+
+%% The physics map is the one that is big enough for this to bite, so it is worth
+%% saying out loud that it is over the threshold rather than assuming.
+the_physics_map_is_large_enough_to_be_a_hashmap_test() ->
+    ?assert(maps:size(airspace:limits()) > 32).

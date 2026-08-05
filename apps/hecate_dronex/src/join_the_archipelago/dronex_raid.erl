@@ -76,8 +76,28 @@ procedure(IslandId) when is_binary(IslandId) ->
 %%==============================================================================
 
 %% @doc 32 bytes over everything that would change an outcome silently.
+%%
+%% ⚠⚠⚠ `[deterministic]' IS LOad BEARING AND ITS ABSENCE MADE THIS A FINGERPRINT
+%% THAT DID NOT IDENTIFY ANYTHING. `term_to_binary/1' does not encode a map
+%% canonically: for a map big enough to be a hashmap — `airspace:limits/0' has
+%% about thirty-five keys — the entries are emitted in internal hash order, and
+%% for ATOM keys that order depends on the node's atom table, which depends on
+%% the order atoms were first created. Two islands running the identical image
+%% therefore produced different fingerprints, measured:
+%%
+%%     physics, plain           beam01 AB9CD351   beam02 8BF316FD
+%%     physics, deterministic   beam01 41BF0006   beam02 41BF0006
+%%
+%% Every other part matched. The consequence was total and silent: each island
+%% filtered the other out of its target list as an incompatible engine, so no
+%% raid was ever attempted, `raids' stayed at zero on both, and nothing anywhere
+%% reported an error — the mechanism simply did not run.
+%%
+%% ⚠ AND IT FAILS IN THE DIRECTION THAT LOOKS LIKE CAUTION. A fingerprint exists
+%% to refuse mismatched engines; one that is wrong refuses everything, which
+%% reads as the check working rather than as the check being broken.
 -spec fingerprint() -> binary().
-fingerprint() -> crypto:hash(sha256, term_to_binary(fingerprint_parts())).
+fingerprint() -> crypto:hash(sha256, term_to_binary(fingerprint_parts(), [deterministic])).
 
 %% @doc The parts, so a mismatch can be explained rather than merely reported.
 %%

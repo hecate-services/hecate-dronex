@@ -160,6 +160,49 @@ survey.**
 the top drawer. There were three hammers in the drawer underneath. The rule is
 to open every drawer before saying what is not in the toolbox.
 
+## I.12: the engine fingerprint was not the same on two identical machines
+
+Two islands, same image, same OTP, same architecture. Neither ever attempted a
+raid against the other. `raids` stayed at **zero** on both for ten minutes while
+`open_islands` showed each of them had heard the other perfectly well.
+
+**They were filtering each other out as incompatible engines.** The fingerprint
+is checked before a raid is sent, precisely so that two different builds cannot
+produce a result comparable to nothing — and it was different on two builds that
+were identical.
+
+⚠ **`term_to_binary/1` does not encode a map canonically.** For a map large
+enough to be a hashmap — `airspace:limits/0` has about thirty-five keys — the
+entries are emitted in internal hash order, and for ATOM keys that order depends
+on the node's atom table, which depends on the order atoms were first created.
+Measured on the two live islands, hashing each part separately:
+
+| part | beam01 | beam02 |
+|---|---|---|
+| otp, erts, arch, topology, genes, senses, comms | identical | identical |
+| **physics, `term_to_binary/1`** | `AB9CD351` | `8BF316FD` |
+| **physics, `term_to_binary/2` `[deterministic]`** | `41BF0006` | `41BF0006` |
+
+⚠⚠ **It fails in the direction that looks like caution.** A fingerprint exists to
+refuse mismatched engines. One that is wrong refuses *everything*, and a
+mechanism refusing everything reads as a check working rather than as a check
+being broken. Nothing errored, nothing logged, `/health` was green, both islands
+were open and advertising, and the entire raid protocol simply did not run.
+
+**Why the obvious local test would not have caught it.** Two equal maps built in
+different orders inside ONE node serialise identically, so a same-node property
+test passes with or without the flag. The divergence needs two atom tables. What
+is asserted instead is the encoding itself — that `fingerprint/0` equals the
+`[deterministic]` hash — plus that the two encodings genuinely differ, so the
+assertion has something to catch. Both go red when the flag is dropped.
+
+**ELI5.** Two machines were told to describe the same room and compare notes, to
+be sure they were talking about the same room before doing anything together.
+They listed the same furniture, but each wrote the list in its own order, so the
+notes never matched and neither would proceed. They stood there politely
+refusing each other, and from outside it looked exactly like the check doing its
+job.
+
 ## I.11: the island advertised once, at the wrong moment, and could never be raided
 
 Two islands, twelve raids launched, **one** ever hosted. The rest died at the
