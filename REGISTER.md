@@ -160,6 +160,50 @@ survey.**
 the top drawer. There were three hammers in the drawer underneath. The rule is
 to open every drawer before saying what is not in the toolbox.
 
+## I.17: the data was on the wire, the code was deployed, and nothing said tower
+
+Asked to visualise the defending island's sensor stations, the work shipped and
+was reported as done. Raf's reply was that no towers were shown.
+
+Everything checked out. The islands published `ground` and `ground_range`; the
+live page carried them in `data-bout`; the deployed JS bundle contained `towers()`
+and `coverage()`; the caption rendered "5 of them"; and the projection put all
+five masts in the middle of the canvas at a readable size. Every link in the
+chain verified, and the answer to the question was still **no**.
+
+The masts were drawn as a thin vertical line with a dot on top. That is
+**exactly the mark the same canvas already uses for a drone**, which is joined to
+its ground position by a stalk so that altitude reads. Five towers stood among
+twenty-four aircraft using the aircraft's own vocabulary, and the coverage rings
+were drawn in the defender's red, so they read as stray flight paths. Nothing was
+missing and nothing was broken. It simply did not communicate.
+
+Two things this changes.
+
+**Verifying the data path is not verifying the picture.** The checks run were all
+of the form "did the value arrive", and a value can arrive and mean nothing. The
+fix was to render the live payload offline with the deployed projection constants
+and LOOK AT IT — which took one script and answered in one image what four
+verified links could not.
+
+**Silhouette before colour.** A recolour would not have fixed this. What a viewer
+reads first is shape, and while a tower had a drone's shape it was a drone in
+another colour. It is now a splayed lattice mast with cross-braces, a base pad
+and a sensor head, and coverage is a faint filled disc rather than an outline, so
+watched ground reads as an area and the dark between the discs reads as the way
+in.
+
+This is the second time on this track that something was drawn correctly and
+could not be seen — the earlier one was a drone's ground shadow painted black on
+a near-black floor. Both passed every check that did not involve looking.
+
+**ELI5.** Someone was asked to put signposts along a path, and they did. Then
+they checked that the signs had been made, that the right words were painted on
+them, that they had been delivered, and that they were standing in the right
+places. All true. But the signs were the same shape and colour as the trees, so
+everyone walking past saw trees. The only check that would have caught it was
+walking the path and looking.
+
 ## I.16: three green checks and a release that would not assemble
 
 `sensor` is a module in `faber_tweann`, which is a dependency. The BEAM has one
