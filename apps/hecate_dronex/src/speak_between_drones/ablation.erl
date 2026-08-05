@@ -78,7 +78,8 @@ arms() -> [air, ground, all].
 -spec measure([{#arena{}, #{term() => engagement:controller()}}]) -> report().
 measure([]) -> empty();
 measure(Fights) ->
-    Base = [engagement:run(A, C, #{frames => true}) || {A, C} <- Fights],
+    Base = [engagement:run(A, C, #{frames => true, network => network:home()})
+            || {A, C} <- Fights],
     Muted = maps:from_list([{Arm, scored(silenced(Fights, Arm))} || Arm <- arms()]),
     Rate = scored(Base),
     Volume = lists:sum([maps:get(signal_volume, R) || R <- Base]),
@@ -94,8 +95,14 @@ measure(Fights) ->
 %% ⚠ ONE SIDE, NOT BOTH. See `engagement:muting/1': the attacker is silenced and
 %% the defender is left exactly as it was, so the number is what the channel is
 %% worth to the side that lost it rather than a difference that cancels.
+%% ⚠ THE NETWORK IS PRESENT IN EVERY ARM, WHICH IS WHAT MAKES THE GROUND ARM MEAN
+%% ANYTHING. Muting the ground bank measures whether CUEING mattered, and with no
+%% network to mute there is nothing to measure — the arm would read zero for ever
+%% and look like a finding. It reported exactly that from item 6 until the static
+%% defence landed, correctly and uselessly.
 silenced(Fights, Arm) ->
-    [engagement:run(A, C, #{mute => #{attacker => Arm}}) || {A, C} <- Fights].
+    [engagement:run(A, C, #{mute => #{attacker => Arm}, network => network:home()})
+     || {A, C} <- Fights].
 
 empty() ->
     #{engagements => 0, ticks => 0, volume => 0, void => true,

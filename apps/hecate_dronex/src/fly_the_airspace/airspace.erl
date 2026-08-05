@@ -737,6 +737,11 @@ limits() ->
       seeker_fov_cos => ?SEEKER_FOV_COS,
       signal_max => ?SIGNAL_MAX, heard_max => ?HEARD_MAX,
       comms_range => ?COMMS_RANGE,
+      sensors => ?SENSORS,
+      sensor_range => ?SENSOR_RANGE, sensor_p_near => ?SENSOR_P_NEAR,
+      sensor_p_far => ?SENSOR_P_FAR, sensor_noise => ?SENSOR_NOISE,
+      sensor_ghosts => ?SENSOR_GHOSTS, confirm_evidence => ?CONFIRM_EVIDENCE,
+      track_gate => ?TRACK_GATE, track_drop_ticks => ?TRACK_DROP_TICKS,
       withdraw_speed => ?WITHDRAW_SPEED, withdraw_margin => ?WITHDRAW_MARGIN,
       withdraw_ticks => ?WITHDRAW_TICKS,
       max_ticks => ?MAX_TICKS}.

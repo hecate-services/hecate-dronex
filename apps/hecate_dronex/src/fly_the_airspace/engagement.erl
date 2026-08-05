@@ -46,7 +46,8 @@ run(Arena, Controllers) -> run(Arena, Controllers, #{}).
 
 -spec run(#arena{}, #{term() => controller()}, map()) -> result().
 run(Arena, Controllers, Opts) ->
-    loop(Arena, Controllers, collector(Opts), muting(maps:get(mute, Opts, none)), 0).
+    loop(Arena, Controllers, collector(Opts), muting(maps:get(mute, Opts, none)), 0,
+         maps:get(network, Opts, network:none())).
 
 %% ⚠ THE MUTE IS PER SIDE, AND MAKING IT GLOBAL WOULD HAVE PRODUCED A FALSE ZERO.
 %% Silencing both sides of a self-play match leaves the win rate at about half
@@ -65,14 +66,19 @@ muting(Map) when is_map(Map) -> maps:merge(#{attacker => none, defender => none}
 collector(#{frames := true}) -> [];
 collector(_Opts) -> false.
 
-loop(A, Cs, Frames, Mute, Vol) ->
-    stepped(airspace:finished(A), A, Cs, Frames, Mute, Vol).
+loop(A, Cs, Frames, Mute, Vol, Net) ->
+    stepped(airspace:finished(A), A, Cs, Frames, Mute, Vol, Net).
 
-stepped(true, A, _Cs, Frames, _Mute, Vol) -> report(A, Frames, Vol);
-stepped(false, A, Cs, Frames, Mute, Vol) ->
-    {Intents, Next} = commanded(A, Cs, Mute),
+stepped(true, A, _Cs, Frames, _Mute, Vol, Net) -> report(A, Frames, Vol, Net);
+stepped(false, A, Cs, Frames, Mute, Vol, Net) ->
+    %% ⚠ THE NETWORK LOOKS BEFORE ANYBODY COMMANDS, so a cue describes this tick
+    %% rather than the last one. It is still a tick behind what it is looking at
+    %% by the time a drone acts on it, which is the same delay the drones' own
+    %% comms carry and is a property of broadcasting rather than an accident.
+    Looked = network:observe(Net, airspace:drones(A), airspace:tick_of(A)),
+    {Intents, Next} = commanded(A, Cs, Mute, Looked),
     Advanced = airspace:step(A, Intents),
-    loop(Advanced, Next, kept(Frames, Advanced), Mute, Vol + said(Advanced)).
+    loop(Advanced, Next, kept(Frames, Advanced), Mute, Vol + said(Advanced), Looked).
 
 %% Counted after the step, so it is what was actually transmitted rather than
 %% what was commanded: the engine clamps a signal exactly as it clamps thrust.
@@ -90,9 +96,9 @@ kept(Frames, A) -> [A | Frames].
 %% first drone in the list see the world after nobody had moved and the last see
 %% it after everybody had, so list order would be an advantage and a swarm's
 %% behaviour would depend on how its roster happened to be sorted.
-commanded(A, Cs, Mute) ->
+commanded(A, Cs, Mute, Net) ->
     Ds = [D || D <- airspace:drones(A), not gone(D)],
-    lists:foldl(fun (D, Acc) -> ask(D, Ds, Cs, Mute, Acc) end, {#{}, Cs}, Ds).
+    lists:foldl(fun (D, Acc) -> ask(D, Ds, Cs, Mute, Net, Acc) end, {#{}, Cs}, Ds).
 
 gone(#drone{dead = true}) -> true;
 gone(#drone{withdrawn = true}) -> true;
@@ -102,10 +108,11 @@ gone(#drone{}) -> false.
 %% WERE SET BY THE PREVIOUS STEP. That is where the one-tick delay comes from, and
 %% it is a consequence of the data flow rather than a timer somebody has to
 %% remember to keep.
-ask(#drone{id = Id, side = Side} = D, Ds, Cs, Mute, {Intents, Next}) ->
+ask(#drone{id = Id, side = Side} = D, Ds, Cs, Mute, Net, {Intents, Next}) ->
     Others = others(Id, Ds),
     answered(Id, maps:get(Id, Cs, undefined), D, Others,
-             radio:heard(D, Others, maps:get(Side, Mute)), {Intents, Next}).
+             radio:heard(D, Others, maps:get(Side, Mute), network:transmission(Net, D)),
+             {Intents, Next}).
 
 others(Id, Ds) -> [O || O <- Ds, O#drone.id =/= Id].
 
@@ -124,12 +131,18 @@ answered(Id, {drill, Dr}, D, Others, Heard, {Intents, Next}) ->
     {I, Dr2} = drone_drills:act(Dr, D, Others, Heard),
     {Intents#{Id => I}, Next#{Id := {drill, Dr2}}}.
 
-report(A, Frames, Vol) ->
+report(A, Frames, Vol, Net) ->
     #{winner => settled(airspace:winner(A)),
       ticks => airspace:tick_of(A),
       survivors => [D#drone.id || D <- airspace:survivors(A)],
       withdrawn => [D#drone.id || D <- airspace:drones(A), D#drone.withdrawn],
       signal_volume => Vol,
+      %% ⚠ WHERE THE GROUND WAS, so a spectator can see that an away fight has no
+      %% towers in it and a home fight does. Without this the asymmetry that
+      %% prices a raid is invisible on the exhibit and only readable in a log,
+      %% and an audience cannot be asked to take the interesting part on trust.
+      %% Empty is the honest answer for an away game.
+      ground => [maps:with([x, y, z], S) || S <- network:sensors(Net)],
       frames => ordered(Frames)}.
 
 ordered(false) -> false;

@@ -116,6 +116,14 @@ one(Genome, Kind, Index) ->
     {ok, Drill} = engagement:controller(Kind),
     Placed = drone_starts:place(1, 1, Index),
     [{AttackerId, _, _, _, _, _}, {DefenderId, _, _, _, _, _}] = Placed,
+    %% ⚠ SPELLED OUT, NOT LEFT TO THE DEFAULT. The benchmark is an away game
+    %% ALWAYS: drills, fixed geometry, no sensors, no cueing, ground bank forced
+    %% to zero. It measures the CONTROLLER, and a network here would mean the
+    %% frozen ladder scored an island's terrain instead — every rung would move
+    %% the day the placement changed, and the one fixed thing in the system would
+    %% stop being fixed. Relying on `engagement:run/2' defaulting to no network
+    %% would leave that commitment resting on a default somebody could flip.
     Result = engagement:run(airspace:new(Placed),
-                            #{AttackerId => Pilot, DefenderId => Drill}),
+                            #{AttackerId => Pilot, DefenderId => Drill},
+                            #{network => network:none()}),
     maps:get(winner, Result).

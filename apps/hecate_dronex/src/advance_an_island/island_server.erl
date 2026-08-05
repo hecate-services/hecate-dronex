@@ -499,8 +499,10 @@ flown(I, Entry, Kind, Index, {ok, Mine}) ->
     {ok, Theirs} = engagement:controller(Kind),
     Placed = drone_starts:place(1, 1, Index),
     [{AId, _, _, _, _, _}, {DId, _, _, _, _, _}] = Placed,
-    Result = engagement:run(airspace:new(Placed),
-                            #{AId => Mine, DId => Theirs}, #{frames => true}),
+    %% A training bout is flown at home like every other training fight, so the
+    %% exhibit shows the island's towers standing in its own airspace.
+    Result = engagement:run(airspace:new(Placed), #{AId => Mine, DId => Theirs},
+                            #{frames => true, network => network:home()}),
     Meta = #{kind => training, bout => island:tick_of(I), start_index => Index,
              entrants => [roster:entry_id(Entry), atom_to_binary(Kind, utf8)]},
     dronex_mesh:publish(dronex_facts:topic(bout),
@@ -688,7 +690,12 @@ hosted({error, Why}, _D, _R, Req, Island) ->
                    [maps:get(raid_id, Req), Why]),
     gen_server:cast(Island, {published, settle(Req, draw, [])});
 hosted({ok, Arena, Controllers, Pairs}, Defenders, Raiders, Req, Island) ->
-    Result = engagement:run(Arena, Controllers, #{frames => true}),
+    %% ⚠ THE DEFENDER FIGHTS AT HOME WITH ITS NETWORK, and the attacker flew in
+    %% without one. That is the second price of raiding, on top of the airframes:
+    %% an island's sensors defend its own airspace only, so choosing to attack is
+    %% choosing to fight without the thing that makes you strong.
+    Result = engagement:run(Arena, Controllers,
+                            #{frames => true, network => network:home()}),
     Fates = defence:fates(maps:get(attackers, Pairs), Result),
     Survivors = defence:survivors(maps:get(defenders, Pairs), Result),
     Meta = #{from => maps:get(attacker, Req), raid => maps:get(raid_id, Req),

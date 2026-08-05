@@ -134,3 +134,80 @@
     %% where the ones that were missed look fine.
     seed = 0 :: integer()
 }).
+
+%% ==========================================================================
+%% THE STATIC DEFENCE, ITEM 8 PHASE 1
+%% ==========================================================================
+%%
+%% ⚠ TERRAIN, NOT TARGETS. A sensor cannot be destroyed. Destructible sensors
+%% would give an attacker a second objective, and multiple objectives is a
+%% balance problem this repository has no means to settle — the same reasoning
+%% that gives a drone exactly one weapon. The counterplay to a network is the
+%% APPROACH PATH: fly low, fly around, fly through the gap.
+%%
+%% ⚠⚠ AND THESE ARE PHYSICS, SO THEY SHIP WITH THE IMAGE. They are in
+%% `airspace:limits/0' and therefore inside the engine fingerprint, which means
+%% two islands running different sensor constants refuse each other rather than
+%% fighting a match neither can interpret.
+
+%% ⚠ HOW MANY STATIONS AN ISLAND FIELDS, AND IT IS THE DIAL THE VIABILITY SWEEP
+%% TURNS. Five: one at the centre and four on a ring, which leaves a genuine hole
+%% overhead and genuine gaps between neighbours. More would close the corridors
+%% and make attacking hopeless, which is the failure the design names as most
+%% likely — so this number is set on the measurement, with the whole sweep
+%% published including the settings that made raiding pointless.
+-ifndef(SENSORS).
+-define(SENSORS, 5).
+-endif.
+
+%% 350 m. Shorter than the 400 m two swarms start apart, so an attacker is not
+%% detected at spawn and the approach is a decision rather than a formality.
+-ifndef(SENSOR_RANGE).
+-define(SENSOR_RANGE, 7168000).
+-endif.
+
+%% Detection probability in per-mille, at the sensor and at the edge of its
+%% range. Falling off is what makes a corridor a corridor: at the fringe it sees
+%% you four times in ten, which is not nothing and is not a wall.
+-ifndef(SENSOR_P_NEAR).
+-define(SENSOR_P_NEAR, 950).
+-endif.
+-ifndef(SENSOR_P_FAR).
+-define(SENSOR_P_FAR, 400).
+-endif.
+
+%% Position error at maximum range, scaling linearly to nothing at the sensor.
+%% 40 m: enough that a raw contact is not a firing solution and a track has to
+%% be built from several.
+-ifndef(SENSOR_NOISE).
+-define(SENSOR_NOISE, 819200).
+-endif.
+
+%% ⚠ FALSE ALARMS ARE WHAT MAKE THE THRESHOLD A TRADEOFF. Without ghosts, any
+%% threshold above one is strictly worse than one and the interesting number
+%% stops being interesting. Per-mille chance per sensor per tick.
+-ifndef(SENSOR_GHOSTS).
+-define(SENSOR_GHOSTS, 12).
+-endif.
+
+%% ⚠⚠ THE INTERESTING NUMBER. Contacts needed before a track is CONFIRMED and
+%% the network says anything out loud. Too sensitive and it cues its drones at
+%% ghosts, which spends battery flying at nothing; too conservative and it sees
+%% the attacker too late to launch. Fixed in phase 1, evolved in phase 2.
+-ifndef(CONFIRM_EVIDENCE).
+-define(CONFIRM_EVIDENCE, 3).
+-endif.
+
+%% How near a contact must fall to a track's predicted position to be counted as
+%% the same object. 60 m, comfortably above the sensor noise so a real track
+%% keeps accumulating, comfortably below the spacing of a spread swarm.
+-ifndef(TRACK_GATE).
+-define(TRACK_GATE, 1228800).
+-endif.
+
+%% Ticks without an update before a track is dropped. Two seconds at 20 Hz: long
+%% enough to ride out a missed detection, short enough that the network stops
+%% shouting about something that has gone.
+-ifndef(TRACK_DROP_TICKS).
+-define(TRACK_DROP_TICKS, 40).
+-endif.

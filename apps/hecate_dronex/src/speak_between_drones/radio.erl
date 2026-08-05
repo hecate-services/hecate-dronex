@@ -44,7 +44,7 @@
 
 -include("airspace.hrl").
 
--export([heard/2, heard/3, banks/0, width/0, silence/0, volume/1]).
+-export([heard/2, heard/3, heard/4, banks/0, width/0, silence/0, volume/1]).
 
 %% Four channels per bank, three banks: friendly air, hostile air, ground.
 -define(BANK, 4).
@@ -69,14 +69,34 @@ heard(Self, Others) -> heard(Self, Others, none).
 %% differs from the real one in exactly one respect and nothing else. A second
 %% code path would be a second engine, and the two would drift.
 -spec heard(#drone{}, [#drone{}], none | air | ground | all) -> [integer()].
-heard(#drone{} = Self, Others, Mute) ->
+heard(#drone{} = Self, Others, Mute) -> heard(Self, Others, Mute, silence_of_the_ground()).
+
+%% @doc As above, with what the ground network is saying where this drone is.
+%%
+%% ⚠ THE GROUND BANK IS NO LONGER ZERO. It was carried as four zeros from item 6
+%% precisely so that the static defence could start speaking without changing the
+%% genome's width — growing it here would have invalidated every genome bred and
+%% persisted before today.
+%%
+%% ⚠⚠ AFFILIATION IS IMPLICIT AND THAT IS THE DESIGN. There is one ground bank,
+%% not one per side. A defender's carries its own network; an attacker flying
+%% over enemy territory hears the DEFENDER's network on the same four channels
+%% and has none of its own in that engagement. You hear a radio, and where you
+%% are tells you whose it is.
+-spec heard(#drone{}, [#drone{}], none | air | ground | all, [integer()]) -> [integer()].
+heard(#drone{} = Self, Others, Mute, Ground) ->
     Audible = [O || O <- Others, in_earshot(Self, O)],
     muted(air, Mute, sum([O#drone.signal || O <- Audible, friendly(Self, O)]))
         ++ muted(air, Mute, sum([O#drone.signal || O <- Audible, not friendly(Self, O)]))
-        %% ⚠ ZERO UNTIL ITEM 8, AND CARRIED ANYWAY. The genome's width is fixed by
-        %% the channel count, so growing it when the static defence lands would
-        %% invalidate every genome bred and persisted before it.
-        ++ muted(ground, Mute, lists:duplicate(?BANK, 0)).
+        ++ muted(ground, Mute, bounded(Ground)).
+
+silence_of_the_ground() -> lists:duplicate(?BANK, 0).
+
+%% The ground is clamped on the same scale as the air, so one bank cannot shout
+%% louder than another and a controller reading all twelve channels is reading
+%% one kind of number.
+bounded(Ground) when is_list(Ground), length(Ground) =:= ?BANK -> [bound(V) || V <- Ground];
+bounded(_Malformed) -> silence_of_the_ground().
 
 muted(_Bank, none, Values) -> Values;
 muted(Bank, Bank, _Values) -> lists:duplicate(?BANK, 0);

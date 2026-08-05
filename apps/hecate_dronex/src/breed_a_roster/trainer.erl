@@ -145,7 +145,19 @@ against(_Mine, {error, _Why}, _Index) -> 0;
 against(Mine, {ok, Theirs}, Index) ->
     Placed = drone_starts:place(1, 1, Index),
     [{AId, _, _, _, _, _}, {DId, _, _, _, _, _}] = Placed,
-    Result = engagement:run(airspace:new(Placed), #{AId => Mine, DId => Theirs}),
+    %% ⚠ TRAINING HAPPENS UNDER THE ISLAND'S OWN NETWORK, and without this the
+    %% ground bank would be four zeroes for every generation that ever ran.
+    %% Selection cannot favour using a cue that is never present, so the cue would
+    %% stay worthless for ever and the ablation's ground arm would read zero
+    %% honestly and uselessly — which is exactly what it reported from item 6
+    %% until this line existed.
+    %%
+    %% ⚠⚠ BOTH SIDES HEAR IT, because the sensors are non-cooperative and cannot
+    %% tell whose aircraft they are looking at. In self-play both swarms are this
+    %% island's, in this island's airspace, so both being cued is the truthful
+    %% arrangement rather than a concession.
+    Result = engagement:run(airspace:new(Placed), #{AId => Mine, DId => Theirs},
+                            #{network => network:home()}),
     points(maps:get(winner, Result)).
 
 -spec points(attacker | defender | draw) -> integer().
