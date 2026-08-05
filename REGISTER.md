@@ -160,6 +160,45 @@ survey.**
 the top drawer. There were three hammers in the drawer underneath. The rule is
 to open every drawer before saying what is not in the toolbox.
 
+## I.13: one dead subscription bred three, and five symptoms had one cause
+
+An island's mailbox reached **615,722 messages**. It was wedged inside
+`macula_client:subscribe` making the problem worse, `snapshot` calls timed out at
+thirty seconds, twenty-six publishes had failed, and the public page showed a
+growing pile of raids stuck `in flight`.
+
+Five symptoms, one line.
+
+`listen_for_neighbours/0` subscribed to all three inter-island topics, and a
+single `listening` boolean recorded that it had. `{macula_event_gone, Ref, _}`
+for **any one** of them set that boolean false and re-ran the lot — so one dead
+subscription produced three new ones while its two live siblings stayed live.
+The next death produced three more. Every fact then arrived once per surviving
+subscription, and the growth is what filled the mailbox.
+
+⚠ **The comment directly above it already knew.** It said, in as many words, that
+every `subscribe` returns a fresh reference and the pool keeps them all, so
+re-subscribing on a timer would multiply deliveries. It guarded the TIMER and
+left the death path to do exactly what it had just described.
+
+⚠⚠ **And the symptoms pointed everywhere but at the cause.** Raids stuck in
+flight looked like a raid-protocol fault; the failed publishes looked like a mesh
+fault; the timing-out snapshot looked like the island being busy. The mailbox
+depth was the only number that named the real thing, and nothing published it.
+
+**What changed.** Subscriptions are tracked per topic, `{macula_event_gone, Ref}`
+drops exactly that reference, and `listening/1` fills only the gaps. `listening`
+on the wire is now DERIVED — true when every topic an island needs is
+subscribed — because a boolean beside the subscriptions is a second copy of the
+truth that can disagree with it, which is precisely what happened.
+
+**ELI5.** A shop had three phone lines. When one of them was cut, someone
+reconnected all three — so now there were five, then seven. Every caller got
+through to every line at once and the shop drowned in its own ringing. The
+instruction card by the phone already warned that connecting a line twice doubles
+the calls. It was written for a different situation and nobody applied it to this
+one.
+
 ## I.12: the engine fingerprint was not the same on two identical machines
 
 Two islands, same image, same OTP, same architecture. Neither ever attempted a
