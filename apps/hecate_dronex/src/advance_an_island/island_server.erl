@@ -44,6 +44,10 @@
 -define(DEFAULT_BENCH_MS, 300000).
 %% Write the roster down every two minutes.
 -define(DEFAULT_SNAPSHOT_MS, 120000).
+%% One watchable bout every twenty seconds. Frequent enough that a page is never
+%% showing a fight from ten minutes ago, rare enough that a spectator on a slow
+%% link is not perpetually downloading one.
+-define(DEFAULT_BOUT_MS, 20000).
 
 start_link() -> gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
@@ -78,6 +82,7 @@ init([]) ->
     schedule(train, train_ms()),
     schedule(benchmark, ?DEFAULT_BENCH_MS),
     schedule(snapshot, ?DEFAULT_SNAPSHOT_MS),
+    schedule(bout, ?DEFAULT_BOUT_MS),
     {ok, #{island => Island, sent => 0, failed => 0, sitting => false}}.
 
 %% A store that is not there yet, or a log that cannot be read, is an island that
@@ -134,6 +139,15 @@ handle_info(benchmark, S) ->
 handle_info({benchmarked, Profile}, #{island := I} = S) ->
     {noreply, S#{island := island:benchmarked(I, Profile), sitting := false}};
 
+%% ⚠ RUN INLINE AND WITH FRAMES ON, WHICH IS THE ONE PLACE THAT IS TRUE. An
+%% engagement with the frame accumulator running allocates an arena per tick, so
+%% every other caller leaves it off: a benchmark is 288 engagements and would
+%% allocate 345,000 arenas to throw all but the last away. This is one
+%% engagement every twenty seconds, and the frames are the entire point of it.
+handle_info(bout, #{island := I} = S) ->
+    schedule(bout, ?DEFAULT_BOUT_MS),
+    {noreply, counted(publish_bout(I), S)};
+
 handle_info(snapshot, #{island := I} = S) ->
     schedule(snapshot, ?DEFAULT_SNAPSHOT_MS),
     _ = roster_log:snapshot(hecate_dronex_service:store_id(), island:roster_of(I)),
@@ -141,6 +155,36 @@ handle_info(snapshot, #{island := I} = S) ->
 
 handle_info(_Msg, S) ->
     {noreply, S}.
+
+%% @doc Fly the island's best controller against one of its drills, and publish
+%% the recording.
+%%
+%% ⚠ THE DRILL ROTATES WITH THE CLOCK AND THE START DOES TOO, so a page left open
+%% sees a different fight each time rather than the same one replayed. Derived
+%% from the tick rather than drawn, because a bout must be reproducible from what
+%% the fact already carries.
+publish_bout(I) -> featured(roster:best(island:roster_of(I)), I).
+
+featured(undefined, _I) -> {error, no_roster};
+featured(Entry, I) ->
+    Tick = island:tick_of(I),
+    Kind = lists:nth((Tick div 20) rem length(drone_drills:kinds()) + 1,
+                     drone_drills:kinds()),
+    Index = Tick rem drone_starts:count(),
+    flown(I, Entry, Kind, Index, engagement:controller(roster:entry_genome(Entry))).
+
+flown(_I, _E, _K, _Ix, {error, _Why}) -> {error, unflyable};
+flown(I, Entry, Kind, Index, {ok, Mine}) ->
+    {ok, Theirs} = engagement:controller(Kind),
+    Placed = drone_starts:place(1, 1, Index),
+    [{AId, _, _, _, _, _}, {DId, _, _, _, _, _}] = Placed,
+    Result = engagement:run(airspace:new(Placed),
+                            #{AId => Mine, DId => Theirs}, #{frames => true}),
+    Meta = #{kind => training, bout => island:tick_of(I), start_index => Index,
+             entrants => [roster:entry_id(Entry), atom_to_binary(Kind, utf8)]},
+    dronex_mesh:publish(dronex_facts:topic(bout),
+                        dronex_facts:bout(I, Meta, Result,
+                                          maps:get(frames, Result, []))).
 
 %% The best entry sits the exam, because the exam asks what this island's drones
 %% can do and the best is the honest answer to that.

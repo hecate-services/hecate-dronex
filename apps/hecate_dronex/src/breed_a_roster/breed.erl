@@ -24,7 +24,7 @@
 %% learnable time constant is supposed to mean.
 -module(breed).
 
--export([mutate/3, cross/3, random/2, sigma/0]).
+-export([mutate/3, cross/3, random/1, sigma/0]).
 
 %% The default perturbation, in gene units. Genes span -32768 to 32767 at Q12, so
 %% 4096 is one unit of weight: a mutation of about 600 moves a weight by ~0.15,
@@ -41,8 +41,14 @@
 sigma() -> ?SIGMA.
 
 %% @doc A wholly random genome, for seeding a roster that has nothing in it.
--spec random(rand:state(), pos_integer()) -> {drone_genome:genome(), rand:state()}.
-random(S, _Unused) ->
+%%
+%% ⚠ IT TAKES ONLY THE GENERATOR. It used to take a second argument it ignored,
+%% declared `pos_integer()' while every caller passed zero, and dialyzer read
+%% that as a call that never returns and concluded the whole seeding recursion
+%% was unreachable. The runtime was fine and the CONTRACT was a lie, which is the
+%% kind of thing that makes a type checker useless by degrees.
+-spec random(rand:state()) -> {drone_genome:genome(), rand:state()}.
+random(S) ->
     {In, Hidden, Out} = drone_genome:topology(),
     Layers = [In] ++ Hidden ++ [Out],
     {Genes, S1} = draws(drone_genome:gene_count(Layers), S, []),

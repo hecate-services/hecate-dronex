@@ -61,7 +61,7 @@
     {roster:roster(), rand:state()}.
 seed_roster(R, 0, S) -> {R, S};
 seed_roster(R, N, S) ->
-    {Genome, S1} = breed:random(S, 0),
+    {Genome, S1} = breed:random(S),
     Entry = roster:entry(Genome, #{origin => {bred, seeded}, generation => 0}),
     seed_roster(kept(roster:admit(R, Entry), R), N - 1, S1).
 

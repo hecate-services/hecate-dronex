@@ -185,6 +185,27 @@ flew into the far wall of the room. Because nobody let go of the throttle, it
 kept pushing against the wall until it broke. The measurement was fine. The room
 is just smaller than the test was patient.
 
+## I.7: a parameter that is ignored makes a type checker useless by degrees
+
+`breed:random/2` took a generator and a second argument it never read, declared
+`pos_integer()`, and every caller passed `0`.
+
+At runtime that is harmless. To dialyzer it is a call that cannot return, so the
+recursive clause of `trainer:seed_roster/3` became unreachable, its success
+typing collapsed to `(_, 0, _)`, and a helper beside it was reported as never
+called. **Four warnings, none of them about the actual defect**, and all of them
+about code that works.
+
+The cost was small because dialyzer runs on every commit here. The cost of NOT
+running it would have been a contract that lies, in a module whose whole job is
+to be the one place randomness is honest about itself.
+
+**ELI5.** A form had a box on it that nobody ever filled in, and the instructions
+said the box must contain a positive number. Everyone wrote zero, and everything
+worked, because no human ever read that box. Then they bought a machine to check
+the forms, and it refused to process anything after that line, and reported four
+problems with the parts that were fine.
+
 ## D.7: breeding works, and the frozen ladder is beaten inside 120 rounds
 
 The first real measurement of the trainer. 24 seeded controllers, 120 steady-state

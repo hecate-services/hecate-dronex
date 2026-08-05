@@ -120,20 +120,20 @@ sampling_more_than_it_holds_gives_what_it_has_test() ->
 %% make the benchmark irreproducible and to break the property that a genome
 %% specifies a controller.
 breeding_is_a_pure_function_of_the_generator_test() ->
-    {A, _} = breed:random(seeded(4), 0),
-    {B, _} = breed:random(seeded(4), 0),
-    {C, _} = breed:random(seeded(5), 0),
+    {A, _} = breed:random(seeded(4)),
+    {B, _} = breed:random(seeded(4)),
+    {C, _} = breed:random(seeded(5)),
     ?assertEqual(A, B),
     ?assertNotEqual(A, C).
 
 a_random_genome_is_valid_test() ->
-    {G, _} = breed:random(seeded(11), 0),
+    {G, _} = breed:random(seeded(11)),
     ?assertEqual(ok, drone_genome:validate(G)).
 
 %% Sparse: a child is recognisably descended from its parent. Perturbing every
 %% gene would make the search a random walk with extra steps.
 mutation_moves_some_genes_and_not_most_test() ->
-    {G, S} = breed:random(seeded(12), 0),
+    {G, S} = breed:random(seeded(12)),
     {M, _} = breed:mutate(G, S, breed:sigma()),
     ?assertEqual(ok, drone_genome:validate(M)),
     Moved = length([x || {A, B} <- lists:zip(element(2, G), element(2, M)), A =/= B]),

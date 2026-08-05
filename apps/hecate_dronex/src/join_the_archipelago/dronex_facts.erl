@@ -42,7 +42,7 @@
 -module(dronex_facts).
 
 -export([topic/1, topics/0, namespace/0, fact_version/0]).
--export([vitals/1]).
+-export([vitals/1, bout/4]).
 
 -define(DEFAULT_NS, <<"dronex">>).
 
@@ -50,12 +50,15 @@
 %% other way to ask "is the field I want in this frame, or am I talking to an
 %% island that predates it".
 %%
+%% 3 adds `dronex/bout', a whole engagement published as a recording. The vitals
+%% shape is unchanged; the version moves because a reader that wants to know
+%% whether an island publishes bouts at all has no other way to ask.
 %% 2 adds the trainer and the frozen exam: `generation', `rounds', `admissions',
 %% and the benchmark profile with its rung names beside it. They arrive together
 %% because they arrived together in the code: an island that breeds without
 %% publishing what it sat is an island whose numbers cannot be read.
 %% 1 was the first fact this track ever published.
--define(FACT_VERSION, 2).
+-define(FACT_VERSION, 3).
 
 -spec fact_version() -> pos_integer().
 fact_version() -> ?FACT_VERSION.
@@ -64,7 +67,11 @@ fact_version() -> ?FACT_VERSION.
 %% another, for instance a laptop from the fleet, and is NOT how islands are
 %% distinguished.
 -spec topic(atom()) -> binary().
-topic(vitals) -> leaf(<<"vitals">>).
+topic(vitals) -> leaf(<<"vitals">>);
+%% ITS OWN TOPIC, so a reader chooses whether to hear it. Vitals are counts and
+%% are small enough to keep forever; a bout is a recording of tens of kilobytes
+%% and a statistics reader must not have to take one to get the other.
+topic(bout) -> leaf(<<"bout">>).
 
 %% @doc Every topic this island publishes on.
 %%
@@ -75,9 +82,11 @@ topic(vitals) -> leaf(<<"vitals">>).
 %% drifted exactly that way.
 %%
 %% `dronex/raid' and `dronex/roster' are designed and are deliberately absent
-%% until something publishes them.
+%% until something publishes them. `dronex/bout' is here because something does:
+%% an island's own best controller against one of its drills, which is what an
+%% island actually spends its time doing.
 -spec topics() -> [binary()].
-topics() -> [topic(vitals)].
+topics() -> [topic(vitals), topic(bout)].
 
 leaf(Leaf) -> <<(namespace())/binary, "/", Leaf/binary>>.
 
@@ -144,3 +153,19 @@ described({error, _Why}) ->
     #{station_host => <<"unknown">>,
       station_connected => false,
       station_id => <<>>}.
+
+%% @doc A whole engagement, as a recording.
+%%
+%% ⚠ SEPARATE FROM `vitals/1' BECAUSE THEY ARE DIFFERENT SIZES AND DIFFERENT
+%% RATES. Counts are small enough to keep forever and go out every second; a bout
+%% is tens of kilobytes and goes out when one happens. Folding them together
+%% would make a statistics reader pay for frames it will never draw, and would
+%% force both onto one clock.
+-spec bout(island:island(), map(), map(), list()) -> map().
+bout(Island, Meta, Result, Frames) ->
+    maps:merge(
+      #{fact_version => ?FACT_VERSION,
+        island => dronex_identity:island(),
+        island_id => dronex_identity:island_id(),
+        tick => island:tick_of(Island)},
+      dronex_bout:encode(Meta, Result, Frames, airspace:limits())).
