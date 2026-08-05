@@ -552,6 +552,53 @@ waiting behind that one clerk, and the light on the door still said OPEN.
 
 # D: findings about the world
 
+## D.14: the gun is fired constantly and appears never to hit
+
+Raf asked whether the unguided rounds do any damage. They do, on paper: 2500
+against 10000 of health, so four of them kill, where the guided interceptor does
+5000 and two kill.
+
+Whether one has ever landed is a different question, and the published recordings
+answer it. Health is on the wire as a percentage, so an unguided hit is a drop of
+**25** and a guided hit a drop of **50**. Over one live raid, 24 drones, 256
+published frames:
+
+    50  x28   guided hits, unambiguous
+    25  x 0   unguided hits
+    1-7 x48   wall impacts, which is `impact_damage/1` and not a weapon at all
+
+Twenty-eight interceptor kills' worth of damage and **not one clean gun hit**,
+while the same recording carries about twice as many unguided rounds in flight as
+guided ones. The evolved controllers fire the thing constantly. The scripted
+drills never fire it at all — zero unguided releases across all six kinds over
+thirty-six benchmark fights — so the frozen ladder has never exercised it either.
+
+⚠ **AND THE DESIGN SAID SO IN ADVANCE**, in the `#intent{}` record, before any of
+this was measured: *"at 60 m/s a shot needs 1.7 s to cross 100 m, and a target
+with 50 m/s² of acceleration displaces about 70 m in that time against a 2 m hit
+radius. The unguided release is therefore effective inside roughly 15 m and
+nowhere else."* Two weapons different in kind exist precisely because of that
+arithmetic. What was not anticipated is that **a swarm would spend its battery on
+the weapon anyway**: firing costs 200 J a shot, and at generation 3 selection has
+not yet had the chance to remove a reflex that only drains it.
+
+So this is not yet a defect. It is a prediction with a number on it: **if the gun
+is real, gun hits should appear as the rosters mature, and the unguided fire rate
+should fall.** If neither happens by the time the viability sweep runs, the honest
+conclusion is that the second weapon is a battery tax with a muzzle flash, and it
+should be either removed or given a reason to exist.
+
+Recorded now, with n=1 raid, so that the later reading is a check against a
+written prediction rather than a story told after the fact.
+
+**ELI5.** A fighter plane carries a machine gun and a homing missile. Watching a
+whole battle, every single kill was made by a missile, and the guns were fired
+nearly twice as often as the missiles and hit nothing. The gun is not broken —
+it works fine if you are almost touching the other plane — but nobody has learned
+that yet, and firing it flattens your battery. The thing to write down today is
+what we expect to see later: if the gun is worth having, pilots will get good at
+it and stop wasting it. If they never do, it should not be on the plane.
+
 ## D.13: the network is never silent, so the threshold decides nothing
 
 Publishing what the towers had confirmed, tick by tick, was meant to be an
