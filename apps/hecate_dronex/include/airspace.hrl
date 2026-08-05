@@ -31,6 +31,10 @@
     vy = 0 :: integer(),
     vz = 0 :: integer(),
     yaw = 0 :: 0..255,
+    %% The yaw rate ACTUALLY APPLIED last tick, after clamping, which is what a
+    %% gyro reads. Not the commanded value: a controller that asked for more than
+    %% the airframe can do should feel the airframe's answer.
+    yaw_rate = 0 :: integer(),
     battery = 0 :: integer(),
     health = 0 :: integer(),
     release_heat = 0 :: non_neg_integer(),

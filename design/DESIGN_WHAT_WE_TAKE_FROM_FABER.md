@@ -64,26 +64,42 @@ again, which is reflex rather than tactics. The full argument is in
 survivor carries from a naming quibble into a real Lamarckian fork. Argued in
 [DESIGN_THE_ROSTER_AND_THE_RAID.md](DESIGN_THE_ROSTER_AND_THE_RAID.md).
 
-## The one real cost: floats, and the split that answers it
+## The one real cost: floats, and the split that did NOT answer it
 
-`functions:tanh/1` is `math:tanh/1`, which is libm, so the evaluator is **not
-bit-portable across machines**. That is exactly what the retiring `robo_net`
-bought with Q12 and a checked-in table.
+⚠ **Revised 2026-08-05. What this section proposed does not work, and the reason
+is worth more than the proposal was.**
 
-It is narrower than it looks. Float `+`, `*` and `-` are exact under IEEE754,
-BEAM uses SSE2 doubles with no extended precision, and Erlang does not reorder
-float arithmetic, so **the transcendental is the only source of divergence**. A
-table-based activation removes it, and `network_evaluator` already takes
-`activation :: atom()` and dispatches through `functions`, so it is one function.
+It said `functions:tanh/1` is `math:tanh/1` and therefore libm, which is true,
+and then that the fix was small because `network_evaluator` "already takes
+`activation :: atom()` and dispatches through `functions`, so it is one
+function". **That is wrong on both counts.** It dispatches through a private
+`apply_activation/2`, not through `functions`, and that function's clause list is
+closed and ends:
 
-| path | used for | exact across machines |
-|---|---|---|
-| Rust NIF, `math:tanh` | training, where throughput matters | no, and it does not need to be |
-| pure Erlang, table activation | the published fight | yes |
+```erlang
+apply_activation(X, _) ->
+    math:tanh(X).
+```
 
-faber-tweann already keeps a pure Erlang reference held in agreement with the
-native path by a conformance test, so the pattern exists rather than being
-invented here.
+There is no registration point, and an unknown activation atom is not an error:
+it **silently becomes libm tanh**. A `tanh_table` passed in would have looked
+like it worked and produced a non-portable fight, which is insight 002's shape
+exactly, and the claim above is what would have made somebody believe it.
+
+**The decision taken was to keep the evaluator and give up bit-identical replay
+across runtimes**, rather than fork the library, patch it upstream, or
+reimplement it. The reasoning and what it costs are in
+[DESIGN_THE_AIRSPACE.md](DESIGN_THE_AIRSPACE.md); the short form is that the
+arena stays integer, so divergence is confined to one function and bounded, and
+the fleet runs one image.
+
+Three alternatives were weighed and are recorded because they may come back:
+
+| | |
+|---|---|
+| our own integer evaluator | exact everywhere, and exactly ONNX-representable if the only nonlinearity is piecewise linear, since products of Q12 values need 33 bits against a double's 53. Costs CfC, plasticity and the NIF, all of which would have to be rebuilt |
+| patch `apply_activation/2` upstream | four lines, and it buys a portable FEEDFORWARD net only: faber's CfC uses a sigmoid internally and the NIF is separate Rust, so memory would still not be portable |
+| per-layer with `linear` and clip between layers ourselves | portable with no change to faber, because `linear` is `X -> X`. Leaves faber contributing a dot product over a list, so the dependency becomes nominal |
 
 ## What is genuinely not usable, with the evidence
 

@@ -3,7 +3,7 @@
 #
 # ⚠ WHY THIS EXISTS. Register INHERITED-3: a guard never seen to fail is not
 # known to be a guard. A green suite proves the code passes its tests; it does
-# not prove the tests would notice if the code stopped being right. Nine of the
+# not prove the tests would notice if the code stopped being right. Twelve of the
 # assertions in this repository are boundaries rather than behaviour, and a
 # boundary that cannot be shown to bite is a comment with a function's syntax.
 #
@@ -30,6 +30,8 @@ FACTS=apps/hecate_dronex/src/join_the_archipelago/dronex_facts.erl
 ISLAND=apps/hecate_dronex/src/advance_an_island/island.erl
 FIXED=apps/hecate_dronex/src/fly_the_airspace/fixed.erl
 AIRSPACE=apps/hecate_dronex/src/fly_the_airspace/airspace.erl
+SENSES=apps/hecate_dronex/src/pilot_a_drone/drone_senses.erl
+GENOME=apps/hecate_dronex/src/pilot_a_drone/drone_genome.erl
 
 FAILURES=0
 BROKEN=""
@@ -58,7 +60,7 @@ restore() {
     rm -rf _build/test
 }
 
-trap 'restore "$SVC" "$MESH" "$FACTS" "$ISLAND" "$FIXED" "$AIRSPACE"' EXIT
+trap 'restore "$SVC" "$MESH" "$FACTS" "$ISLAND" "$FIXED" "$AIRSPACE" "$SENSES" "$GENOME"' EXIT
 
 # Run one perturbation. $1 is the name, $2 the file, $3 a perl one-liner that
 # breaks it, $4 the eunit module that must go red.
@@ -170,8 +172,24 @@ probe "a module reaches into mnesia" "$ISLAND" \
 # 7. The match path must hold no libm, no clock and no unseeded generator, or a
 #    published raid stops being checkable by the island that flew into it. The
 #    check is structural, so merely IMPORTING libm is the whole perturbation.
+#    ⚠ IT PERTURBS AN EXISTING LEAF RATHER THAN APPENDING A NEW FUNCTION, and
+#    that is robustness rather than style. The first version added an exported
+#    `root/1' and had to name `fixed''s whole export list to do it, so adding any
+#    function to that module silently stopped the probe from matching. Changing
+#    what `clamp/3' returns needs no export and cannot drift.
+#
+#    ⚠⚠ AND IT DELIBERATELY DOES NOT CHANGE THE ANSWER: `* 0' means clamp still
+#    returns exactly what it did. So only the STRUCTURAL check can catch this,
+#    which is the whole point of having one, and a behavioural suite would stay
+#    green while every published fight quietly stopped being portable.
+#
+#    ⚠⚠⚠ THE ARGUMENT MUST DEPEND ON A RUNTIME VALUE. `math:sqrt(1.0)' is
+#    CONSTANT-FOLDED by the compiler, so no call reaches the beam's imports chunk
+#    and the structural check is right to stay green: there genuinely is no libm
+#    call at runtime. The first version of this probe used a literal, compiled
+#    cleanly, and reported the guard as broken when the guard was correct.
 probe "the match path reaches for libm" "$FIXED" \
-  's/-export\(\[isqrt\/1, clamp\/3, mag3\/3, scale_to\/4\]\)\./-export([isqrt\/1, clamp\/3, mag3\/3, scale_to\/4]).\n-export([root\/1])./; s/\z/\nroot(N) -> trunc(math:sqrt(N)).\n/' \
+  's/clamp\(V, _Lo, _Hi\) -> V\./clamp(V, _Lo, _Hi) -> V + trunc(math:sqrt(abs(V) + 1.0)) * 0./' \
   airspace_determinism_tests
 
 # 8. A munition must be tested against the SEGMENT it travelled, not its end
@@ -189,11 +207,37 @@ probe "thrust is clamped per axis instead of as a vector" "$FIXED" \
   's/shortened\(X, Y, Z, Max, Mag\) ->\n    \{X \* Max div Mag, Y \* Max div Mag, Z \* Max div Mag\}\./shortened(X, Y, Z, Max, _Mag) ->\n    {clamp(X, -Max, Max), clamp(Y, -Max, Max), clamp(Z, -Max, Max)}./s' \
   airspace_tests
 
+# 10. A stranger's genome must be REFUSED rather than repaired. Clamping a weight
+#     into range changes the genome, which changes what fought, which means the
+#     published identifier no longer names the code that ran.
+probe "a foreign genome is clamped instead of refused" "$GENOME" \
+  's/usable\(_W\) -> false\./usable(_W) -> true./' \
+  drone_pilot_tests
+
+# 11. The input width must be enforced. network_evaluator pads a short input
+#     layer in SILENCE and a short output vector falls back to a null command, so
+#     a mismatched genome does not crash: it fights badly and produces a result
+#     nobody can tell from a measurement.
+#     ⚠ THE GUARD IS NARROWED RATHER THAN DELETED, so every variable in the
+#     clause head stays used and the module still compiles. Deleting the clause
+#     leaves `In' bound and unread, which is an unused-variable error against
+#     warnings_as_errors and proves nothing about the test.
+probe "a wrong-width genome is admitted" "$GENOME" \
+  's/when hd\(Layers\) =\/= In -> \{error, wrong_input_width\}/when hd(Layers) =\/= In, In < 0 -> {error, wrong_input_width}/' \
+  drone_pilot_tests
+
+# 12. A drone is blind behind. The 120 degree cone is what makes yaw expensive
+#     and gives the comms channel something to be for; widening it to 360 would
+#     quietly remove the reason for half the design.
+probe "the sensor cone becomes all-round vision" "$SENSES" \
+  's/-define\(CONE_COS, 16384\)\./-define(CONE_COS, -32768)./' \
+  drone_senses_tests
+
 echo
 rebar3 compile >/dev/null 2>&1
 
 if [ "$FAILURES" -eq 0 ]; then
-    echo "All nine guards bit."
+    echo "All twelve guards bit."
     exit 0
 fi
 

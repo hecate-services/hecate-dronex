@@ -268,6 +268,63 @@ an oven, it is a box with a light bulb in it". The sign had been there the whole
 time, on the front, at eye height. The lesson is not about ovens. It is that
 saying you can reuse a thing means walking over and looking at it.
 
+## I.5: a closed dispatch with a catch-all is a silent fallback
+
+`network_evaluator` takes an `activation` atom, and a design document here said
+adding a deterministic table activation was "one function", because it
+"dispatches through `functions`".
+
+It does not. It dispatches through a **private** `apply_activation/2` whose
+clause list is closed and whose last clause is:
+
+```erlang
+apply_activation(X, _) ->
+    math:tanh(X).
+```
+
+So passing `tanh_table` is not an error. It **silently becomes libm tanh**, the
+network looks like it worked, and every published fight is quietly
+non-portable. That is insight 002's shape exactly: a silent fallback hides
+correctness divergence, not just speed.
+
+**The claim that made it dangerous was mine**, and it was made from the record
+`activation :: atom()` rather than from the dispatcher, which is the same
+directory-listing-as-survey habit as `INHERITED-7` and `I.1` in a third costume:
+reading a type and inferring a mechanism.
+
+Raf's decision was to keep the evaluator, with its CfC memory, plasticity and
+NIF, and drop bit-identical replay across runtimes. `CHARTER.md`,
+`DESIGN_THE_AIRSPACE.md` and `DESIGN_WHAT_WE_TAKE_FROM_FABER.md` were amended so
+none of them still asserts exactness, and the three rejected alternatives are
+recorded in case they come back.
+
+**ELI5.** A machine had a dial for choosing which kind of blade to use. The
+instructions implied you could add your own blade to the list. You cannot: the
+list is fixed, and if you ask for a blade it does not have, it quietly fits the
+default one and carries on. It does not stop, and it does not tell you. So you
+would go home believing you had cut with your blade.
+
+## I.6: a constant-folded call is not a call, and a probe with a literal proves nothing
+
+The probe for *no libm on the match path* perturbed `fixed:clamp/3` to compute
+`trunc(math:sqrt(1.0)) * 0` and add it to the result. It compiled, changed no
+answer, and the structural guard **stayed green**, which looked like the guard
+being broken.
+
+The guard was right. `math:sqrt(1.0)` has a literal argument, so the compiler
+evaluates it at compile time and no call survives into the beam's imports chunk.
+There genuinely was no libm call at runtime to find.
+
+`math:sqrt(abs(V) + 1.0)` cannot be folded, and the guard bites immediately.
+
+**The general shape:** a test that reads what the compiler produced is testing
+the compiler's output, not the source. That is exactly why it is the right check
+for this property, and exactly why perturbing it needs care.
+
+**ELI5.** They tested a metal detector by hiding a coin, but they hid it before
+the floor was laid and it ended up under the concrete rather than in the room.
+The detector did not beep. The detector was fine. There was nothing in the room.
+
 ## I.4: a copied comment was false in the commit that copied it
 
 `.github/workflows/lint.yml` was taken from a sibling, comment and all. It said

@@ -224,13 +224,19 @@ pre-registration, and the four measurement rules from 053 to 056 apply.
   and not impersonation. A hostile node can claim to be another island and can
   submit pathological genomes. Validation limits are a denial-of-service defence
   and are in scope; identity signing is named here and is not.
-- **Determinism across machines.** The pure-Erlang fight path must be
-  bit-identical on different hardware, which needs a table activation rather
-  than libm. Until that lands, replay agreement is a property of the fleet
-  running one image, not of the design.
-- **What a defender owes an attacker.** Today the defender reports the outcome
-  and is believed. The engine is exactly replayable by design, so the attacker
-  can check; nothing yet requires it to.
+- ⚠ **Bit-identical replay across runtimes is NOT a commitment, decided
+  2026-08-05.** `network_evaluator:apply_activation/2` is private with a closed
+  clause list and a catch-all of `math:tanh(X)`, so there is no way to put a
+  table activation in front of it, and the choice taken was to keep faber's
+  evaluator with its CfC memory, plasticity and NIF. The **arena** stays integer
+  and exact, so divergence is confined to one function and bounded at about a
+  unit in the last place; the fleet runs one image, so replay works today. What
+  is owed is that the engine fingerprint on a raid request name the OTP release
+  and the libc, not only the code.
+- **What a defender owes an attacker.** The defender reports the outcome and is
+  believed. An attacker on a matching runtime can replay and expect agreement,
+  and cannot demand it otherwise, so this is reporting rather than proof. Making
+  it proof would need the brain to be exact, which is the trade above.
 - **Whether the home advantage leaves room to attack.** Stated as a viability
   criterion rather than assumed: a competent attacking swarm must win a
   non-trivial fraction of raids against a competent defence. If it cannot,

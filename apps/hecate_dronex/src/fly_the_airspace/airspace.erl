@@ -225,7 +225,8 @@ fly(#drone{} = D, #intent{} = I) -> thrusting(D, thrust(D, I), yawed(D, I)).
 %% chosen because it makes a commanded turn take effect immediately, which is
 %% what a controller with a one-tick view expects.
 yawed(#drone{yaw = Y}, #intent{yaw_rate = R}) ->
-    fixed:wrap(Y + fixed:clamp(R, -?MAX_YAW_RATE, ?MAX_YAW_RATE)).
+    Applied = fixed:clamp(R, -?MAX_YAW_RATE, ?MAX_YAW_RATE),
+    {fixed:wrap(Y + Applied), Applied}.
 
 %% ⚠ AN EMPTY BATTERY PRODUCES NO THRUST, AND THE DRONE IS NOT REMOVED. It
 %% becomes a falling object that can still be hit and can still hit the ground.
@@ -243,9 +244,9 @@ world_frame(F, L, V, Yaw) ->
     Cos = fixed:cos(Yaw),
     {(F * Cos - L * Sin) div 32768, (F * Sin + L * Cos) div 32768, V}.
 
-thrusting(#drone{} = D, {Ax, Ay, Az}, Yaw) ->
+thrusting(#drone{} = D, {Ax, Ay, Az}, {Yaw, Rate}) ->
     Drawn = drained(D, fixed:mag3(Ax, Ay, Az)),
-    Drawn#drone{yaw = Yaw,
+    Drawn#drone{yaw = Yaw, yaw_rate = Rate,
                 vx = velocity(D#drone.vx, Ax),
                 vy = velocity(D#drone.vy, Ay),
                 vz = velocity(D#drone.vz, Az - ?GRAVITY)}.

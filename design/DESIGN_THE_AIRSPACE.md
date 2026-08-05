@@ -251,30 +251,53 @@ side can withdraw intact and lose the engagement, which is the trade the
 mechanism exists to offer. `winner/1` answers the first, `survivors/1` the
 second.
 
-## Reproducibility, and the one honest limit
+## Reproducibility, and where it stops
 
 **Everything in the arena is integer.** Fixed-point positions, binary angles, a
-checked-in sine table, no `math:` call anywhere on the match path. A fight is a
-pure function of the start state, the genomes and nothing else. There is no
-wall clock in the loop and no `rand` outside the seeded generator.
+checked-in sine table, no `math:` call anywhere on the arena path. There is no
+wall clock in the loop and no `rand` outside the seeded generator, and
+`airspace_determinism_tests` asserts that structurally over the compiled call
+graph rather than trusting this paragraph.
 
-⚠ **The brain is the exception, today.** The controller is a
-`network_evaluator` network over floats, and its activation is `math:tanh/1`,
-which is libm and is not guaranteed identical across libc versions. Float `+`,
-`*` and `-` are exact under IEEE754 and BEAM uses SSE2 doubles with no extended
-precision, so **the transcendental is the only source of divergence**, and a
-table-based activation removes it entirely.
+⚠ **THE BRAIN IS NOT, AND THAT IS A DECISION RATHER THAN AN OVERSIGHT. Decided
+2026-08-05, and this section previously claimed the opposite.**
 
-That gives a clean split rather than a compromise:
+It claimed a table-based activation would make the whole path bit-identical, on
+the grounds that `network_evaluator` takes an `activation` atom and dispatches
+through `functions`. That is false. `apply_activation/2` is **private**, its
+clause list is closed, and its last clause reads:
 
-| path | used for | exact across machines |
-|---|---|---|
-| Rust NIF, `math:tanh` | **training**, where throughput matters | no, and it does not need to be |
-| pure Erlang, table activation | **the published fight** | yes |
+```erlang
+apply_activation(X, _) ->
+    math:tanh(X).
+```
 
-Until the table activation lands, replay agreement is a property of a fleet
-running one image rather than a property of the design, and the charter records
-that as owed.
+So an unrecognised activation atom does not fail: it **silently becomes libm
+tanh**. There is nothing to register.
+
+The choice made was to keep `faber_tweann`'s evaluator as it is, with CfC memory,
+in-episode plasticity and the Rust NIF, and to give up bit-identical replay across
+runtimes. What that costs and what it does not:
+
+| | |
+|---|---|
+| same image, same OTP, same libc | **exact.** The fleet runs one image, so replay works today |
+| different libc or OTP release | **approximate.** libm `tanh` may differ in the last place, and a fight can diverge at a decision boundary |
+| the arena's contribution to divergence | **none.** It is integer, and that is why the integer work is still worth having |
+
+⚠ **The value of keeping the arena exact goes up rather than down.** Divergence is
+now localised to one function in one module and bounded at about one unit in the
+last place, instead of being spread across every position, every velocity and
+every collision test. A known, small, single-source discrepancy can be measured;
+a diffuse one cannot.
+
+⚠⚠ **So a defender's published raid is reported, not proved.** An attacker can
+replay it and expect agreement on a matching runtime, and cannot demand it
+otherwise. The engine fingerprint that travels with a raid request must therefore
+name the **OTP release and the libc** as well as the code, because those are now
+part of what determines the fight. That is
+[DESIGN_WHAT_CROSSES_THE_MESH.md](DESIGN_WHAT_CROSSES_THE_MESH.md)'s business and
+it is owed at item 7.
 
 ## What is published from a fight
 
