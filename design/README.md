@@ -20,6 +20,7 @@ commitment gets relitigated if new information arrives.
 | [DESIGN_WHAT_CROSSES_THE_MESH.md](DESIGN_WHAT_CROSSES_THE_MESH.md) | topics, realms, the raid request and reply, the frame budget, and the wire rules each of which was earned by something that broke |
 | [DESIGN_THE_MAP.md](DESIGN_THE_MAP.md) | the archipelago, the airspace volume, raid arcs, drawn signals, the replay player, and the bug that has to be fixed first |
 | [DESIGN_WHAT_WE_TAKE_FROM_FABER.md](DESIGN_WHAT_WE_TAKE_FROM_FABER.md) | the dependency boundary, module by module, with the float determinism split and a record of the survey error that produced it |
+| [DESIGN_THE_SECOND_WEAPON.md](DESIGN_THE_SECOND_WEAPON.md) | **staged, not implemented.** Why the gun is fired at maximum rate and hits nothing, why that is a reward landscape with no gradient rather than a weapon to be tuned, and the two changes that fix it together and neither alone: fragmentation damage falling as 1/d² of MISS distance, and a magazine |
 | [DESIGN_THE_SECOND_ACT.md](DESIGN_THE_SECOND_ACT.md) | what of the counter-UAS line comes forward, what is retired, what stays deferred, and the two seams the swap point now sits on |
 
 ## What goes here, and what does not

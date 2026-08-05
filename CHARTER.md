@@ -221,6 +221,16 @@ The sweep turns sensor count and sensor range. The whole sweep gets published,
 standing rule that a dial is never set by which value gave the answer that was
 wanted.
 
+⚠⚠⚠ **AND THE SWEEP HAS FIVE DIALS, NOT ONE.** It was named as station count.
+Three more were found by building the instruments rather than by thinking:
+**reach against the geometry a fight starts in** (D.13 — every raider is
+confirmed on frame 1, so there is no approach phase to measure), the **ceiling**
+(D.12 — a station's radius at altitude is sqrt(R² - z²), so the ceiling is a
+coverage parameter), and the **gun's blast radius and magazine**
+([DESIGN_THE_SECOND_WEAPON.md](design/DESIGN_THE_SECOND_WEAPON.md)). A sweep
+over station count alone would have measured a saturated network at every point
+and reported a smooth, confident, meaningless curve.
+
 It is owed rather than done because it cannot be run yet: a sweep against
 untrained rosters measures random controllers, not competence, and would answer
 a different question convincingly. It runs once the fleet's rosters have trained
