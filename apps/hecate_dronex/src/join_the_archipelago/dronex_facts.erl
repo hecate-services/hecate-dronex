@@ -112,7 +112,11 @@ ns(Str) -> list_to_binary(string:trim(Str)).
 %% actually speaking through is a property of the live connection and not of the
 %% island. It is merged in rather than passed, so a caller cannot forget it.
 -spec vitals(island:island(), map()) -> map().
-vitals(Island, Writer) ->
+%% ⚠ `Runtime' IS THE SERVER'S VIEW OF ITSELF, and it is a map rather than a
+%% growing argument list because it has grown twice already: the roster writer's
+%% counts at item 5, and whether this island is reachable at item 7.
+vitals(Island, Runtime) ->
+    Writer = maps:get(writer, Runtime),
     maps:merge(
       #{fact_version => ?FACT_VERSION,
         island => dronex_identity:island(),
@@ -139,7 +143,7 @@ vitals(Island, Writer) ->
         raids_lost => island:raids_lost_of(Island),
         defences => island:defences_of(Island),
         captures => island:captures_of(Island)},
-      maps:merge(station(),
+      maps:merge(maps:merge(station(), reachability(Runtime)),
                  maps:merge(persistence(Writer),
                             maps:merge(frozen(island:benchmark_of(Island)),
                                        ablation(island:ablation_of(Island),
@@ -158,6 +162,21 @@ vitals(Island, Writer) ->
 %% writer that drops everything and one that drops nothing must look different.
 persistence(#{written := W, failed := F, dropped := D}) ->
     #{roster_writes => W, roster_write_failures => F, roster_writes_dropped => D}.
+
+%% ⚠ WHETHER THIS ISLAND CAN BE RAIDED AT ALL, AND IT TOOK A SIX-STEP DIVE TO
+%% FIND OUT ONCE. An island that failed to advertise still breeds, still
+%% publishes, still answers `/health', still hears its neighbours and still
+%% raids them. From every outside angle it is a healthy, busy island. It simply
+%% cannot be attacked back, and the only symptom is that somebody else's
+%% `defences' counter never moves — a number on a different machine.
+%%
+%% `advertising' false with `listening' true is exactly that state, and it is
+%% worth its own field because the two failed independently: subscribing reads
+%% the public realm out of an environment variable, while advertising has to ask
+%% `hecate_om' for the fleet realm and could not at boot.
+reachability(Runtime) ->
+    #{advertising => maps:get(advertising, Runtime, false),
+      listening => maps:get(listening, Runtime, false)}.
 
 %% ⚠ THE THREE NUMBERS FROM `DESIGN_DRONES_THAT_TALK.md', AND THE FOURTH THAT
 %% MAKES THEM READABLE. Volume, delta and entropy each mean something specific

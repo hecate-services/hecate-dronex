@@ -68,6 +68,10 @@
 %% down as gone.
 -define(HEARD_FOR_MS, 600000).
 
+%% Often enough that a mesh coming up late costs a minute rather than a
+%% deployment, rare enough that re-asserting is not chatter.
+-define(DEFAULT_MESH_CHECK_MS, 60000).
+
 %% ⚠ SWARM, NOT DUEL, AND A DUEL WOULD HAVE MADE THE MEASUREMENT MEANINGLESS. In
 %% a one-against-one fight there is no friendly to talk to, so the friendly bank
 %% is structurally zero and muting it cannot change anything. An ablation run on
@@ -114,16 +118,30 @@ init([]) ->
     %% start together on a node with four slow cores.
     schedule(ablate, ?DEFAULT_ABLATE_MS div 2),
     schedule(raid, ?DEFAULT_RAID_MS),
-    %% ⚠ BOTH OF THESE ARE FIRE AND FORGET, AND A FAILURE IS NOT FATAL. An island
-    %% whose mesh is not up yet must still breed, publish counters and answer
-    %% `/health'; it simply cannot be raided and cannot raid. The retry is the
-    %% next timer tick rather than a loop here, because a loop here would be a
-    %% boot that never finishes on a node whose station is down.
-    _ = advertise_self(),
-    _ = listen_for_neighbours(),
+    %% ⚠⚠ ON A TIMER, AND THE FIRST VERSION DID IT ONCE HERE AND CLAIMED
+    %% OTHERWISE. Its comment said "the retry is the next timer tick"; there was
+    %% no such tick. `init/1' runs before `hecate_om_identity' can answer, so
+    %% `dronex_mesh:advertise/2' failed on the fleet realm, the pool never
+    %% learned the handler, and the island advertised nothing for the rest of its
+    %% life.
+    %%
+    %% ⚠⚠⚠ AND THE FAILURE WAS INVISIBLE FROM EVERY ANGLE. The STATION still held
+    %% a route from an earlier incarnation, pointing at a connection that was
+    %% still alive, so a caller's CALL was forwarded and simply never answered:
+    %% it timed out after two minutes with `vanished into the dark'. Meanwhile
+    %% SUBSCRIBING worked, because it uses the public realm out of an environment
+    %% variable and never asks `hecate_om' for anything — so the island heard its
+    %% neighbours, raided them enthusiastically, and could not be raided back.
+    %% Twelve raids launched, one ever hosted, and `/health' green throughout.
+    %%
+    %% Re-asserted every tick rather than once-until-it-works, because a pool
+    %% restart, a link respawn or a stale station entry all heal the same way and
+    %% none of them tells us they happened. Advertising the same procedure twice
+    %% is a map overwrite at the pool and a re-register at the station.
+    schedule(mesh_check, 0),
     {ok, #{island => Island, sent => 0, failed => 0, sitting => false,
            ablating => false, writer => roster_log_writer:silent(),
-           heard => #{}, away => #{}}}.
+           heard => #{}, away => #{}, advertising => false, listening => false}}.
 
 %% ⚠ ADDRESSED BY IDENTITY, NEVER BY NAME. Two islands may both be called
 %% `beam02'; only the 128 bits in the data directory are unique. A procedure
@@ -136,6 +154,36 @@ advertise_self() ->
 
 listen_for_neighbours() -> dronex_mesh:subscribe(dronex_facts:topic(vitals), self()).
 
+%% Re-asserted every tick. The transition is logged, so a mesh that comes up late
+%% says so once rather than every minute for ever.
+advertising(S) -> announced(advertise_self(), maps:get(advertising, S), S).
+
+announced(ok, false, S) ->
+    logger:info("[island] advertised for raids as ~s",
+                [dronex_raid:procedure(dronex_identity:island_id())]),
+    S#{advertising := true};
+announced(ok, true, S) ->
+    S;
+announced({error, Why}, true, S) ->
+    logger:warning("[island] can no longer advertise for raids: ~p", [Why]),
+    S#{advertising := false};
+announced({error, _Why}, false, S) ->
+    S.
+
+%% ⚠ ONLY WHEN THERE IS NO LIVE SUBSCRIPTION, unlike the advertisement. Every
+%% `subscribe' returns a fresh reference and the pool keeps them all, so
+%% re-subscribing on a timer would multiply deliveries: after an hour every
+%% neighbour's vitals would arrive sixty times. `{macula_event_gone, ...}' is
+%% what says a subscription has died, and it re-arms there.
+listening(#{listening := true} = S) -> S;
+listening(S) -> heard_now(listen_for_neighbours(), S).
+
+heard_now({ok, _Ref}, S) ->
+    logger:info("[island] listening for neighbours"),
+    S#{listening := true};
+heard_now({error, _Why}, S) ->
+    S.
+
 %% A store that is not there yet, or a log that cannot be read, is an island that
 %% starts fresh rather than an island that refuses to start. The roster depth it
 %% publishes is what makes that visible.
@@ -146,8 +194,8 @@ restored(Island) ->
 kept(Island, {ok, R}) -> island:with_roster(Island, R);
 kept(Island, {error, _Why}) -> Island.
 
-handle_call(snapshot, _From, #{island := I, writer := W} = S) ->
-    {reply, dronex_facts:vitals(I, W), S};
+handle_call(snapshot, _From, #{island := I} = S) ->
+    {reply, dronex_facts:vitals(I, runtime(S)), S};
 handle_call(island, _From, #{island := I} = S) ->
     {reply, I, S};
 handle_call(publishes, _From, #{sent := Sent, failed := Failed} = S) ->
@@ -180,6 +228,9 @@ mustered_defence({I2, Party}, #{island := I} = S) ->
 %% The writer's own exercise counts, pushed after every drain. Held rather than
 %% fetched: see `roster_log_writer:told/1'.
 handle_cast({roster_written, Stats}, S) -> {noreply, S#{writer := Stats}};
+%% A fact published from somebody else's process still belongs in this island's
+%% counters, or `sent' and `failed' quietly stop describing everything it sends.
+handle_cast({published, Outcome}, S) -> {noreply, counted(Outcome, S)};
 %% A raid this island hosted has finished, off-process. Two things settle at
 %% once: the defenders that survived come back, and the attacker's genomes are
 %% kept whatever the outcome was.
@@ -194,10 +245,10 @@ handle_cast(_Msg, S) -> {noreply, S}.
 handle_info(tick, #{island := I} = S) ->
     schedule(tick, slot_ms()),
     {noreply, S#{island := island:run(I, ticks_per_slot())}};
-handle_info(publish, #{island := I, writer := W} = S) ->
+handle_info(publish, #{island := I} = S) ->
     schedule(publish, publish_ms()),
     {noreply, counted(dronex_mesh:publish(dronex_facts:topic(vitals),
-                                          dronex_facts:vitals(I, W)), S)};
+                                          dronex_facts:vitals(I, runtime(S))), S)};
 %% One breeding round, on this process. It is bounded work and the island has
 %% nothing else to do between publishes.
 handle_info(train, #{island := I} = S) ->
@@ -266,8 +317,15 @@ handle_info({macula_event, _Ref, _Topic, Fact, _Meta}, S) ->
     {noreply, noted(Fact, S)};
 handle_info({macula_event_gone, _Ref, Why}, S) ->
     logger:warning("[island] neighbour subscription gone (~p), re-arming", [Why]),
-    _ = listen_for_neighbours(),
-    {noreply, S};
+    {noreply, listening(S#{listening := false})};
+
+%% ⚠ THE ONE THING THAT MAKES THIS ISLAND REACHABLE. Everything else it does is
+%% outbound and works without anybody's permission; being raided needs a live
+%% advertisement, and an advertisement is the only piece of this service that can
+%% be lost without anything going red.
+handle_info(mesh_check, S) ->
+    schedule(mesh_check, ?DEFAULT_MESH_CHECK_MS),
+    {noreply, listening(advertising(S))};
 
 handle_info(raid, #{island := I} = S) ->
     schedule(raid, ?DEFAULT_RAID_MS),
@@ -275,6 +333,10 @@ handle_info(raid, #{island := I} = S) ->
 
 handle_info(_Msg, S) ->
     {noreply, S}.
+
+%% What the server knows about itself, as opposed to what the island knows about
+%% its world. Kept in one place so a new field is one line rather than three.
+runtime(S) -> maps:with([writer, advertising, listening], S).
 
 %% Who else is out there, and when they were last heard. Anything that is not a
 %% vitals fact from somebody else is ignored rather than guessed at.
@@ -479,7 +541,13 @@ hosted({ok, Arena, Controllers, Pairs}, Defenders, Raiders, Req, Island) ->
     Meta = #{from => maps:get(attacker, Req), raid => maps:get(raid_id, Req),
              tick => maps:get(tick, Req, 0)},
     gen_server:cast(Island, {defended, Survivors, Defenders, Raiders, Meta}),
-    _ = publish_raid(Result, Fates, Meta),
+    %% ⚠ COUNTED, NOT DISCARDED, AND IT WAS DISCARDED FIRST. This runs in
+    %% macula's process, so the island's own publish counters cannot see it
+    %% unless it is sent back. Thrown away, a raid fact that never leaves looks
+    %% exactly like a raid that never happened — and the first thing the raid
+    %% diagnostic did was watch the public realm for four minutes while both
+    %% islands were demonstrably raiding, and see nothing at all.
+    gen_server:cast(Island, {published, publish_raid(Result, Fates, Meta)}),
     dronex_raid:reply(maps:get(raid_id, Req), defence:outcome(Result),
                       [{Id, F, <<>>} || {Id, F} <- Fates]).
 

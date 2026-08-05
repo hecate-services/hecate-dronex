@@ -160,6 +160,59 @@ survey.**
 the top drawer. There were three hammers in the drawer underneath. The rule is
 to open every drawer before saying what is not in the toolbox.
 
+## I.11: the island advertised once, at the wrong moment, and could never be raided
+
+Two islands, twelve raids launched, **one** ever hosted. The rest died at the
+caller with `vanished into the dark: timeout` after two minutes, while the
+callee's `defences` counter never moved.
+
+**The cause was one line in `init/1`.** `advertise_self()` ran once at boot,
+before `hecate_om_identity` could answer, so `dronex_mesh:advertise/2` failed on
+the fleet realm and returned an error nobody read. `macula_client:advertise`
+was therefore never reached, the pool's `procs` map stayed empty for the life of
+the process, and inbound CALLs had no handler to dispatch to.
+
+⚠ **The comment above that line said "the retry is the next timer tick".** There
+was no such tick. Asserting a safety net in prose is worse than not having one,
+because the next reader stops looking for it.
+
+⚠⚠ **It was invisible from every angle, and the asymmetry is why.**
+
+| what it did | why it kept working |
+|---|---|
+| bred, benchmarked, ablated | none of it touches the mesh |
+| published vitals, bouts, raids | the PUBLIC realm comes from an environment variable |
+| **heard its neighbours** | `subscribe` also uses the public realm, so it never asks `hecate_om` for anything |
+| **raided them** | outbound calls need no advertisement of its own |
+| answered `/health` green | it was perfectly healthy |
+
+So it heard everyone, attacked everyone, and could not be attacked back. The
+only symptom anywhere was a counter on a *different machine* failing to rise.
+
+⚠⚠⚠ **And the station kept a route to it.** `macula_remote_advertise_registry`
+on Stockholm still held both islands' procedures, with `conn_pid`s that were
+alive, from an earlier incarnation. So a CALL was accepted and forwarded rather
+than refused: the caller got silence instead of `unknown_next_peer`, which is the
+difference between waiting two minutes and failing in 27 milliseconds. A probe
+against a procedure that had NEVER existed came back correctly in 27 ms; the
+probe against the real one hung. That contrast is what located it.
+
+**What changed.** A `mesh_check` timer re-asserts the advertisement every minute
+— not once-until-it-works, because a pool restart, a link respawn and a stale
+station entry all heal the same way and none of them announces itself.
+Re-subscribing is NOT re-asserted on the timer, because every `subscribe` returns
+a fresh reference and the pool keeps them all, so a minute-by-minute re-subscribe
+would multiply deliveries; that re-arms on `macula_event_gone` instead. And
+`advertising` and `listening` now go out on every vitals fact, so the state
+"healthy, busy, and unreachable" is one field rather than a six-step dive.
+
+**ELI5.** A shop put its phone number in the directory once, on the morning it
+opened, at a moment when the phone company was not yet listening. Nobody noticed,
+because the shop could still ring everybody else, and did. The directory even
+still had an old number from the previous owner, so callers heard ringing rather
+than "no such number", and gave up after two minutes assuming nobody was in. The
+shop's own sign said OPEN the entire time.
+
 ## I.9: a file written into a directory that does not exist leaves everything green
 
 `radio.erl` was written into `src/speak_between_drones/`. The directory had never
