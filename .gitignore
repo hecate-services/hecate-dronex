@@ -15,3 +15,6 @@ architecture/build/
 .DS_Store
 *~
 .idea/
+
+# Left by scripts/prove_the_guards_bite.sh if it is interrupted mid-probe.
+*.guardbak

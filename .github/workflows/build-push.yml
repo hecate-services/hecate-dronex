@@ -1,10 +1,18 @@
-# Build the OCI image for hecate-dronex-sim and push to ghcr.io.
-# Triggered on push to main and on tag pushes.
+# Build the OCI image for hecate-dronex and push to ghcr.io.
 #
-# The GitHub mirror runs this (Codeberg has Forgejo Actions disabled per the
-# migration pattern). The Containerfile defaults to RELEASE=dronex_sim — the
-# demo image that generates drones and publishes airspace facts to the mesh.
-# (dronex_edge, the production site brain, is built with --build-arg RELEASE.)
+# GitHub is canonical since 2026-07-26, so this runs where the code lives.
+# Pushes BOTH :latest and the semver tag. The deployed compose tracks :latest
+# under watchtower for zero-touch deploys, and the semver tags stay on ghcr so a
+# bad release can be pinned back to a known one.
+#
+# ONE IMAGE NAME, WHERE THERE WERE TWO. This used to publish `hecate-dronex-sim'
+# because the tree built two releases from one Containerfile behind a RELEASE
+# build-arg. An island is one release, so the image is `hecate-dronex'.
+#
+# NO EXPERIMENT TAG, AND DELIBERATELY. A sibling tagged every image from a number
+# its own physics reported, which is a good mechanism and worth copying back the
+# day there is a numbered thing to copy it for. A tag derived from a number that
+# does not exist yet is a tag that lies.
 
 name: build-and-push
 
@@ -12,6 +20,7 @@ on:
   push:
     branches: [main]
     tags:     ['v*']
+  workflow_dispatch:
 
 jobs:
   build-and-push:
@@ -46,5 +55,5 @@ jobs:
           file: Containerfile
           push: true
           tags: |
-            ghcr.io/hecate-services/hecate-dronex-sim:latest
-            ghcr.io/hecate-services/hecate-dronex-sim:${{ steps.tag.outputs.tag }}
+            ghcr.io/hecate-services/hecate-dronex:latest
+            ghcr.io/hecate-services/hecate-dronex:${{ steps.tag.outputs.tag }}

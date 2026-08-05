@@ -1,21 +1,12 @@
-## Substituted by the start script at boot from the runtime env.
-##
-## Required (no defaults; boot fails fast if unset):
-##   NODE_NAME       e.g. dronex_edge@beam03.lab
-##   RELEASE_COOKIE  shared Erlang dist cookie for the site cluster
-##
-## Optional (defaults in the quadlet .env):
-##   INET_DIST_PORT_MIN / INET_DIST_PORT_MAX
+## Node identity and runtime flags for hecate_dronex.
+-name ${HECATE_NODE_NAME}@${HECATE_NODE_HOST}
+-setcookie ${HECATE_COOKIE}
 
--name ${NODE_NAME}
--setcookie ${RELEASE_COOKIE}
++K true
 
--kernel inet_dist_listen_min ${INET_DIST_PORT_MIN}
--kernel inet_dist_listen_max ${INET_DIST_PORT_MAX}
-
-+sbwt none
-+sbwtdcpu none
-+sbwtdio none
-
--heart
--mode interactive
+## A tick is CPU-bound integer arithmetic over a swarm, and a training round is
+## thousands of engagements, so the schedulers are the resource that matters and
+## the async thread pool is not on that path. Left at a modest 8 until there is
+## something to measure; a number chosen before the first measurement is a guess
+## either way, and this one is cheap to revisit.
++A 8

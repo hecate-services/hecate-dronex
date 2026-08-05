@@ -203,6 +203,41 @@ an oven, it is a box with a light bulb in it". The sign had been there the whole
 time, on the front, at eye height. The lesson is not about ovens. It is that
 saying you can reuse a thing means walking over and looking at it.
 
+## I.3: a restore that refreshes one build profile leaves the other perturbed
+
+`scripts/prove_the_guards_bite.sh` breaks a boundary, compiles, runs the suite,
+asserts red, and restores. It reported **all six guards biting**. The next plain
+`rebar3 eunit` then failed **four** tests, against sources that `git diff` showed
+were already correct and that `grep` confirmed line by line.
+
+The restore was not the problem, and neither was the mtime, which the script
+already handled. **`rebar3 compile` builds the `default` profile and `rebar3
+eunit` builds the `test` profile, and they hold separate beams.** The script
+compiled in one and tested in the other, so refreshing `_build/default` left
+`_build/test` holding every perturbation. `rm -rf _build/test` on restore fixes
+it.
+
+The known trap, `INHERITED-3`, says a restore leaves an older mtime and rebar3
+serves a stale beam. That was guarded. **The trap had a second dimension nobody
+had written down**, and guarding the recorded half is what made the failure
+surprising rather than expected.
+
+Two smaller ones, both caught by the script's own compile check rather than by
+reading its output as a result, and both instances of *a perturbation that only
+breaks the compile is not a red check*:
+
+- an unexported function nobody calls is an unused-function warning, and this
+  tree builds `warnings_as_errors`
+- a function definition placed among the attributes puts `-export_type` and
+  `-record` after the first function, which Erlang rejects outright
+
+**ELI5.** They tested the fire alarm by lighting a small fire in the kitchen,
+confirmed it went off, put the fire out, and wrote down that the alarm works.
+What they had not noticed is that the building has two kitchens with the same
+layout, and they had been lighting fires in one and cleaning up in the other. The
+fire was still burning next door. Nothing was wrong with the alarm or with the
+cleaning up. There was just a second room nobody had put on the list.
+
 ## I.2: an inherited scope decision was carried a day too long
 
 The counter-UAS line was written up as a deferred second act: contracts kept,

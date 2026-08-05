@@ -1,44 +1,50 @@
-%% Production config (interpolated at release build for `as prod`).
-%% Runtime knobs (SITE_ID, DRONEX_ROLE, DRONEX_TIME_SCALE, DRONEX_SCENARIO,
-%% DRONEX_SEED) are read from OS env at boot, not from this file.
+%% Substituted by relx at boot; every ${VAR} must resolve or the node will not
+%% start with a malformed term. That is the correct failure: an island with a
+%% half-configured realm would announce itself where nobody can attribute it.
 [
-    {hecate_dronex, [
-        {site_id,    "leuven-perimeter"},
-        {role,       edge},
-        {http_port,  8484},
-        {time_scale, 1.0},
-        {seed,       0},
-        {scenario,   "perimeter_probe"}
+    {hecate_om, [
+        {service_cert_path, "/etc/hecate/secrets/service-cert.pem"},
+        {station_socket,    "/run/macula/station.sock"},
+        {health_port,       ${HECATE_HEALTH_PORT}},
+        {capability_topic,  <<"_mesh.cap.">>},
+        %% THE REALM IS AN APPLICATION ENV, NOT A SHELL VARIABLE, and this file
+        %% is the only place the two meet. hecate_om_identity:realm() reads
+        %% application:get_env(hecate_om, realm); exporting HECATE_REALM in the
+        %% shell and expecting that to be enough cost a sibling service an hour,
+        %% because nothing translates between the two by itself.
+        {realm,             <<"${HECATE_REALM}">>}
     ]},
 
+    %% ==========================================================================
+    %% EVOQ'S ADAPTER, WITHOUT WHICH THE NODE DOES NOT BOOT
+    %% ==========================================================================
+    %%
+    %% ⚠ MANDATORY BECAUSE `hecate_dronex_service' EXPORTS `store_id/0'.
+    %% `hecate_om:boot/1' then starts the store AND a per-store evoq
+    %% subscription, and that subscription reads the global log through evoq,
+    %% which crashes on `{not_configured, event_store_adapter}' if this block is
+    %% absent. hecate_om cannot inject it at runtime: evoq starts as a
+    %% release-boot application before any service's `start/2' runs.
+    %%
+    %% `hecate_om_store' says exactly this in its own module docs, and a sibling
+    %% still put two of three fleet nodes into a crash loop, because the callbacks
+    %% were added without reading the module that consumes them.
+    %%
+    %% ⚠⚠ THE STORE IS OPEN AND NOTHING WRITES TO IT YET, which is why this block
+    %% is here at order-of-work item 1. The failure above happens at BOOT, in a
+    %% container, on a fleet node, and never on a laptop. Discovering it at item 5
+    %% with the roster would mean discovering it at the moment the interesting
+    %% work lands.
     {evoq, [
         {event_store_adapter,    reckon_evoq_adapter},
         {subscription_adapter,   reckon_evoq_adapter},
-        {snapshot_store_adapter, reckon_evoq_adapter}
+        {snapshot_store_adapter, reckon_evoq_adapter},
+        %% A fallback for dispatch. Nothing here dispatches a command: an island
+        %% is not event-sourced, and what this store will hold is a roster, which
+        %% is queryable state with provenance rather than a replayable log. It is
+        %% set because evoq resolves it before knowing that.
+        {store_id,               dronex_store}
     ]},
 
-    %% Mesh: connect to the Leuven relay stations and publish facts under the
-    %% io.macula realm tag (= macula_realm:id(<<"io.macula">>)). Same seeds +
-    %% realm as parksim/ClankerCab, so the realm-side DroneX dashboard
-    %% subscribes airspace/<site>/track_confirmed alongside the other demos.
-    %% The realm tag is a topic namespace, not authorization. A dark node (no
-    %% reachable station) degrades to no-op publishes.
-    {hecate_om, [
-        {realm, <<"ABB81B5A614B63551B400B810648C0C8A78EFAD845442630C94B46CC95D2FCD1">>},
-        {station_seeds, [
-            <<"https://station-be-leuven-centrum.macula.io:4433">>,
-            <<"https://station-be-leuven-gasthuisberg.macula.io:4433">>,
-            <<"https://station-be-leuven-heverlee.macula.io:4433">>,
-            <<"https://station-be-leuven-korbeek-lo.macula.io:4433">>
-        ]}
-    ]},
-
-    {kernel, [
-        {logger_level, info},
-        {logger, [
-            {handler, default, logger_std_h,
-                #{formatter => {logger_formatter,
-                    #{depth => 30, chars_limit => 8192}}}}
-        ]}
-    ]}
+    {kernel, [{logger_level, info}]}
 ].

@@ -1,0 +1,23 @@
+{application, hecate_dronex, [
+    {description, "One island: a roster of drone controllers, an airspace, and a network that defends it"},
+    {vsn, "0.1.0"},
+    {registered, [hecate_dronex_sup]},
+    {mod, {hecate_dronex_app, []}},
+    {applications, [
+        kernel,
+        stdlib,
+        crypto,
+        %% The fact contracts that came forward from the counter-UAS line: the
+        %% sensor-model behaviour and what a sensor reports.
+        dronex_contracts,
+        %% The neural substrate. Listed so the release starts it and so a broken
+        %% NIF build fails at boot rather than at the first evaluation.
+        faber_tweann,
+        %% Mesh SDK, realm identity, capabilities, health.
+        hecate_om
+    ]},
+    {env, []},
+    {modules, []},
+    {licenses, ["Apache-2.0"]},
+    {links, [{"GitHub", "https://github.com/hecate-services/hecate-dronex"}]}
+]}.

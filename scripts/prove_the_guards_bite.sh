@@ -1,0 +1,167 @@
+#!/usr/bin/env bash
+# Break each boundary on purpose, one at a time, and assert the suite goes red.
+#
+# ⚠ WHY THIS EXISTS. Register INHERITED-3: a guard never seen to fail is not
+# known to be a guard. A green suite proves the code passes its tests; it does
+# not prove the tests would notice if the code stopped being right. Five of the
+# assertions in this repository are boundaries rather than behaviour, and a
+# boundary that cannot be shown to bite is a comment with a function's syntax.
+#
+# ⚠⚠ TWO TRAPS THIS SCRIPT IS BUILT AROUND, both recorded on siblings.
+#
+#   A perturbation that only breaks the COMPILE is not a red check. Every
+#   perturbation below produces code that compiles and is wrong, so a failure is
+#   the test noticing rather than the compiler noticing. Each one is verified to
+#   compile before its test is run.
+#
+#   `cp` restoring a backup leaves an OLDER mtime, so rebar3 serves a stale beam
+#   and the next run passes against code that is no longer there. Every restore
+#   here is followed by `touch`.
+#
+# Usage:  scripts/prove_the_guards_bite.sh
+# Exit:   0 when every guard bit, 1 when any of them did not.
+
+set -uo pipefail
+cd "$(dirname "$0")/.."
+
+SVC=apps/hecate_dronex/src/hecate_dronex_service.erl
+MESH=apps/hecate_dronex/src/join_the_archipelago/dronex_mesh.erl
+FACTS=apps/hecate_dronex/src/join_the_archipelago/dronex_facts.erl
+ISLAND=apps/hecate_dronex/src/advance_an_island/island.erl
+
+FAILURES=0
+BROKEN=""
+
+# ⚠ THE RESTORE TOUCHES, AND THEN DROPS THE TEST PROFILE, AND BOTH ARE NEEDED.
+#
+# `mv` back would leave the restored file with the backup's mtime, so rebar3
+# would serve the PERTURBED beam afterwards and the next honest run would fail
+# against code that is no longer on disk. `touch` fixes that for the profile the
+# perturbation was compiled in.
+#
+# It is not enough. `rebar3 compile' builds the DEFAULT profile and `rebar3
+# eunit' builds the TEST profile, which keeps its own copy of every beam. This
+# script compiles in one and tests in the other, so a restore that refreshes only
+# `_build/default' leaves `_build/test' holding the perturbations. That is
+# exactly what happened on the first green run of this script: it reported all
+# six guards biting, and the next plain `rebar3 eunit' failed four tests against
+# sources that were already correct.
+restore() {
+    for f in "$@"; do
+        if [ -f "${f}.guardbak" ]; then
+            mv "${f}.guardbak" "$f"
+            touch "$f"
+        fi
+    done
+    rm -rf _build/test
+}
+
+trap 'restore "$SVC" "$MESH" "$FACTS" "$ISLAND"' EXIT
+
+# Run one perturbation. $1 is the name, $2 the file, $3 a perl one-liner that
+# breaks it, $4 the eunit module that must go red.
+probe() {
+    local name="$1" file="$2" script="$3" suite="$4"
+
+    cp "$file" "${file}.guardbak"
+    perl -0777 -i -pe "$script" "$file"
+    touch "$file"
+
+    if cmp -s "$file" "${file}.guardbak"; then
+        echo "  SKIPPED  ${name}: the perturbation changed nothing (pattern drifted?)"
+        BROKEN="${BROKEN}\n  ${name}: perturbation matched nothing"
+        FAILURES=$((FAILURES + 1))
+        restore "$file"
+        return
+    fi
+
+    # A perturbation that does not compile proves nothing about the test.
+    if ! rebar3 compile >/dev/null 2>&1; then
+        echo "  SKIPPED  ${name}: the perturbation does not compile, so it is not a red check"
+        BROKEN="${BROKEN}\n  ${name}: perturbation broke the compile"
+        FAILURES=$((FAILURES + 1))
+        restore "$file"
+        rebar3 compile >/dev/null 2>&1
+        return
+    fi
+
+    if rebar3 eunit --module="$suite" >/dev/null 2>&1; then
+        echo "  DID NOT BITE  ${name}  (${suite} stayed green)"
+        BROKEN="${BROKEN}\n  ${name}: ${suite} stayed green"
+        FAILURES=$((FAILURES + 1))
+    else
+        echo "  bit           ${name}"
+    fi
+
+    restore "$file"
+}
+
+echo "Proving the guards bite."
+echo
+
+# 1. The publish path must not be able to kill the island.
+#    hecate_om_identity:macula_client/0 is a gen_server call, so with hecate_om
+#    down it EXITS with noproc rather than returning an error. Unwrapped, that
+#    exit travels up through the publish timer and takes the roster with it.
+probe "an unwrapped endpoint kills the island" "$MESH" \
+  's/try pool\(hecate_om_identity:macula_client\(\)\)\n    catch Class:Reason -> \{error, \{no_hecate_om, Class, Reason\}\}\n    end\./pool(hecate_om_identity:macula_client())./s' \
+  dronex_mesh_tests
+
+# 2. A malformed public realm must refuse rather than fall back. Falling back
+#    would publish PUBLIC facts onto the OPERATIONAL realm and report success,
+#    which is the one outcome nobody would notice.
+probe "a malformed realm falls back instead of refusing" "$MESH" \
+  's/decode\(_Hex, _FleetRealm\) -> \{error, dronex_realm_not_64_hex\}\./decode(_Hex, FleetRealm) -> {ok, FleetRealm}./' \
+  dronex_mesh_tests
+
+# 3. store_id/0 and the evoq block in sys.config.src must name the same store.
+#    They are in different files on different review paths, and disagreeing is
+#    what put two of three fleet nodes into a boot-crash loop on a sibling.
+probe "store_id drifts from the evoq block" "$SVC" \
+  's/store_id\(\) -> dronex_store\./store_id() -> some_other_store./' \
+  hecate_dronex_service_tests
+
+# 4. The identity spec must ask for exactly the topics published. Authority in
+#    two places is authority that drifts, and a sibling published on two topics
+#    its spec did not name.
+probe "the identity spec hardcodes its own topic list" "$SVC" \
+  's/resources => dronex_facts:topics\(\),/resources => [<<"dronex\/anything">>],/' \
+  hecate_dronex_service_tests
+
+# 5. A zero must be published rather than omitted. CHARTER.md rule 4: an island
+#    with an empty roster and an island that does not report a roster look
+#    identical unless the zero goes out.
+probe "a zero count is omitted from the fact" "$FACTS" \
+  's/        roster => island:roster_depth\(Island\),\n//' \
+  dronex_facts_tests
+
+# 6. Nothing in this repository may reach mnesia or the genotype path.
+#
+#    ⚠ THE PERTURBATION IS EXPORTED, AND APPENDED AT THE END OF THE FILE, AND
+#    NEITHER IS TIDINESS. This probe broke the compile twice before it worked,
+#    and both times for a reason that is not about mnesia at all:
+#
+#      an unexported function nobody calls is an unused-function warning, and
+#      this tree builds with warnings_as_errors
+#
+#      a function definition placed among the attributes puts `-export_type' and
+#      `-record' AFTER the first function, which Erlang rejects outright
+#
+#    Both are the trap named at the top of this file, and both were caught by
+#    this script's own compile check rather than by reading the output as a
+#    result. A probe that does not compile is not evidence about anything.
+probe "a module reaches into mnesia" "$ISLAND" \
+  's/-export\(\[tick_of\/1, roster_depth\/1, capacity\/1, seed_of\/1\]\)\./-export([tick_of\/1, roster_depth\/1, capacity\/1, seed_of\/1]).\n-export([tables\/0])./; s/\z/\ntables() -> mnesia:system_info(tables).\n/' \
+  faber_boundary_tests
+
+echo
+rebar3 compile >/dev/null 2>&1
+
+if [ "$FAILURES" -eq 0 ]; then
+    echo "All six guards bit."
+    exit 0
+fi
+
+echo "${FAILURES} guard(s) did not bite:"
+printf '%b\n' "$BROKEN"
+exit 1
