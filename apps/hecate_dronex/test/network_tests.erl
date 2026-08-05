@@ -266,4 +266,8 @@ the_towers_reach_the_wire_test() ->
     %% Metres, like the arena and the frames, so a reader never mixes units.
     #{arena_x := Ax} = airspace:limits(),
     [?assert(V >= 0 andalso V =< Ax div 20480) || V <- maps:get(ground, Home)],
-    ?assertEqual([], maps:get(ground, Enc(Run(network:none())))).
+    ?assertEqual([], maps:get(ground, Enc(Run(network:none())))),
+    %% The reach travels too, because five dots without it is a picture of the
+    %% towers rather than a picture of the defence.
+    #{sensor_range := R} = airspace:limits(),
+    ?assertEqual(R div 20480, maps:get(ground_range, Home)).

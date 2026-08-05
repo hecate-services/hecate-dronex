@@ -101,6 +101,12 @@ encode(Meta, Result, Frames, Limits) ->
       %% move, and repeating five fixed positions across 600 frames would be
       %% three thousand numbers saying one thing.
       ground_fields => [x, y, z],
+      %% ⚠ AND HOW FAR EACH ONE REACHES, or a spectator can draw five dots and
+      %% not the thing that matters about them: WHERE THE HOLES ARE. The gaps
+      %% between coverage and the volume overhead are the whole counterplay to a
+      %% network, so a picture without the range is a picture of the towers
+      %% rather than a picture of the defence.
+      ground_range => metres(maps:get(sensor_range, Limits, 0)),
       ground => lists:append([[metres(X), metres(Y), metres(Z)]
                               || #{x := X, y := Y, z := Z}
                                  <- maps:get(ground, Result, [])]),
