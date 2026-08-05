@@ -79,6 +79,63 @@ a `meta` on the end, so every fact fell through a catch-all and was discarded
 silently for an hour, with 226 published and 0 failed at the other end and every
 checkable thing checking out.
 
+## Availability, and why it is pub/sub while the challenge is not
+
+⚠ **Added 2026-08-05, replacing "an island picks a target from the islands it
+has heard publish".** That worked by subscribing to `dronex/vitals` — thirty
+fields including a benchmark ladder and ablation deltas, once a second, from
+every island — and reading one thing from it: who exists.
+
+**A protocol is a combination of both mechanisms, and the split is by nature:**
+
+| part | nature | mechanism |
+|---|---|---|
+| who can be fought | ambient, no answer wanted | **pub/sub** |
+| may I attack you | addressed, needs an immediate definite yes/no | **RPC** |
+| the fight | slow work with one owner | neither, it is work |
+| what happened | a fact about two islands | **pub/sub** |
+
+⚠⚠ **The challenge stays RPC because admission control needs a serialisation
+point.** Two attackers both see an island open, both muster, both send. Only a
+synchronous accept can turn one of them away *before* it has committed a party;
+with pub/sub alone both would learn afterwards, and the roster's finiteness is
+the whole price of a raid.
+
+### `dronex/island_opened_for_battle` is a LEASE
+
+Re-announced while open, expired by the listener if it stops arriving. A bare
+`opened` would be edge-triggered distributed state: one lost message and a
+neighbour believes you are open for ever, spending two minutes per raid on a
+corpse.
+
+⚠ **The lease is long on purpose, and that is a design decision rather than a
+tuning one.** Announced every 30s, believed for five minutes.
+
+| lease | resting state | consequence |
+|---|---|---|
+| short | **closed** | neglect keeps you safe. Islands drift into turtling, no genomes cross, and the one idea dies while the exhibit still looks busy |
+| long | **open** | staying open is what happens if you do nothing. Closing is an act, and being popular costs airframes |
+
+The second is what this design wants, because the turtling failure is the one it
+is most at risk of. Death still clears the entry, which is what a lease is for.
+
+**An island announces open only when it actually is.** The published state is
+derived from whether the raid procedure is really registered and whether a
+defence can be mustered above the floor — never asserted beside them. Without
+that an island can announce itself open, be believed, and answer nothing, which
+is REGISTER I.11 exactly.
+
+Two fields ride along, and each turns a wasted raid into a filter: the **engine
+fingerprint**, because a mismatch would refuse on arrival, and the **roster
+depth**, because an island at its floor has nobody to field.
+
+**Presence stays on `dronex/vitals`.** The site needs the islands that are
+CLOSED — a turtling island is still land on the map, arguably the most
+interesting thing on it — so deriving presence from the opening topic would draw
+the combatants and quietly omit everyone who chose not to fight. `open` also
+rides on `vitals`, so the map can tell the two apart without subscribing to the
+availability topics at all.
+
 ## The raid protocol
 
 ```

@@ -28,7 +28,7 @@ only_what_exists_is_published_test() ->
                   ablation_void, ablations, admissions, advertising,
                   benchmark_draws, benchmark_losses, benchmark_rungs,
                   benchmark_starts, benchmark_wins, capacity, captures, defences,
-                  fact_version, generation, island, island_id, listening,
+                  fact_version, generation, island, island_id, listening, open,
                   raids, raids_home, raids_lost, roster,
                   roster_write_failures, roster_writes, roster_writes_dropped,
                   rounds, signal_entropy, signal_volume,
@@ -170,4 +170,56 @@ restore(Name, Value) -> os:putenv(Name, Value), ok.
 %% and not yet reachable. Zeros and falses rather than absent fields, so a reader
 %% can tell `nothing yet' from `not reporting'.
 runtime() ->
-    #{writer => roster_log_writer:silent(), advertising => false, listening => false}.
+    #{writer => roster_log_writer:silent(), advertising => false,
+      listening => false, open => false}.
+
+%%==============================================================================
+%% Availability, which is the only thing islands tell each other
+%%==============================================================================
+
+%% ⚠ THE TWO EXTRA FIELDS EACH TURN A WASTED RAID INTO A FILTER. An incompatible
+%% ENGINE would refuse on arrival and an island at its ROSTER floor would have
+%% nobody to field, and both cost a whole raiding party to discover.
+an_opening_carries_what_a_caller_needs_to_skip_a_pointless_raid_test() ->
+    Fact = with_data_dir(fun () -> dronex_facts:opened(island:new(#{})) end),
+    ?assertEqual(lists:sort([fact_version, fingerprint, island, island_id, roster]),
+                 lists:sort(maps:keys(Fact))),
+    ?assertEqual(dronex_raid:fingerprint(), maps:get(fingerprint, Fact)),
+    ?assertEqual(0, maps:get(roster, Fact)).
+
+%% Closing says only who, because the listener needs nothing else to forget you.
+a_closing_says_only_who_test() ->
+    Fact = with_data_dir(fun dronex_facts:closed/0),
+    ?assertEqual(lists:sort([fact_version, island, island_id]),
+                 lists:sort(maps:keys(Fact))).
+
+%% ⚠ PRESENCE STAYS ON VITALS AND AVAILABILITY IS ITS OWN TOPIC, because the site
+%% needs the islands that are CLOSED. Deriving presence from the opening topic
+%% would draw the combatants and quietly omit everyone who chose not to fight.
+availability_is_separate_from_presence_test() ->
+    ?assert(lists:member(dronex_facts:topic(opened), dronex_facts:topics())),
+    ?assert(lists:member(dronex_facts:topic(closed), dronex_facts:topics())),
+    ?assertNotEqual(dronex_facts:topic(opened), dronex_facts:topic(vitals)),
+    #{resources := Asked} = hecate_dronex_service:identity_spec(),
+    [?assert(lists:member(T, Asked)) || T <- dronex_facts:topics()].
+
+%% And the site can tell a turtling island from a fighting one without
+%% subscribing to the availability topics at all.
+whether_an_island_is_open_is_on_vitals_too_test() ->
+    Shut = with_data_dir(fun () -> dronex_facts:vitals(island:new(#{}), runtime()) end),
+    ?assertNot(maps:get(open, Shut)),
+    Open = with_data_dir(fun () ->
+        dronex_facts:vitals(island:new(#{}), (runtime())#{open => true})
+    end),
+    ?assert(maps:get(open, Open)).
+
+%% ⚠ THE SAME FLOOR THE ATTACKER RESPECTS. An island that has been ground down
+%% stops being able to attack and stops being worth attacking at the same moment,
+%% which is one rule rather than two that could disagree.
+an_island_at_its_floor_cannot_defend_test() ->
+    {R, _} = trainer:seed_roster(roster:new(p, 240), raid:floor_of() + raid:party(),
+                                 rand:seed_s(exsss, {2, 4, 6})),
+    I = island:with_roster(island:new(#{}), R),
+    ?assert(island:can_defend(I, raid:party())),
+    ?assertNot(island:can_defend(I, raid:party() + 1)),
+    ?assertNot(island:can_defend(island:new(#{}), raid:party())).

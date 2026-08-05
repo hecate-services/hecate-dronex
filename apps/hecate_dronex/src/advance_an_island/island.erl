@@ -28,7 +28,7 @@
 -export([tick_of/1, roster_depth/1, capacity/1, seed_of/1, roster_of/1]).
 -export([generation_of/1, benchmark_of/1, rounds_of/1, admissions_of/1]).
 -export([ablated/2, ablation_of/1, ablations_of/1]).
--export([muster/2, returned/3, defended/5]).
+-export([muster/2, returned/3, defended/5, can_defend/2]).
 -export([raids_of/1, raids_home_of/1, raids_lost_of/1, defences_of/1, captures_of/1]).
 
 -export_type([island/0]).
@@ -155,6 +155,16 @@ generation_of(#island{roster = R}) -> roster:generation_of(R).
 
 -spec benchmark_of(island()) -> map().
 benchmark_of(#island{benchmark = B}) -> B.
+
+%% @doc Whether this island could field a defence of `N' right now.
+%%
+%% ⚠ THE SAME FLOOR THE ATTACKER RESPECTS, and asking BEFORE announcing open is
+%% what stops a neighbour spending a whole raiding party to discover the answer.
+%% It is deliberately not a separate defence floor: an island that has been
+%% ground down stops being able to attack and stops being worth attacking at the
+%% same moment, which is one rule rather than two that could disagree.
+-spec can_defend(island(), pos_integer()) -> boolean().
+can_defend(#island{roster = R}, N) -> roster:depth(R) - N >= raid:floor_of().
 
 %% @doc Send a raiding party out of the roster.
 %%

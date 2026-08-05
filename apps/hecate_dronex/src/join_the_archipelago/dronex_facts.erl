@@ -42,7 +42,7 @@
 -module(dronex_facts).
 
 -export([topic/1, topics/0, namespace/0, fact_version/0]).
--export([vitals/2, bout/4, raid/3]).
+-export([vitals/2, bout/4, raid/3, opened/1, closed/0]).
 
 -define(DEFAULT_NS, <<"dronex">>).
 
@@ -76,7 +76,22 @@ topic(bout) -> leaf(<<"bout">>);
 %% it is worth its own topic rather than riding `bout'. A reader collecting the
 %% archipelago's history wants these and may not want a training bout every
 %% twenty seconds from every island.
-topic(raid) -> leaf(<<"raid">>).
+topic(raid) -> leaf(<<"raid">>);
+%% ==========================================================================
+%% ⚠ AVAILABILITY IS A DECISION, AND IT IS THE ONLY THING ISLANDS TELL EACH OTHER
+%% ==========================================================================
+%%
+%% Islands subscribe to these two and to nothing else. They used to subscribe to
+%% `vitals' — thirty fields including a benchmark ladder and ablation deltas,
+%% once a second, from every island — purely to learn who existed. That is a
+%% spectator's fact and islands were reading it for one field.
+%%
+%% PRESENCE STAYS ON `vitals', where the site reads it, because the site needs
+%% islands that are CLOSED. A turtling island is still land on the map, and
+%% deriving presence from these topics would draw the combatants and quietly omit
+%% everyone who chose not to fight.
+topic(opened) -> leaf(<<"island_opened_for_battle">>);
+topic(closed) -> leaf(<<"island_closed_for_battle">>).
 
 %% @doc Every topic this island publishes on.
 %%
@@ -92,7 +107,7 @@ topic(raid) -> leaf(<<"raid">>).
 %% an island's own best controller against one of its drills, which is what an
 %% island actually spends its time doing.
 -spec topics() -> [binary()].
-topics() -> [topic(vitals), topic(bout), topic(raid)].
+topics() -> [topic(vitals), topic(bout), topic(raid), topic(opened), topic(closed)].
 
 leaf(Leaf) -> <<(namespace())/binary, "/", Leaf/binary>>.
 
@@ -176,7 +191,13 @@ persistence(#{written := W, failed := F, dropped := D}) ->
 %% `hecate_om' for the fleet realm and could not at boot.
 reachability(Runtime) ->
     #{advertising => maps:get(advertising, Runtime, false),
-      listening => maps:get(listening, Runtime, false)}.
+      listening => maps:get(listening, Runtime, false),
+      %% ⚠ ON VITALS AS WELL AS ON ITS OWN TOPIC, and the duplication is for two
+      %% audiences with different needs. Islands want it pushed, small and on
+      %% change; the site wants it beside everything else it already draws, so
+      %% that a turtling island can be drawn differently from a fighting one
+      %% without subscribing to the availability topics at all.
+      open => maps:get(open, Runtime, false)}.
 
 %% ⚠ THE THREE NUMBERS FROM `DESIGN_DRONES_THAT_TALK.md', AND THE FOURTH THAT
 %% MAKES THEM READABLE. Volume, delta and entropy each mean something specific
@@ -228,6 +249,41 @@ described({error, _Why}) ->
     #{station_host => <<"unknown">>,
       station_connected => false,
       station_id => <<>>}.
+
+%% @doc I can be fought, and here is what you need to know before trying.
+%%
+%% ⚠ A LEASE, NOT AN EVENT. Re-announced while open and expired by the listener
+%% if it stops arriving, because a bare `opened' is edge-triggered distributed
+%% state: one lost message and a neighbour believes you are open for ever, and
+%% raids against a corpse cost two minutes each.
+%%
+%% ⚠⚠ AND THE TTL IS LONG ON PURPOSE, WHICH IS A DESIGN DECISION AND NOT A
+%% TUNING ONE. A short lease makes CLOSED the resting state: neglect keeps you
+%% safe, islands drift into turtling, no genomes cross the mesh, and the
+%% charter's one idea dies while the exhibit still looks busy — which
+%% `DESIGN_THE_ROSTER_AND_THE_RAID.md' names as the failure it is most at risk
+%% of. A lease renewed easily while alive makes OPEN the resting state: staying
+%% open is what happens if you do nothing, closing is an act, and being popular
+%% costs airframes. Death still clears the entry, which is what a lease is for.
+%%
+%% The two extra fields each turn a wasted raid into a filter: an incompatible
+%% ENGINE would refuse on arrival, and an island near its ROSTER floor would
+%% refuse for want of anybody to field.
+-spec opened(island:island()) -> map().
+opened(Island) ->
+    #{fact_version => ?FACT_VERSION,
+      island => dronex_identity:island(),
+      island_id => dronex_identity:island_id(),
+      fingerprint => dronex_raid:fingerprint(),
+      roster => island:roster_depth(Island)}.
+
+%% @doc I am no longer a target. Immediate, so choosing to turtle costs seconds
+%% rather than the lease.
+-spec closed() -> map().
+closed() ->
+    #{fact_version => ?FACT_VERSION,
+      island => dronex_identity:island(),
+      island_id => dronex_identity:island_id()}.
 
 %% @doc A raid, as a recording plus who lost what.
 %%

@@ -62,11 +62,14 @@
 %% again while nothing selects.
 -define(DEFAULT_RAID_MS, 120000).
 
-%% How long an island remembers having heard from another. There is no directory
-%% and no membership, so this is the entire definition of `who is out there', and
-%% an island that stops publishing stops being a target rather than being marked
-%% down as gone.
--define(HEARD_FOR_MS, 600000).
+%% ⚠ THE LEASE, AND ITS LENGTH IS THE DESIGN DECISION. Announced every 30s while
+%% open, believed for five minutes. Short enough that a dead island stops being
+%% raided within one raid interval; long enough that OPEN is the resting state,
+%% because a lease that lapses easily makes neglect safe and islands drift into
+%% turtling — the failure the roster design names as the one it is most at risk
+%% of. Staying open is what happens if you do nothing; closing is an act.
+-define(ANNOUNCE_MS, 30000).
+-define(OPEN_FOR_MS, 300000).
 
 %% Often enough that a mesh coming up late costs a minute rather than a
 %% deployment, rare enough that re-asserting is not chatter.
@@ -139,9 +142,11 @@ init([]) ->
     %% none of them tells us they happened. Advertising the same procedure twice
     %% is a map overwrite at the pool and a re-register at the station.
     schedule(mesh_check, 0),
+    schedule(announce, ?ANNOUNCE_MS),
     {ok, #{island => Island, sent => 0, failed => 0, sitting => false,
            ablating => false, writer => roster_log_writer:silent(),
-           heard => #{}, away => #{}, advertising => false, listening => false}}.
+           open_islands => #{}, away => #{},
+           advertising => false, listening => false, open => false}}.
 
 %% ⚠ ADDRESSED BY IDENTITY, NEVER BY NAME. Two islands may both be called
 %% `beam02'; only the 128 bits in the data directory are unique. A procedure
@@ -152,7 +157,18 @@ advertise_self() ->
     dronex_mesh:advertise(dronex_raid:procedure(dronex_identity:island_id()),
                           fun (Request) -> host_a_raid(Request, Self) end).
 
-listen_for_neighbours() -> dronex_mesh:subscribe(dronex_facts:topic(vitals), self()).
+%% ⚠ AVAILABILITY, NOT PRESENCE. This used to subscribe to `vitals' — thirty
+%% fields including a benchmark ladder, once a second, from every island — to
+%% read one thing: who exists. What an island actually needs is who can be
+%% FOUGHT, which is a smaller fact and a different question. Presence stays on
+%% `vitals' for the site, which needs the islands that are closed too.
+listen_for_neighbours() ->
+    both(dronex_mesh:subscribe(dronex_facts:topic(opened), self()),
+         dronex_mesh:subscribe(dronex_facts:topic(closed), self())).
+
+both({ok, _} = Ok, {ok, _}) -> Ok;
+both({error, _} = E, _Other) -> E;
+both(_Ok, {error, _} = E) -> E.
 
 %% Re-asserted every tick. The transition is logged, so a mesh that comes up late
 %% says so once rather than every minute for ever.
@@ -327,6 +343,10 @@ handle_info(mesh_check, S) ->
     schedule(mesh_check, ?DEFAULT_MESH_CHECK_MS),
     {noreply, listening(advertising(S))};
 
+handle_info(announce, S) ->
+    schedule(announce, ?ANNOUNCE_MS),
+    {noreply, handle_announcement(S)};
+
 handle_info(raid, #{island := I} = S) ->
     schedule(raid, ?DEFAULT_RAID_MS),
     {noreply, launched(I, S)};
@@ -336,23 +356,64 @@ handle_info(_Msg, S) ->
 
 %% What the server knows about itself, as opposed to what the island knows about
 %% its world. Kept in one place so a new field is one line rather than three.
-runtime(S) -> maps:with([writer, advertising, listening], S).
+runtime(S) -> maps:with([writer, advertising, listening, open], S).
 
-%% Who else is out there, and when they were last heard. Anything that is not a
+%% ⚠ AN ISLAND ANNOUNCES OPEN ONLY WHEN IT ACTUALLY IS, AND THAT IS THE POINT.
+%% `advertising' is whether the raid procedure is really registered; without that
+%% check an island could announce itself open, be believed, and answer nothing —
+%% which is precisely I.11, where it was busy, healthy, and unreachable for
+%% hours. The published state is DERIVED from the capability rather than asserted
+%% beside it, so it cannot lie.
+%%
+%% ⚠⚠ AND ABOVE THE FLOOR, because an island that cannot muster a defence will
+%% refuse anyway. Announcing open while unable to field anybody would spend a
+%% neighbour's whole raiding party to discover it.
+%%
+%% The POLICY is `open whenever capable', stated rather than implied, and it is
+%% deliberately the simplest one for the same reason raid initiation is: a clever
+%% policy would be a tactic nobody evolved. It is the seam where a real one goes.
+handle_announcement(#{island := I} = S) ->
+    Now = capable(S) andalso island:can_defend(I, raid:party()),
+    announced_state(Now, maps:get(open, S), I, S#{open := Now}).
+
+capable(#{advertising := A, listening := L}) -> A andalso L.
+
+%% Re-announced while open, because it is a lease. Announced once on the way
+%% down, because closing should cost seconds rather than the lease.
+announced_state(true, _Was, I, S) ->
+    counted(dronex_mesh:publish(dronex_facts:topic(opened), dronex_facts:opened(I)), S);
+announced_state(false, true, _I, S) ->
+    logger:info("[island] closed for battle"),
+    counted(dronex_mesh:publish(dronex_facts:topic(closed), dronex_facts:closed()), S);
+announced_state(false, false, _I, S) ->
+    S.
+
+%% Who else can be fought, and when they last said so. Anything that is not a
 %% vitals fact from somebody else is ignored rather than guessed at.
-noted(#{island_id := Id}, #{heard := H} = S) when is_binary(Id) ->
-    heard_from(Id =:= dronex_identity:island_id(), Id, H, S);
+%% An `opened' carries what a caller needs to skip a pointless raid; a `closed'
+%% carries only who. Anything else is ignored rather than guessed at.
+noted(#{island_id := Id, fingerprint := F, roster := R}, S) when is_binary(Id) ->
+    opened_by(Id =:= dronex_identity:island_id(), Id, #{fingerprint => F, roster => R}, S);
+noted(#{island_id := Id}, #{open_islands := O} = S) when is_binary(Id) ->
+    S#{open_islands := maps:remove(Id, O)};
 noted(_Other, S) ->
     S.
 
-heard_from(true, _Id, _H, S) -> S;
-heard_from(false, Id, H, S) -> S#{heard := H#{Id => erlang:monotonic_time(millisecond)}}.
+opened_by(true, _Id, _Meta, S) -> S;
+opened_by(false, Id, Meta, #{open_islands := O} = S) ->
+    S#{open_islands := O#{Id => {erlang:monotonic_time(millisecond), Meta}}}.
 
-%% Islands heard from inside the window. An island that stopped publishing stops
-%% being a target, which is the whole membership model.
-neighbours(#{heard := H}) ->
+%% ⚠ FILTERED HERE RATHER THAN DISCOVERED BY REFUSAL. An island whose engine
+%% differs would refuse the raid on arrival and an island at its floor would have
+%% nobody to field, and both cost a whole party to find out. The lease expiry is
+%% what makes a dead island stop being a target.
+targets(#{open_islands := O}) ->
     Now = erlang:monotonic_time(millisecond),
-    [Id || {Id, At} <- maps:to_list(H), Now - At =< ?HEARD_FOR_MS].
+    Mine = dronex_raid:fingerprint(),
+    [Id || {Id, {At, #{fingerprint := F, roster := R}}} <- maps:to_list(O),
+           Now - At =< ?OPEN_FOR_MS,
+           F =:= Mine,
+           R > raid:floor_of()].
 
 %% @doc Fly the island's best controller against one of its drills, and publish
 %% the recording.
@@ -462,7 +523,7 @@ fresh(defender, _A, D) -> element(2, engagement:controller(D)).
 %% defender fights, and doing that here would stop the clock, the trainer and the
 %% publisher for the whole engagement — which is exactly how the first deployed
 %% island wedged itself on a store write.
-launched(I, S) -> aimed(raid:target(neighbours(S), dronex_identity:island_id()), I, S).
+launched(I, S) -> aimed(raid:target(targets(S), dronex_identity:island_id()), I, S).
 
 aimed(none, _I, S) -> S;
 aimed({ok, Target}, I, S) -> mustered(island:muster(I, raid:party()), Target, S).
