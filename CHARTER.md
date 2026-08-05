@@ -198,9 +198,9 @@ noun has to carry that or the physics will drift back to the ground.
 | 4 | the frozen benchmark: scripted drills, fixed starts, the published score | **BUILD**, before any breeding | ✅ | rule: a rising number against a moving exam is an artifact, and it cannot be added to history later |
 | 5 | the trainer and the roster, persisted | **BUILD** | ✅ | |
 | 6 | comms, with the ablation instrument in the same commit | **BUILD** | ✅ | the instrument is not a follow-up. Without it the channel is decoration. Four channels, three banks, one tick late, summed. `ablation` ships in the same commit and its three numbers are on every vitals fact |
-| 7 | the raid protocol, and the defender keeping what attacked it | **BUILD** | | |
-| 8 | **static defence phase 1**: one non-cooperative modality, fixed placement, fixed confirmation threshold, the ground bank, the three-way ablation | **BUILD** |  | the smallest thing that makes the asymmetry real. It lands before the map so coverage is drawn from the start rather than retrofitted |
-| 9 | the map | **BUILD** | | |
+| 7 | the raid protocol, and the defender keeping what attacked it | **BUILD** | ✅ | availability by pubsub (`opened`/`closed`), the handshake by RPC, both sides emitting `committed`, settlement back to the attacker. Proven end to end on two islands |
+| 8 | **static defence phase 1**: one non-cooperative modality, fixed placement, fixed confirmation threshold, the ground bank, the three-way ablation | **BUILD** | ✅ build, ⏳ sweep | the smallest thing that makes the asymmetry real. It lands before the map so coverage is drawn from the start rather than retrofitted. **The viability sweep is owed** — see below |
+| 9 | the map | **BUILD** | ✅ | the archipelago with raid arcs, and the fight drawn obliquely with trails |
 | 10 | **static defence phase 2**: the confirmation threshold evolves | **BUILD** |  | one integer, and it is the genuine counter-drone tradeoff: cue at ghosts and waste battery, or see too late |
 | 11 | **static defence phase 3**: placement evolves, is persisted, is published, is drawn | **BUILD** |  | this is what makes islands visibly different places |
 | 12 | ONNX export of a champion, flown against the simulator through the exported artifact | **BUILD** |  | this is what makes the framing true rather than aspirational, and it is a test rather than a claim |
@@ -208,6 +208,24 @@ noun has to carry that or the physics will drift back to the ground.
 ⚠ **Items 8, 10 and 11 are staged deliberately**, because the static defence
 roughly doubles the surface of the build and only phase 1 is needed for the game
 to be a game.
+
+⚠⚠ **ITEM 8 OWES A VIABILITY SWEEP AND IS NOT FINISHED WITHOUT IT.** The criterion
+was written down before the dial was set, which is the only order in which it
+means anything: **a competent attacking swarm must win a non-trivial fraction of
+raids against a competent defence.** If home advantage turns out to be
+overwhelming, every island turtles, nothing raids, no genomes cross, and the one
+idea this repository has dies quietly while the exhibit still looks busy.
+
+The sweep turns sensor count and sensor range. The whole sweep gets published,
+**including the settings that made attacking hopeless** — charter rule 3, and the
+standing rule that a dial is never set by which value gave the answer that was
+wanted.
+
+It is owed rather than done because it cannot be run yet: a sweep against
+untrained rosters measures random controllers, not competence, and would answer
+a different question convincingly. It runs once the fleet's rosters have trained
+under the towers, which is the first generation that could possibly learn to use
+a cue that until now was four zeroes.
 
 **No claim is scheduled.** If one is ever wanted, it goes in `claims/` with a
 pre-registration, and the four measurement rules from 053 to 056 apply.
