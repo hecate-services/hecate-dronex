@@ -21,11 +21,16 @@ both_sides_fly_and_the_pairing_comes_back_test() ->
     {ok, Arena, Controllers, Pairs} = defence:compose(defenders(3), raiders(3), 0),
     ?assertEqual(6, length(airspace:drones(Arena))),
     ?assertEqual(6, maps:size(Controllers)),
-    %% ⚠ THE PAIRING IS THE WHOLE REPLY. A drone is `{attacker, 1}'; a genome is
-    %% a sha256. Without it the defender could say who won and not WHICH of the
-    %% attacker's genomes came home, and the attacker's roster could not settle.
-    ?assertEqual(3, length(Pairs)),
-    [?assertMatch({{attacker, _}, <<_/binary>>}, P) || P <- Pairs],
+    %% ⚠ BOTH PAIRINGS. A drone is `{attacker, 1}'; a genome is a sha256. Without
+    %% the attacker's map the defender could say who won and not WHICH genomes
+    %% came home; without the defender's it could not settle its OWN losses
+    %% except by position in a list, which is a second unwritten copy of the same
+    %% pairing waiting to disagree with this one.
+    #{attackers := Att, defenders := Def} = Pairs,
+    ?assertEqual(3, length(Att)),
+    ?assertEqual(3, length(Def)),
+    [?assertMatch({{attacker, _}, <<_/binary>>}, P) || P <- Att],
+    [?assertMatch({{defender, _}, _Entry}, P) || P <- Def],
     %% Every drone in the arena has a controller: a drone without one commands
     %% nothing and would sit still inside a result that looks real.
     [?assert(maps:is_key(D#drone.id, Controllers)) || D <- airspace:drones(Arena)].
@@ -34,7 +39,7 @@ both_sides_fly_and_the_pairing_comes_back_test() ->
 %% that is where the second price lives: the defender's sensor network covers
 %% this airspace and the raider's covers nothing.
 the_raiders_are_the_attacking_side_test() ->
-    {ok, Arena, _C, Pairs} = defence:compose(defenders(2), raiders(2), 3),
+    {ok, Arena, _C, #{attackers := Pairs}} = defence:compose(defenders(2), raiders(2), 3),
     Att = [D#drone.id || D <- airspace:drones(Arena), D#drone.side =:= attacker],
     ?assertEqual(lists:sort(Att), lists:sort([Id || {Id, _G} <- Pairs])).
 
@@ -71,9 +76,15 @@ a_result_with_nothing_in_it_is_a_draw_and_a_total_loss_test() ->
 a_whole_raid_can_be_flown_and_settled_test_() ->
     {timeout, 120, fun () ->
         Raiders = raiders(3),
-        {ok, Arena, Controllers, Pairs} = defence:compose(defenders(3), Raiders, 5),
+        Defenders = defenders(3),
+        {ok, Arena, Controllers, Pairs} = defence:compose(Defenders, Raiders, 5),
         Result = engagement:run(Arena, Controllers),
-        Fates = defence:fates(Pairs, Result),
+        Fates = defence:fates(maps:get(attackers, Pairs), Result),
+
+        %% The defender settles its own losses from its own half of the pairing.
+        Home = defence:survivors(maps:get(defenders, Pairs), Result),
+        ?assert(length(Home) =< length(Defenders)),
+        [?assert(lists:member(E, Defenders)) || E <- Home],
 
         ?assertEqual(3, length(Fates)),
         ?assert(lists:member(defence:outcome(Result), [attacker, defender, draw])),
@@ -83,3 +94,14 @@ a_whole_raid_can_be_flown_and_settled_test_() ->
         Sent = [Id || {Id, _G} <- Raiders],
         [?assert(lists:member(Id, Sent)) || {Id, _F} <- Fates]
     end}.
+
+%% ⚠ THE DEFENDER'S OWN LOSSES, BY PAIRING RATHER THAN BY POSITION. The first
+%% version of the caller recovered these by index into the roster list, which is
+%% a second copy of a pairing `compose/3' already knows, and the day the layout
+%% stops being index-ordered it would return plausible survivors quietly.
+the_defender_settles_its_own_losses_by_name_test() ->
+    [A, B] = defenders(2),
+    Pairs = [{{defender, 1}, A}, {{defender, 2}, B}],
+    ?assertEqual([B], defence:survivors(Pairs, #{survivors => [{defender, 2}]})),
+    ?assertEqual([], defence:survivors(Pairs, #{survivors => []})),
+    ?assertEqual([A, B], defence:survivors(Pairs, #{survivors => [{defender, 1}, {defender, 2}]})).

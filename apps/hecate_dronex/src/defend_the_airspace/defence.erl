@@ -32,15 +32,23 @@
 
 -include("airspace.hrl").
 
--export([compose/3, fates/2, outcome/1]).
+-export([compose/3, fates/2, outcome/1, survivors/2]).
 
 %% @doc Lay out the fight and crew both sides.
 %%
 %% Equal numbers: an unequal fight would make the outcome a fact about the
 %% numbers rather than about the controllers, and both sides pay the same price
 %% per airframe.
+%% ⚠ BOTH PAIRINGS COME BACK, for the same reason the attacker's does: a drone is
+%% `{defender, 2}' and a roster entry is a sha256, and the defender has to settle
+%% its OWN losses too. The first version recovered the defender's side by
+%% position in a list, which is a second, unwritten copy of the pairing that
+%% `compose/3' already knows — and the day the layout stops being index-ordered
+%% it would go on returning plausible survivors quietly.
 -spec compose([roster:entry()], [{binary(), drone_genome:genome()}], non_neg_integer()) ->
-    {ok, #arena{}, map(), [{term(), binary()}]} | {error, term()}.
+    {ok, #arena{}, map(), #{attackers := [{term(), binary()}],
+                            defenders := [{term(), roster:entry()}]}}
+    | {error, term()}.
 compose([], _Raiders, _Index) -> {error, no_defenders};
 compose(_Defenders, [], _Index) -> {error, no_raiders};
 compose(Defenders, Raiders, Index) ->
@@ -61,7 +69,7 @@ ids(Placed, Side) -> [Id || {Id, S, _, _, _, _} <- Placed, S =:= Side].
 crew(Placed, {Att, Def}) ->
     Wanted = [{DroneId, G} || {DroneId, {_GenomeId, G}} <- Att]
              ++ [{DroneId, roster:entry_genome(E)} || {DroneId, E} <- Def],
-    assembled(build(Wanted, #{}), Placed, Att).
+    assembled(build(Wanted, #{}), Placed, {Att, Def}).
 
 %% ⚠ ONE UNFLYABLE GENOME REFUSES THE WHOLE ENGAGEMENT, for the same reason
 %% `dronex_raid' refuses the whole raid: the alternative is a drone with no
@@ -74,9 +82,11 @@ build([{DroneId, G} | Rest], Acc) -> made(engagement:controller(G), DroneId, G, 
 made({error, Why}, DroneId, _G, _Rest, _Acc) -> {error, {unflyable, DroneId, Why}};
 made({ok, C}, DroneId, _G, Rest, Acc) -> build(Rest, Acc#{DroneId => C}).
 
-assembled({error, _} = E, _Placed, _Att) -> E;
-assembled({ok, Controllers}, Placed, Att) ->
-    {ok, airspace:new(Placed), Controllers, [{DroneId, GId} || {DroneId, {GId, _G}} <- Att]}.
+assembled({error, _} = E, _Placed, _Sides) -> E;
+assembled({ok, Controllers}, Placed, {Att, Def}) ->
+    {ok, airspace:new(Placed), Controllers,
+     #{attackers => [{DroneId, GId} || {DroneId, {GId, _G}} <- Att],
+       defenders => Def}}.
 
 %% @doc What happened to each of the attacker's genomes, by name.
 -spec fates([{term(), binary()}], map()) -> [{binary(), dronex_raid:fate()}].
@@ -90,6 +100,13 @@ fates(Pairs, Result) ->
 %% the entire reason the withdraw actuator exists.
 fate_of(true) -> survived;
 fate_of(false) -> lost.
+
+%% @doc Which of the defender's own entries are still alive, by the pairing
+%% rather than by position.
+-spec survivors([{term(), roster:entry()}], map()) -> [roster:entry()].
+survivors(Pairs, Result) ->
+    Alive = maps:get(survivors, Result, []),
+    [E || {DroneId, E} <- Pairs, lists:member(DroneId, Alive)].
 
 -spec outcome(map()) -> attacker | defender | draw.
 outcome(Result) -> maps:get(winner, Result, draw).

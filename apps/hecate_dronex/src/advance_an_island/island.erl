@@ -28,6 +28,8 @@
 -export([tick_of/1, roster_depth/1, capacity/1, seed_of/1, roster_of/1]).
 -export([generation_of/1, benchmark_of/1, rounds_of/1, admissions_of/1]).
 -export([ablated/2, ablation_of/1, ablations_of/1]).
+-export([muster/2, returned/3, defended/5]).
+-export([raids_of/1, raids_home_of/1, raids_lost_of/1, defences_of/1, captures_of/1]).
 
 -export_type([island/0]).
 
@@ -58,7 +60,18 @@
     %% whose ablation came back zero must not look the same, so the report starts
     %% absent and the exercise count starts at nought.
     ablation :: undefined | ablation:report(),
-    ablations = 0 :: non_neg_integer()
+    ablations = 0 :: non_neg_integer(),
+    %% ⚠ ON THE ISLAND AND NOT ON THE SERVER, because they are facts about the
+    %% lineage rather than about the process, and the roster snapshot that
+    %% survives a restart is the island. Counters kept beside the gen_server
+    %% state would reset every deploy and an island's raiding history would be
+    %% "since the last container recreate", which is exactly the thing the store
+    %% exists to stop being true of everything else.
+    raids = 0 :: non_neg_integer(),
+    raids_home = 0 :: non_neg_integer(),
+    raids_lost = 0 :: non_neg_integer(),
+    defences = 0 :: non_neg_integer(),
+    captures = 0 :: non_neg_integer()
 }).
 
 -opaque island() :: #island{}.
@@ -143,6 +156,48 @@ generation_of(#island{roster = R}) -> roster:generation_of(R).
 -spec benchmark_of(island()) -> map().
 benchmark_of(#island{benchmark = B}) -> B.
 
+%% @doc Send a raiding party out of the roster.
+%%
+%% ⚠ THE RANDOM STATE ADVANCES HERE, which is why this belongs on the island and
+%% not in `raid'. Everything else about a raid is arithmetic on rosters and is
+%% pure; drawing WHICH genomes go is a decision the island's own seeded generator
+%% makes, so that a run is reproducible from its seed.
+-spec muster(island(), pos_integer()) -> {island(), [roster:entry()]}.
+muster(#island{roster = R, rand = S} = I, N) ->
+    {Party, R1, S1} = raid:sortie(R, S, N),
+    {mustered(Party, I#island{roster = R1, rand = S1}), Party}.
+
+%% Counted only when somebody actually left, so an island sitting below the floor
+%% does not accumulate raids it never flew.
+mustered([], I) -> I;
+mustered(_Party, #island{raids = N} = I) -> I#island{raids = N + 1}.
+
+%% @doc A party this island sent has come home, or has not.
+-spec returned(island(), [roster:entry()], map()) -> island().
+%% Refused: nobody engaged, so the party never left the ground. See
+%% `island_server:decoded/2' for why that is not the same as being wiped out.
+returned(#island{roster = R} = I, Party, #{fates := refused}) ->
+    {R1, _Home, _Lost} = raid:settle(R, Party, [{roster:entry_id(E), survived} || E <- Party]),
+    I#island{roster = R1};
+returned(#island{roster = R, raids_home = H, raids_lost = L} = I, Party, #{fates := Fates}) ->
+    {R1, Home, Lost} = raid:settle(R, Party, Fates),
+    I#island{roster = R1, raids_home = H + Home, raids_lost = L + Lost}.
+
+%% @doc A raid this island hosted has finished.
+%%
+%% ⚠ TWO SETTLEMENTS AT ONCE AND THE ORDER MATTERS. The defenders that survived
+%% come back FIRST, then the attacker's genomes are absorbed. The other order
+%% would let a roster that is momentarily full refuse a defender this island bred
+%% in favour of a foreign genome it has just met, which would make being raided a
+%% way to lose your own lineage rather than a way to gain an opponent.
+-spec defended(island(), [roster:entry()], [roster:entry()],
+               [{binary(), drone_genome:genome()}], map()) -> island().
+defended(#island{roster = R, defences = D, captures = C} = I, Survivors, Party, Raiders, Meta) ->
+    {R1, _Home, _Lost} = raid:settle(R, Party, [{roster:entry_id(E), survived} || E <- Survivors]),
+    R2 = raid:absorb(R1, Raiders, Meta),
+    I#island{roster = R2, defences = D + 1,
+             captures = C + (roster:depth(R2) - roster:depth(R1))}.
+
 %% @doc Record the result of an ablation.
 -spec ablated(island(), ablation:report()) -> island().
 ablated(#island{ablations = N} = I, Report) ->
@@ -153,6 +208,26 @@ ablation_of(#island{ablation = A}) -> A.
 
 -spec ablations_of(island()) -> non_neg_integer().
 ablations_of(#island{ablations = N}) -> N.
+
+-spec raids_of(island()) -> non_neg_integer().
+raids_of(#island{raids = N}) -> N.
+
+-spec raids_home_of(island()) -> non_neg_integer().
+raids_home_of(#island{raids_home = N}) -> N.
+
+-spec raids_lost_of(island()) -> non_neg_integer().
+raids_lost_of(#island{raids_lost = N}) -> N.
+
+-spec defences_of(island()) -> non_neg_integer().
+defences_of(#island{defences = N}) -> N.
+
+%% ⚠ THE ONE NUMBER THAT SAYS WHETHER THE CHARTER'S IDEA IS HAPPENING. Genomes
+%% captured from attackers is the diversity that crossed the mesh. Raids and
+%% defences can both be busy while this stays zero — an island refusing every
+%% raid on an engine mismatch looks identical from the outside — and then the
+%% archipelago is several separate experiments with a light show on top.
+-spec captures_of(island()) -> non_neg_integer().
+captures_of(#island{captures = N}) -> N.
 
 -spec rounds_of(island()) -> non_neg_integer().
 rounds_of(#island{rounds = N}) -> N.

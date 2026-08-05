@@ -55,6 +55,19 @@
 %% both run off-process on a four-core Celeron.
 -define(DEFAULT_ABLATE_MS, 300000).
 
+%% ⚠ SLOW, AND SLOWER THAN IT LOOKS. A raid costs the DEFENDER an engagement and
+%% costs both sides airframes that have to be bred back. An island raiding every
+%% few seconds would spend its whole life rebuilding, which is the stasis this
+%% design is most at risk of: islands raiding, losing, rebuilding and raiding
+%% again while nothing selects.
+-define(DEFAULT_RAID_MS, 120000).
+
+%% How long an island remembers having heard from another. There is no directory
+%% and no membership, so this is the entire definition of `who is out there', and
+%% an island that stops publishing stops being a target rather than being marked
+%% down as gone.
+-define(HEARD_FOR_MS, 600000).
+
 %% ⚠ SWARM, NOT DUEL, AND A DUEL WOULD HAVE MADE THE MEASUREMENT MEANINGLESS. In
 %% a one-against-one fight there is no friendly to talk to, so the friendly bank
 %% is structurally zero and muting it cannot change anything. An ablation run on
@@ -100,8 +113,28 @@ init([]) ->
     %% Offset from the benchmark's first firing so the two heavy jobs do not
     %% start together on a node with four slow cores.
     schedule(ablate, ?DEFAULT_ABLATE_MS div 2),
+    schedule(raid, ?DEFAULT_RAID_MS),
+    %% ⚠ BOTH OF THESE ARE FIRE AND FORGET, AND A FAILURE IS NOT FATAL. An island
+    %% whose mesh is not up yet must still breed, publish counters and answer
+    %% `/health'; it simply cannot be raided and cannot raid. The retry is the
+    %% next timer tick rather than a loop here, because a loop here would be a
+    %% boot that never finishes on a node whose station is down.
+    _ = advertise_self(),
+    _ = listen_for_neighbours(),
     {ok, #{island => Island, sent => 0, failed => 0, sitting => false,
-           ablating => false, writer => roster_log_writer:silent()}}.
+           ablating => false, writer => roster_log_writer:silent(),
+           heard => #{}, away => #{}}}.
+
+%% ⚠ ADDRESSED BY IDENTITY, NEVER BY NAME. Two islands may both be called
+%% `beam02'; only the 128 bits in the data directory are unique. A procedure
+%% named after the nickname would send a raid to whichever of them advertised
+%% last.
+advertise_self() ->
+    Self = self(),
+    dronex_mesh:advertise(dronex_raid:procedure(dronex_identity:island_id()),
+                          fun (Request) -> host_a_raid(Request, Self) end).
+
+listen_for_neighbours() -> dronex_mesh:subscribe(dronex_facts:topic(vitals), self()).
 
 %% A store that is not there yet, or a log that cannot be read, is an island that
 %% starts fresh rather than an island that refuses to start. The roster depth it
@@ -121,12 +154,41 @@ handle_call(publishes, _From, #{sent := Sent, failed := Failed} = S) ->
     {reply, #{sent => Sent, failed => Failed}, S};
 handle_call(roster, _From, #{island := I} = S) ->
     {reply, island:roster_of(I), S};
+%% ⚠ FAST, AND THE ONLY PART OF BEING RAIDED THAT TOUCHES THIS PROCESS. It takes
+%% the defending party out of the roster and returns. The engagement runs in
+%% macula's process, so the island keeps ticking, breeding and publishing while
+%% it is under attack — which is what lets a popular island stay alive while it
+%% is being ground down by attention.
+%%
+%% ⚠⚠ THE DEFENDER PAYS ON THE SAME TERMS, INCLUDING THE FLOOR. `island:muster/2'
+%% refuses below it, so an island that has been raided to the floor cannot field
+%% a defence and REFUSES. That is not a shield: refusing means it stops gaining
+%% the attacker's genomes, which is the only thing being raided is good for.
+handle_call({defend, Req}, _From, #{island := I} = S) ->
+    mustered_defence(island:muster(I, length(maps:get(sortie, Req))), S);
 handle_call(_Other, _From, S) ->
     {reply, {error, unknown_call}, S}.
+
+mustered_defence({_I, []}, S) ->
+    {reply, {error, below_the_floor}, S};
+mustered_defence({I2, Party}, #{island := I} = S) ->
+    %% The start geometry is derived from the tick rather than drawn, so a raid
+    %% is reproducible from the facts it publishes.
+    Index = island:tick_of(I) rem drone_starts:count(),
+    {reply, {ok, Party, Index}, S#{island := I2}}.
 
 %% The writer's own exercise counts, pushed after every drain. Held rather than
 %% fetched: see `roster_log_writer:told/1'.
 handle_cast({roster_written, Stats}, S) -> {noreply, S#{writer := Stats}};
+%% A raid this island hosted has finished, off-process. Two things settle at
+%% once: the defenders that survived come back, and the attacker's genomes are
+%% kept whatever the outcome was.
+handle_cast({defended, Survivors, Party, Raiders, Meta}, #{island := I} = S) ->
+    {noreply, S#{island := island:defended(I, Survivors, Party, Raiders, Meta)}};
+%% A raid this island sent has come home, or has failed to.
+handle_cast({returned, Party, Fates}, #{island := I, away := A} = S) ->
+    {noreply, S#{island := island:returned(I, Party, Fates),
+                 away := maps:remove(maps:get(raid_id, Fates, undefined), A)}};
 handle_cast(_Msg, S) -> {noreply, S}.
 
 handle_info(tick, #{island := I} = S) ->
@@ -196,8 +258,39 @@ handle_info(snapshot, #{island := I} = S) ->
     roster_log_writer:snapshot(hecate_dronex_service:store_id(), island:roster_of(I)),
     {noreply, S};
 
+%% ⚠ FIVE ELEMENTS. A four-element clause here would match nothing, every fact
+%% would fall through to the catch-all, and this island would believe it is alone
+%% in the archipelago while its subscription sat there perfectly healthy. A
+%% sibling shipped exactly that and it cost an hour.
+handle_info({macula_event, _Ref, _Topic, Fact, _Meta}, S) ->
+    {noreply, noted(Fact, S)};
+handle_info({macula_event_gone, _Ref, Why}, S) ->
+    logger:warning("[island] neighbour subscription gone (~p), re-arming", [Why]),
+    _ = listen_for_neighbours(),
+    {noreply, S};
+
+handle_info(raid, #{island := I} = S) ->
+    schedule(raid, ?DEFAULT_RAID_MS),
+    {noreply, launched(I, S)};
+
 handle_info(_Msg, S) ->
     {noreply, S}.
+
+%% Who else is out there, and when they were last heard. Anything that is not a
+%% vitals fact from somebody else is ignored rather than guessed at.
+noted(#{island_id := Id}, #{heard := H} = S) when is_binary(Id) ->
+    heard_from(Id =:= dronex_identity:island_id(), Id, H, S);
+noted(_Other, S) ->
+    S.
+
+heard_from(true, _Id, _H, S) -> S;
+heard_from(false, Id, H, S) -> S#{heard := H#{Id => erlang:monotonic_time(millisecond)}}.
+
+%% Islands heard from inside the window. An island that stopped publishing stops
+%% being a target, which is the whole membership model.
+neighbours(#{heard := H}) ->
+    Now = erlang:monotonic_time(millisecond),
+    [Id || {Id, At} <- maps:to_list(H), Now - At =< ?HEARD_FOR_MS].
 
 %% @doc Fly the island's best controller against one of its drills, and publish
 %% the recording.
@@ -296,6 +389,102 @@ crewed(Placed, A, D, {ok, _}, {ok, _}) ->
 
 fresh(attacker, A, _D) -> element(2, engagement:controller(A));
 fresh(defender, _A, D) -> element(2, engagement:controller(D)).
+
+%%==============================================================================
+%% Raiding somebody
+%%==============================================================================
+
+%% ⚠ THE PARTY LEAVES ON THIS PROCESS AND THE CALL DOES NOT. Taking genomes out
+%% of the roster must be atomic with deciding to go, or two timers could send the
+%% same genome twice. The CALL then blocks for up to two minutes while the
+%% defender fights, and doing that here would stop the clock, the trainer and the
+%% publisher for the whole engagement — which is exactly how the first deployed
+%% island wedged itself on a store write.
+launched(I, S) -> aimed(raid:target(neighbours(S), dronex_identity:island_id()), I, S).
+
+aimed(none, _I, S) -> S;
+aimed({ok, Target}, I, S) -> mustered(island:muster(I, raid:party()), Target, S).
+
+%% Below the floor, or nothing to send: stay home and breed. The floor is what
+%% stops an island raiding itself to extinction.
+mustered({_I, []}, _Target, S) -> S;
+mustered({I2, Party}, Target, S) ->
+    RaidId = new_raid_id(),
+    Back = self(),
+    _ = spawn(fun () -> away(Target, RaidId, Party, Back) end),
+    S#{island := I2, away := maps:put(RaidId, Party, maps:get(away, S))}.
+
+%% Off-process, start to finish: compose the request, make the call, and cast the
+%% settlement back. Nothing here touches the island's state.
+away(Target, RaidId, Party, Back) ->
+    Sorties = [#{id => roster:entry_id(E),
+                 genome => drone_genome:pack(roster:entry_genome(E))} || E <- Party],
+    Request = dronex_raid:request(dronex_identity:island_id(), RaidId, Sorties, 0),
+    Reply = dronex_mesh:call(dronex_raid:procedure(Target), Request),
+    gen_server:cast(Back, {returned, Party, settlement(RaidId, Reply)}).
+
+%% ⚠ A RAID THAT COULD NOT BE DELIVERED IS A TOTAL LOSS, AND THAT IS DELIBERATE.
+%% The party left the roster the moment it was mustered. Putting it back when the
+%% call fails would make raiding free whenever the mesh is flaky, and an island
+%% would learn to raid into the dark. The cost of attacking is paid on take-off.
+settlement(RaidId, {ok, Reply}) -> decoded(RaidId, dronex_raid:decode_reply(Reply));
+settlement(RaidId, {error, Why}) ->
+    logger:warning("[island] raid ~p vanished into the dark: ~p", [RaidId, Why]),
+    #{raid_id => RaidId, fates => []}.
+
+decoded(RaidId, {ok, #{fate := Fates}}) ->
+    #{raid_id => RaidId, fates => [{Id, F} || #{id := Id, fate := F} <- Fates]};
+%% ⚠⚠ A REFUSAL IS NOT A LOSS, AND THE DIFFERENCE IS WHETHER ANYBODY ANSWERED.
+%% Silence means the party flew somewhere and never came back, and the price is
+%% paid. An explicit refusal — a mismatched engine, a bad genome, a defender at
+%% its floor — means the engagement never started and the party never left the
+%% ground. Charging for it would price a protocol disagreement the same as a
+%% massacre, and an island on a stale build would bleed its whole roster into
+%% neighbours that kept politely saying no.
+decoded(RaidId, {error, Why}) ->
+    logger:warning("[island] raid ~p was refused, party stays home: ~p", [RaidId, Why]),
+    #{raid_id => RaidId, fates => refused, why => Why}.
+
+new_raid_id() -> string:lowercase(binary:encode_hex(crypto:strong_rand_bytes(16))).
+
+%%==============================================================================
+%% Being raided
+%%==============================================================================
+
+%% ⚠ THIS RUNS IN MACULA'S PROCESS, NOT THE ISLAND'S. It validates, asks the
+%% island for a defending party (fast), then flies the whole engagement HERE and
+%% casts the outcome back. The island keeps ticking, publishing and breeding
+%% throughout, which is what lets a popular island stay alive while being ground
+%% down by attention.
+host_a_raid(Request, Island) ->
+    answered(dronex_raid:decode_request(Request), Island).
+
+answered({error, Why}, _Island) -> {error, Why};
+answered({ok, Req}, Island) -> checked(dronex_raid:validate_request(Req, raid:party() * 2), Req, Island).
+
+checked({error, Why}, _Req, _Island) -> {error, Why};
+checked(ok, Req, Island) -> defended(gen_server:call(Island, {defend, Req}, 30000), Req, Island).
+
+defended({error, Why}, _Req, _Island) -> {error, Why};
+defended({ok, Defenders, Index}, Req, Island) ->
+    Raiders = [{Id, G} || #{id := Id, genome := P} <- maps:get(sortie, Req),
+                          {ok, G} <- [drone_genome:unpack(P)]],
+    hosted(defence:compose(Defenders, Raiders, Index), Defenders, Raiders, Req, Island).
+
+hosted({error, Why}, _D, _R, _Req, _Island) -> {error, Why};
+hosted({ok, Arena, Controllers, Pairs}, Defenders, Raiders, Req, Island) ->
+    Result = engagement:run(Arena, Controllers, #{frames => true}),
+    Fates = defence:fates(maps:get(attackers, Pairs), Result),
+    Survivors = defence:survivors(maps:get(defenders, Pairs), Result),
+    Meta = #{from => maps:get(attacker, Req), raid => maps:get(raid_id, Req),
+             tick => maps:get(tick, Req, 0)},
+    gen_server:cast(Island, {defended, Survivors, Defenders, Raiders, Meta}),
+    _ = publish_raid(Result, Fates, Meta),
+    dronex_raid:reply(maps:get(raid_id, Req), defence:outcome(Result),
+                      [{Id, F, <<>>} || {Id, F} <- Fates]).
+
+publish_raid(Result, Fates, Meta) ->
+    dronex_mesh:publish(dronex_facts:topic(raid), dronex_facts:raid(Result, Fates, Meta)).
 
 %% ⚠ COUNTED RATHER THAN LOGGED. CHARTER.md rule 4: a capacity that was never
 %% exercised is not evidence of anything, so the exercise count is available

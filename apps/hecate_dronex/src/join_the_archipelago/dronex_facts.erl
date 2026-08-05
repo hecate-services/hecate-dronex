@@ -42,7 +42,7 @@
 -module(dronex_facts).
 
 -export([topic/1, topics/0, namespace/0, fact_version/0]).
--export([vitals/2, bout/4]).
+-export([vitals/2, bout/4, raid/3]).
 
 -define(DEFAULT_NS, <<"dronex">>).
 
@@ -71,7 +71,12 @@ topic(vitals) -> leaf(<<"vitals">>);
 %% ITS OWN TOPIC, so a reader chooses whether to hear it. Vitals are counts and
 %% are small enough to keep forever; a bout is a recording of tens of kilobytes
 %% and a statistics reader must not have to take one to get the other.
-topic(bout) -> leaf(<<"bout">>).
+topic(bout) -> leaf(<<"bout">>);
+%% ⚠ A RAID IS ABOUT TWO ISLANDS AND EVERY OTHER FACT IS ABOUT ONE, which is why
+%% it is worth its own topic rather than riding `bout'. A reader collecting the
+%% archipelago's history wants these and may not want a training bout every
+%% twenty seconds from every island.
+topic(raid) -> leaf(<<"raid">>).
 
 %% @doc Every topic this island publishes on.
 %%
@@ -81,12 +86,13 @@ topic(bout) -> leaf(<<"bout">>).
 %% not name is a call the realm would refuse once delegation lands. A sibling
 %% drifted exactly that way.
 %%
-%% `dronex/raid' and `dronex/roster' are designed and are deliberately absent
-%% until something publishes them. `dronex/bout' is here because something does:
+%% `dronex/roster' is designed and is deliberately absent until something
+%% publishes it. `dronex/raid' joined the list at item 7, when a defender started
+%% publishing the fights it hosts. `dronex/bout' is here because something does:
 %% an island's own best controller against one of its drills, which is what an
 %% island actually spends its time doing.
 -spec topics() -> [binary()].
-topics() -> [topic(vitals), topic(bout)].
+topics() -> [topic(vitals), topic(bout), topic(raid)].
 
 leaf(Leaf) -> <<(namespace())/binary, "/", Leaf/binary>>.
 
@@ -124,7 +130,15 @@ vitals(Island, Writer) ->
         %% has proposed nothing and a trainer whose every proposal was rejected
         %% look identical without these, and they are different situations.
         rounds => island:rounds_of(Island),
-        admissions => island:admissions_of(Island)},
+        admissions => island:admissions_of(Island),
+        %% CHARTER.md rule 4 again, for the mechanism the whole repository is
+        %% named after. Zero raids and zero defences is a fact; so is many raids
+        %% and zero captures, and they mean opposite things.
+        raids => island:raids_of(Island),
+        raids_home => island:raids_home_of(Island),
+        raids_lost => island:raids_lost_of(Island),
+        defences => island:defences_of(Island),
+        captures => island:captures_of(Island)},
       maps:merge(station(),
                  maps:merge(persistence(Writer),
                             maps:merge(frozen(island:benchmark_of(Island)),
@@ -195,6 +209,42 @@ described({error, _Why}) ->
     #{station_host => <<"unknown">>,
       station_connected => false,
       station_id => <<>>}.
+
+%% @doc A raid, as a recording plus who lost what.
+%%
+%% ⚠ PUBLISHED BY THE DEFENDER, BECAUSE THE DEFENDER RAN IT. One engine produced
+%% these frames and it is the one being attacked; an attacker publishing its own
+%% raid would be publishing a fight it simulated itself, and nothing on the wire
+%% could contradict it.
+%%
+%% ⚠⚠ AND IT NAMES BOTH ISLANDS. A raid is the only fact in this deployment that
+%% is ABOUT two islands rather than about one, so a reader that files facts under
+%% the publisher would file it under the defender alone and the attacker's half
+%% of the story would have no home. Both identities travel.
+%% ⚠ NO REQUEST ARGUMENT. The first version took one and read nothing from it,
+%% because `Meta' already carries the attacker, the raid id and the tick. A
+%% parameter that is threaded through and never read is REGISTER I.7, and this is
+%% the second time in one sitting, so it is worth saying plainly: if the caller
+%% has to hand this function a thing to be polite, the thing does not belong.
+-spec raid(map(), [{binary(), dronex_raid:fate()}], map()) -> map().
+raid(Result, Fates, Meta) ->
+    maps:merge(
+      #{fact_version => ?FACT_VERSION,
+        island => dronex_identity:island(),
+        island_id => dronex_identity:island_id(),
+        attacker_id => maps:get(from, Meta),
+        raid_id => maps:get(raid, Meta),
+        %% How many of the attacker's genomes came home. The defender's own
+        %% losses are its business and are visible in its roster depth; what a
+        %% spectator needs is the price the RAID paid, which is what makes an
+        %% archipelago of raids readable as something other than a light show.
+        raiders => length(Fates),
+        raiders_home => length([F || {_Id, F} <- Fates, F =:= survived])},
+      dronex_bout:encode(#{kind => raid,
+                           bout => maps:get(tick, Meta, 0),
+                           start_index => 0,
+                           entrants => [maps:get(from, Meta), dronex_identity:island_id()]},
+                         Result, maps:get(frames, Result, []), airspace:limits())).
 
 %% @doc A whole engagement, as a recording.
 %%

@@ -27,11 +27,46 @@ only_what_exists_is_published_test() ->
     ?assertEqual([ablation_delta_air, ablation_delta_all, ablation_delta_ground,
                   ablation_void, ablations, admissions,
                   benchmark_draws, benchmark_losses, benchmark_rungs,
-                  benchmark_starts, benchmark_wins, capacity, fact_version,
-                  generation, island, island_id, roster,
+                  benchmark_starts, benchmark_wins, capacity, captures, defences,
+                  fact_version, generation, island, island_id,
+                  raids, raids_home, raids_lost, roster,
                   roster_write_failures, roster_writes, roster_writes_dropped,
                   rounds, signal_entropy, signal_volume,
                   station_connected, station_host, station_id, tick], Keys).
+
+%% ⚠ MANY RAIDS AND ZERO CAPTURES IS A DIFFERENT WORLD FROM NO RAIDS AT ALL, and
+%% from the outside they look the same if only one number goes out. An island
+%% refusing every incoming raid on an engine mismatch is busy, healthy, and not
+%% participating in the one idea the repository is named after.
+an_island_that_has_never_raided_publishes_zeros_test() ->
+    Fact = with_data_dir(fun () -> dronex_facts:vitals(island:new(#{}), writer()) end),
+    [?assertEqual(0, maps:get(K, Fact))
+     || K <- [raids, raids_home, raids_lost, defences, captures]].
+
+%% ⚠ A RAID IS THE ONLY FACT HERE THAT IS ABOUT TWO ISLANDS. A reader filing
+%% facts under the publisher would file this under the defender alone, and the
+%% attacker's half of the story would have no home, so both identities travel.
+a_raid_fact_names_both_islands_test() ->
+    Meta = #{from => <<"them">>, raid => <<"r1">>, tick => 9},
+    Result = #{winner => defender, ticks => 40, survivors => [], withdrawn => [],
+               signal_volume => 0, frames => []},
+    Fact = with_data_dir(fun () ->
+        dronex_facts:raid(Result, [{<<"g1">>, survived}, {<<"g2">>, lost}], Meta)
+    end),
+    ?assertEqual(<<"them">>, maps:get(attacker_id, Fact)),
+    ?assertEqual(dronex_identity:island_id(), maps:get(island_id, Fact)),
+    ?assertEqual(<<"r1">>, maps:get(raid_id, Fact)),
+    ?assertEqual(2, maps:get(raiders, Fact)),
+    ?assertEqual(1, maps:get(raiders_home, Fact)),
+    %% It carries the recording, like a bout, because a raid is worth watching.
+    ?assertEqual(raid, maps:get(kind, Fact)).
+
+%% The topic exists because something publishes it now, which is the rule the
+%% topic list has followed since item 1.
+the_raid_topic_is_published_and_authorised_test() ->
+    ?assert(lists:member(dronex_facts:topic(raid), dronex_facts:topics())),
+    #{resources := Asked} = hecate_dronex_service:identity_spec(),
+    ?assert(lists:member(dronex_facts:topic(raid), Asked)).
 
 %% ⚠ WHETHER THE LINEAGE IS BEING SAVED IS ON THE WIRE, because the first
 %% deployed island was not saving it and looked healthy for four minutes.
