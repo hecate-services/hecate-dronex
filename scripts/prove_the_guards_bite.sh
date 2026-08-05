@@ -3,7 +3,7 @@
 #
 # ⚠ WHY THIS EXISTS. Register INHERITED-3: a guard never seen to fail is not
 # known to be a guard. A green suite proves the code passes its tests; it does
-# not prove the tests would notice if the code stopped being right. Five of the
+# not prove the tests would notice if the code stopped being right. Nine of the
 # assertions in this repository are boundaries rather than behaviour, and a
 # boundary that cannot be shown to bite is a comment with a function's syntax.
 #
@@ -28,6 +28,8 @@ SVC=apps/hecate_dronex/src/hecate_dronex_service.erl
 MESH=apps/hecate_dronex/src/join_the_archipelago/dronex_mesh.erl
 FACTS=apps/hecate_dronex/src/join_the_archipelago/dronex_facts.erl
 ISLAND=apps/hecate_dronex/src/advance_an_island/island.erl
+FIXED=apps/hecate_dronex/src/fly_the_airspace/fixed.erl
+AIRSPACE=apps/hecate_dronex/src/fly_the_airspace/airspace.erl
 
 FAILURES=0
 BROKEN=""
@@ -56,7 +58,7 @@ restore() {
     rm -rf _build/test
 }
 
-trap 'restore "$SVC" "$MESH" "$FACTS" "$ISLAND"' EXIT
+trap 'restore "$SVC" "$MESH" "$FACTS" "$ISLAND" "$FIXED" "$AIRSPACE"' EXIT
 
 # Run one perturbation. $1 is the name, $2 the file, $3 a perl one-liner that
 # breaks it, $4 the eunit module that must go red.
@@ -154,11 +156,44 @@ probe "a module reaches into mnesia" "$ISLAND" \
   's/-export\(\[tick_of\/1, roster_depth\/1, capacity\/1, seed_of\/1\]\)\./-export([tick_of\/1, roster_depth\/1, capacity\/1, seed_of\/1]).\n-export([tables\/0])./; s/\z/\ntables() -> mnesia:system_info(tables).\n/' \
   faber_boundary_tests
 
+# ⚠ PROBES 7 TO 9 EACH BROKE THE COMPILE ON THEIR FIRST WRITING, ALL THREE FOR
+#    THE SAME REASON AND NONE OF IT ABOUT WHAT THEY TEST. Replacing the body of
+#    a function ORPHANS the helpers it used to call, and an unreachable function
+#    is an unused-function warning against warnings_as_errors. So a perturbation
+#    has to leave the call graph intact: change what a LEAF returns, or add a new
+#    exported function, never sever a branch.
+#
+#    That is the third and fourth time this trap has fired in this file. It is
+#    the reason the compile check exists, and the reason its failure is reported
+#    as SKIPPED rather than counted as a guard that bit.
+
+# 7. The match path must hold no libm, no clock and no unseeded generator, or a
+#    published raid stops being checkable by the island that flew into it. The
+#    check is structural, so merely IMPORTING libm is the whole perturbation.
+probe "the match path reaches for libm" "$FIXED" \
+  's/-export\(\[isqrt\/1, clamp\/3, mag3\/3, scale_to\/4\]\)\./-export([isqrt\/1, clamp\/3, mag3\/3, scale_to\/4]).\n-export([root\/1])./; s/\z/\nroot(N) -> trunc(math:sqrt(N)).\n/' \
+  airspace_determinism_tests
+
+# 8. A munition must be tested against the SEGMENT it travelled, not its end
+#    point. It covers 3 m a tick before inheriting any launcher velocity, and two
+#    hit radii span 4 m, so an end-point test tunnels straight through a drone it
+#    struck squarely, more often the faster the shot. Forcing the parameter to
+#    its upper bound is exactly "measure from the end point".
+probe "the hit test uses the end point instead of the path" "$AIRSPACE" \
+  's/clamped_t\(Num, _Den\) -> Num\./clamped_t(_Num, Den) -> Den./' \
+  airspace_tests
+
+# 9. Thrust is limited as a vector. Per-axis clamping hands out root three times
+#    the thrust, available only diagonally, and a population finds it at once.
+probe "thrust is clamped per axis instead of as a vector" "$FIXED" \
+  's/shortened\(X, Y, Z, Max, Mag\) ->\n    \{X \* Max div Mag, Y \* Max div Mag, Z \* Max div Mag\}\./shortened(X, Y, Z, Max, _Mag) ->\n    {clamp(X, -Max, Max), clamp(Y, -Max, Max), clamp(Z, -Max, Max)}./s' \
+  airspace_tests
+
 echo
 rebar3 compile >/dev/null 2>&1
 
 if [ "$FAILURES" -eq 0 ]; then
-    echo "All six guards bit."
+    echo "All nine guards bit."
     exit 0
 fi
 

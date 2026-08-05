@@ -164,7 +164,43 @@ to open every drawer before saying what is not in the toolbox.
 
 # D: findings about the world
 
-*None yet. Nothing has been run.*
+## D.1: the arena's walls kill a drone flying flat out, and that is the physics
+
+A test meant to check terminal velocity ran a drone at full forward thrust for
+400 ticks and found it dead. Not from the fall, and not from a bug: at 35 m/s
+from the middle of a 1000 m arena it reaches the far wall at about tick **286**,
+and a drone that keeps commanding thrust into a surface keeps being clamped,
+keeps losing that tick's speed to the wall, and keeps taking the damage that
+speed was worth. Dead by tick 300.
+
+That is `bounded/1` behaving exactly as designed, and it makes the arena's edge a
+thing to respect rather than a place to park. It is written down because it is
+the first emergent consequence this engine has produced, because the first
+version of the test was silently measuring it, and because a controller that
+learns to hug a wall will meet it.
+
+**ELI5.** They wanted to know how fast the drone could go, so they held the
+throttle down and waited. It got up to speed in five seconds, kept going, and
+flew into the far wall of the room. Because nobody let go of the throttle, it
+kept pushing against the wall until it broke. The measurement was fine. The room
+is just smaller than the test was patient.
+
+## D.2: the model settles on the analytic terminal velocity exactly
+
+At full thrust against quadratic drag the speed converges to `sqrt(max_accel *
+drag_div)` and then **stops there to the unit**: 35840, which is 35 m/s. Not
+close to it, equal to it, because at that speed the integer drag term is 2560
+and the net acceleration is exactly zero.
+
+Worth recording because it is what the whole fixed-point unit scheme was chosen
+for, and because it makes the test an equality rather than a tolerance. A
+tolerance would have passed against a drag constant wrong by a few percent.
+
+**ELI5.** Push a shopping trolley as hard as you can and it stops speeding up at
+some point, because the faster it goes the harder the air pushes back. You can
+work out that top speed on paper before you push. Here the number on paper and
+the number the model reaches are the same number, exactly, with nothing rounded
+off in between.
 
 # I: findings about the work
 
