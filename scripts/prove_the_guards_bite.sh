@@ -41,6 +41,13 @@ PILOT=apps/hecate_dronex/src/pilot_a_drone/drone_pilot.erl
 GENOME=apps/hecate_dronex/src/pilot_a_drone/drone_genome.erl
 RADIO=apps/hecate_dronex/src/speak_between_drones/radio.erl
 ENGAGE=apps/hecate_dronex/src/fly_the_airspace/engagement.erl
+SENSOR=apps/hecate_dronex/src/defend_the_airspace/sensor.erl
+TRACKS=apps/hecate_dronex/src/defend_the_airspace/tracks.erl
+NETWORK=apps/hecate_dronex/src/defend_the_airspace/network.erl
+BENCH=apps/hecate_dronex/src/sit_the_benchmark/benchmark.erl
+ISLANDSRV=apps/hecate_dronex/src/advance_an_island/island_server.erl
+TRAINER=apps/hecate_dronex/src/breed_a_roster/trainer.erl
+DEFENCE=apps/hecate_dronex/src/defend_the_airspace/defence.erl
 
 FAILURES=0
 BROKEN=""
@@ -69,7 +76,7 @@ restore() {
     rm -rf _build/test
 }
 
-trap 'restore "$SVC" "$MESH" "$FACTS" "$ISLAND" "$FIXED" "$AIRSPACE" "$SENSES" "$GENOME" "$PILOT" "$RADIO" "$ENGAGE"' EXIT
+trap 'restore "$SVC" "$MESH" "$FACTS" "$ISLAND" "$FIXED" "$AIRSPACE" "$SENSES" "$GENOME" "$PILOT" "$RADIO" "$ENGAGE" "$SENSOR" "$TRACKS" "$NETWORK" "$BENCH" "$ISLANDSRV" "$TRAINER" "$DEFENCE"' EXIT
 
 # Run one perturbation. $1 is the name, $2 the file, $3 a perl one-liner that
 # breaks it, $4 the eunit module that must go red.
@@ -267,12 +274,19 @@ probe "the radio has no horizon" "$RADIO" \
   's/in_earshot\(#drone\{x = X, y = Y, z = Z\}, #drone\{x = Ox, y = Oy, z = Oz\}\) ->\n    #\{comms_range := R\} = airspace:limits\(\),\n    fixed:mag3\(Ox - X, Oy - Y, Oz - Z\) =< R\./in_earshot(#drone{}, #drone{}) ->\n    #{comms_range := R} = airspace:limits(),\n    R > 0./s' \
   radio_tests
 
-# 15. The mute must reach the engine. This is the failure that actually happened:
+# 15. The mute must reach the drones. This is the failure that actually happened:
 #     with the mute dropped, every ablation arm is the baseline, every delta is
 #     zero, and the report says `the channel is depended on by nothing' with
 #     total confidence about a measurement it never took.
-probe "the ablation mute never reaches the drones" "$ENGAGE" \
-  's/ask\(#drone\{id = Id, side = Side\} = D, Ds, Cs, Mute, \{Intents, Next\}\) ->\n    Others = others\(Id, Ds\),\n    answered\(Id, maps:get\(Id, Cs, undefined\), D, Others,\n             radio:heard\(D, Others, maps:get\(Side, Mute\)\), \{Intents, Next\}\)\./ask(#drone{id = Id} = D, Ds, Cs, _Mute, {Intents, Next}) ->\n    Others = others(Id, Ds),\n    answered(Id, maps:get(Id, Cs, undefined), D, Others,\n             radio:heard(D, Others, none), {Intents, Next})./s' \
+#
+#     ⚠ RE-ANCHORED ON `muted/3' AFTER IT ROTTED ONCE. The original perturbation
+#     quoted the whole of `engagement:ask/5' verbatim, so item 8 adding a network
+#     argument silently stopped it matching and the script reported a SKIP rather
+#     than a bite — REGISTER I.10 in its second sitting. A four-line function is a
+#     smaller thing to be wrong about than a call site with six arguments, and
+#     `muted/3' is where the mute either bites or does not.
+probe "the ablation mute never reaches the drones" "$RADIO" \
+  's/muted\(_Bank, none, Values\) -> Values;\nmuted\(Bank, Bank, _Values\) -> lists:duplicate\(\?BANK, 0\);\nmuted\(_Bank, all, _Values\) -> lists:duplicate\(\?BANK, 0\);\nmuted\(_Bank, _Other, Values\) -> Values\./muted(_Bank, _Mute, Values) -> Values./s' \
   ablation_tests
 
 # 16. The two sides must mute independently. A global mute cancels in self-play:
@@ -283,11 +297,69 @@ probe "muting one side silences both" "$ENGAGE" \
   's/muting\(Map\) when is_map\(Map\) -> maps:merge\(#\{attacker => none, defender => none\}, Map\)\./muting(Map) when is_map(Map) ->\n    Bank = hd([B || B <- maps:values(Map), B =\/= none] ++ [none]),\n    #{attacker => Bank, defender => Bank}./' \
   ablation_tests
 
+# ==============================================================================
+# Item 8. The static defence.
+# ==============================================================================
+
+# 17. ⚠ THE ONE THAT ALREADY HAPPENED. `sensor', `tracks' and `network' were
+#     written, compiled and unit-tested while being called from NO production
+#     module, so every fight ran with no network at all and the entire static
+#     defence was dead code with a green suite behind it. Tests that supply the
+#     network themselves cannot see that, which is why this probe exists at the
+#     wiring rather than at the modules.
+probe "a hosted raid is fought without the island's network" "$DEFENCE" \
+  's/#\{frames => true, network => network:home\(\)\}/#{frames => true, network => network:none()}/' \
+  network_tests
+
+# 18. Training must happen under the island's own network. Selection cannot
+#     favour using a cue that is never present, so with this reverted the ground
+#     bank is four zeroes for every generation that ever runs and the ablation's
+#     ground arm reports zero honestly and uselessly for ever.
+probe "training never sees the ground" "$TRAINER" \
+  's/#\{network => network:home\(\)\}/#{network => network:none()}/' \
+  network_tests
+
+# 19. ⚠ AND THE BENCHMARK MUST STAY AWAY. The frozen ladder measures the
+#     CONTROLLER. A network here scores an island's terrain instead: every rung
+#     moves the day placement changes, and the one fixed thing in the system
+#     stops being fixed without anything failing.
+probe "the frozen benchmark is fought at home" "$BENCH" \
+  's/#\{network => network:none\(\)\}/#{network => network:home()}/' \
+  network_tests
+
+# 20. A sensor's range must be a hard edge. One that occasionally saw past it
+#     would leave no corridors, and the approach path is the only counterplay to
+#     a network this design offers.
+probe "the sensor can see past its own range" "$SENSOR" \
+  's/ranged\(D, _Sensor, _DroneId, _Tick, _X, _Y, _Z\) when D > \?SENSOR_RANGE ->\n    miss;/ranged(D, _Sensor, _DroneId, _Tick, _X, _Y, _Z) when D > ?SENSOR_RANGE * 4 ->\n    miss;/s' \
+  sensor_tests
+
+# 21. The confirmation threshold must bite. At one piece of evidence every ghost
+#     is a target, the network cues at its own false alarms, and the number this
+#     phase exists to tune decides nothing.
+probe "a single contact confirms a track" "$TRACKS" \
+  's/graduated\(E, S\) when E >= \?CONFIRM_EVIDENCE ->/graduated(E, S) when E >= 1 ->/' \
+  tracks_tests
+
+# 22. The network must be silent until it is sure. Transmitting the tentative
+#     picture broadcasts its ghosts, which is the same failure as 21 arriving
+#     one module later.
+probe "the network broadcasts its tentative picture" "$NETWORK" \
+  's/heard_from\(in_earshot\(Sensors, D\), tracks:confirmed\(Tracks\)\)\./heard_from(in_earshot(Sensors, D), Tracks)./' \
+  network_tests
+
+# 23. The ground is a transmitter with a horizon, like every other transmitter.
+#     Without it, flying wide stops being a way to avoid being cued at and an
+#     attacker can never get out from under an island's voice.
+probe "the ground can be heard everywhere" "$NETWORK" \
+  's/in_earshot\(Sensors, #drone\{x = X, y = Y, z = Z\}\) ->\n    #\{comms_range := R\} = airspace:limits\(\),\n    \[S \|\| #\{x := Sx, y := Sy, z := Sz\} = S <- Sensors,\n          fixed:mag3\(Sx - X, Sy - Y, Sz - Z\) =< R\]\./in_earshot(Sensors, #drone{}) ->\n    #{comms_range := R} = airspace:limits(),\n    [S || S <- Sensors, R > 0]./s' \
+  network_tests
+
 echo
 rebar3 compile >/dev/null 2>&1
 
 if [ "$FAILURES" -eq 0 ]; then
-    echo "All sixteen guards bit."
+    echo "All twenty-three guards bit."
     exit 0
 fi
 

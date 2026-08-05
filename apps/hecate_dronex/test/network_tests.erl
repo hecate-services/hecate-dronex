@@ -56,6 +56,59 @@ a_fresh_network_says_nothing_test() ->
     %% number this phase exists to tune — would decide nothing.
     ?assertNot(loud(network:home(), at_the_centre(defender))).
 
+%% ⚠ A FRESH NETWORK HAS NO TRACKS AT ALL, so the test above passes whether the
+%% threshold is respected or ignored — a guard probe that replaced
+%% `tracks:confirmed(T)' with `T' left it green. This one puts a TENTATIVE track
+%% in the picture and nothing else, which is the only state that tells the two
+%% apart.
+%%
+%% ⚠⚠ ONE STATION, DELIBERATELY. A five-station network confirms a target in the
+%% middle of it almost at once, because every station reports the same place in
+%% the same tick and the threshold is met before a second tick happens. That is
+%% correct and is asserted below; it also means the full network never sits in
+%% the tentative state long enough to test it.
+a_network_with_only_a_tentative_track_says_nothing_test() ->
+    D = at_the_centre(attacker),
+    Seen = seen_for(network:home(1), D, ?CONFIRM_EVIDENCE - 1),
+    ?assert(seen_something(Seen)),
+    ?assertEqual([], network:tracks_of(Seen)),
+    ?assertNot(loud(Seen, at_the_centre(defender))).
+
+%% ⚠ WHAT A NETWORK IS ACTUALLY FOR, and it falls out of the design rather than
+%% being arranged. Several stations reporting the same place in the same tick
+%% clears the threshold immediately, while several stations' GHOSTS do not,
+%% because each station invents its own at its own position and they do not
+%% coincide inside the gate. Agreement is the evidence.
+several_stations_agreeing_confirm_faster_than_one_test() ->
+    D = at_the_centre(attacker),
+    ?assert(ticks_to_confirm(network:home(), D) < ticks_to_confirm(network:home(1), D)).
+
+ticks_to_confirm(Net, Drone) -> ticks_to_confirm(Net, Drone, 1).
+
+ticks_to_confirm(_Net, _Drone, T) when T > 300 -> never;
+ticks_to_confirm(Net, Drone, T) ->
+    Next = network:observe(Net, [Drone], T),
+    reached(network:tracks_of(Next), Next, Drone, T).
+
+reached([], Net, Drone, T) -> ticks_to_confirm(Net, Drone, T + 1);
+reached(_Confirmed, _Net, _Drone, T) -> T.
+
+%% Look until the tracker holds N pieces of evidence on something. Detection is
+%% probabilistic, so counting ticks would count misses too.
+seen_for(Net, Drone, Evidence) ->
+    lists:foldl(fun (T, N) -> maybe_look(N, Drone, T, Evidence) end, Net,
+                lists:seq(1, 400)).
+
+maybe_look(Net, Drone, Tick, Evidence) ->
+    stopped(evidence_in(Net) >= Evidence, Net, Drone, Tick).
+
+stopped(true, Net, _Drone, _Tick) -> Net;
+stopped(false, Net, Drone, Tick) -> network:observe(Net, [Drone], Tick).
+
+evidence_in(#{tracks := Ts}) -> lists:max([0 | [E || #{evidence := E} <- Ts]]).
+
+seen_something(#{tracks := Ts}) -> Ts =/= [].
+
 after_watching_something_for_long_enough_it_speaks_test() ->
     D = at_the_centre(attacker),
     Net = watched(network:home(), D, 60),
@@ -171,8 +224,20 @@ training_happens_under_the_islands_own_network_test() ->
     %% and the ablation's ground arm would read zero honestly and uselessly.
     ?assert(binary:match(source(trainer), <<"network:home()">>) =/= nomatch).
 
+%% ⚠ CALLED, NOT GREPPED. This assertion used to read `island_server.erl' for the
+%% string `network:home()' and passed while the raid path was perturbed to
+%% `none', because the same string also appears on the training-bout path a few
+%% hundred lines away. A textual probe cannot tell two occurrences apart, which
+%% is half the reason hosting moved into `defence' — the other half is that how a
+%% raid is defended is a fact about defending.
 a_hosted_raid_is_fought_at_home_test() ->
-    ?assert(binary:match(source(island_server), <<"network:home()">>) =/= nomatch).
+    {ok, C} = engagement:controller(hoverer),
+    Placed = drone_starts:place(1, 1, 0),
+    [{A, _, _, _, _, _}, {B, _, _, _, _, _}] = Placed,
+    Result = (defence:host(#{A => C, B => C}))(airspace:new(Placed)),
+    ?assertEqual(?SENSORS, length(maps:get(ground, Result))),
+    %% And it records, because a raid nobody can watch is not an exhibit.
+    ?assert(maps:get(frames, Result) =/= false).
 
 %% ⚠ THE PATH COMES FROM THE COMPILER, NOT FROM A GUESS AT THE WORKING DIRECTORY.
 %% A relative climb out of `_build' is a probe that rots the day anything moves,
@@ -183,3 +248,22 @@ source(Module) ->
     ?assert(Path =/= undefined),
     {ok, Bin} = file:read_file(Path),
     Bin.
+
+the_towers_reach_the_wire_test() ->
+    %% A spectator cannot draw what was never published. Both a bout and a raid
+    %% go through one encoder, so this covers both.
+    {ok, C} = engagement:controller(hoverer),
+    Placed = drone_starts:place(1, 1, 0),
+    [{A, _, _, _, _, _}, {B, _, _, _, _, _}] = Placed,
+    Run = fun (Net) ->
+              engagement:run(airspace:new(Placed), #{A => C, B => C},
+                             #{frames => true, network => Net})
+          end,
+    Enc = fun (R) -> dronex_bout:encode(#{}, R, maps:get(frames, R), airspace:limits()) end,
+    Home = Enc(Run(network:home())),
+    ?assertEqual([x, y, z], maps:get(ground_fields, Home)),
+    ?assertEqual(?SENSORS * 3, length(maps:get(ground, Home))),
+    %% Metres, like the arena and the frames, so a reader never mixes units.
+    #{arena_x := Ax} = airspace:limits(),
+    [?assert(V >= 0 andalso V =< Ax div 20480) || V <- maps:get(ground, Home)],
+    ?assertEqual([], maps:get(ground, Enc(Run(network:none())))).

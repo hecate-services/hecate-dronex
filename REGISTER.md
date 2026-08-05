@@ -160,6 +160,75 @@ survey.**
 the top drawer. There were three hammers in the drawer underneath. The rule is
 to open every drawer before saying what is not in the toolbox.
 
+## I.14: a whole subsystem was built, tested, and connected to nothing
+
+`sensor`, `tracks` and `network` were written, compiled, and covered by their own
+passing unit tests. Every fight in the system ran without any of them. The static
+defence — the entire point of item 8 — was dead code with a green suite behind
+it, and the suite was green **because** the tests supplied the network themselves.
+A test that hands a module its input cannot notice that nothing in production
+ever does.
+
+It was caught by a one-line grep for `network:home` returning no matches outside
+the module that defines it. Nothing else in the toolchain had an opinion:
+Dialyzer was clean, elvis was clean, 285 tests passed, and the compiler is
+perfectly happy with an exported function nobody calls.
+
+The lesson generalises past this instance and is now the shape of three
+assertions: **the wiring is a boundary and needs its own guard.** For a pure
+value that flows through a system, the guard is that the value reaches the far
+end — `the_ground_reaches_the_result_test` runs an engagement two ways and
+asserts the results differ.
+
+This is I.9 wearing different clothes. There, `radio.erl` was written into a
+directory that did not exist and everything downstream compiled *because* the
+module was absent. Here the module was present and reachable and called by
+nobody. Both are the same question asked twice: **is this code actually on the
+path?** — and neither the compiler nor a unit test is the thing that answers it.
+
+**ELI5.** Someone built a smoke detector, tested it in the workshop by blowing
+smoke at it, and it beeped every time. Then they wrote in the log that the house
+had a smoke detector. It was still in the workshop. Nobody had put it on a
+ceiling. Every test of it was honest, and every one of them was a test of the
+detector rather than a test of the house.
+
+## I.15: the same guard probe rotted twice, and then found the wrong copy
+
+Three failures of one mechanism, in one sitting.
+
+**It rotted.** A probe proving the ablation's mute reaches the drones quoted the
+whole of `engagement:ask/5` verbatim. Item 8 added a network argument, the
+pattern stopped matching, and the probe reported "changed nothing" instead of
+biting. This is I.10 exactly: a probe anchored on something large enough that
+ordinary work moves it. Re-anchored on `muted/3`, four short lines whose whole
+job is the thing being proved.
+
+**It found the wrong copy.** A probe that the defender fights at home searched
+`island_server.erl` for `network:home()`. Perturbing the raid path left the
+probe green, because the same string appears on the training-bout path a few
+hundred lines away. **A textual probe cannot tell two occurrences apart.** The
+fix was not a better regex: hosting a raid moved into `defence:host/1`, where it
+belonged anyway, and the assertion now calls the function.
+
+**It proved a state that could not occur.** A probe that the network stays silent
+until a track is confirmed passed against a test using a network that had
+observed nothing at all — no tracks, confirmed or otherwise, so both the correct
+and the broken code said nothing. The test had to construct a network holding a
+*tentative* track and no more, which turned out to need a **single** station:
+five stations agree in one tick and clear the threshold before a second tick
+happens. Writing that test surfaced a genuine property of the design that had
+not been noticed — agreement across stations is itself the evidence, and it is
+why a ghost, invented independently by each station at its own position, does not
+confirm.
+
+**ELI5.** Three ways of checking a lock without checking the lock. First they
+described the door so precisely that repainting it meant the description no
+longer matched anything, and they wrote down "nothing to check" instead of
+"something is wrong". Then they went looking for a door by its colour, found a
+different door of the same colour on the far side of the building, and rattled
+that one. Then they tested whether a door stays shut when it is locked, on a
+doorway that had no door in it at all: it stayed shut either way.
+
 ## I.13: one dead subscription bred three, and five symptoms had one cause
 
 An island's mailbox reached **615,722 messages**. It was wedged inside

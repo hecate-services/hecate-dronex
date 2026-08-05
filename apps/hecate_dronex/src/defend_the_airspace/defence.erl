@@ -32,7 +32,7 @@
 
 -include("airspace.hrl").
 
--export([compose/3, fates/2, outcome/1, survivors/2]).
+-export([compose/3, host/1, fates/2, outcome/1, survivors/2]).
 
 %% @doc Lay out the fight and crew both sides.
 %%
@@ -45,6 +45,25 @@
 %% position in a list, which is a second, unwritten copy of the pairing that
 %% `compose/3' already knows — and the day the layout stops being index-ordered
 %% it would go on returning plausible survivors quietly.
+%% @doc Fly a composed defence. AT HOME, WITH THE ISLAND'S NETWORK UP.
+%%
+%% ⚠ THIS LIVES HERE RATHER THAN AT THE CALL SITE, and the reason is a guard
+%% probe that would not bite. How a hosted raid is fought is a fact about
+%% DEFENDING, so it belongs to this slice; while it sat inline in the island
+%% server it was one option map among several in a process that also runs
+%% training bouts, and nothing could assert it without reading source and
+%% guessing which occurrence it had found. Now the asymmetry that prices a raid
+%% is one exported function with a test on it.
+%%
+%% The raider gets no equivalent, because a raider has no equivalent: it flies
+%% into somebody else's volume with no ground support at all.
+-spec host(#{term() => engagement:controller()}) -> fun((#arena{}) -> engagement:result()).
+host(Controllers) ->
+    fun (Arena) ->
+        engagement:run(Arena, Controllers,
+                       #{frames => true, network => network:home()})
+    end.
+
 -spec compose([roster:entry()], [{binary(), drone_genome:genome()}], non_neg_integer()) ->
     {ok, #arena{}, map(), #{attackers := [{term(), binary()}],
                             defenders := [{term(), roster:entry()}]}}

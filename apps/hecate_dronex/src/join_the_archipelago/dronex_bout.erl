@@ -91,6 +91,19 @@ encode(Meta, Result, Frames, Limits) ->
       %% mirror a field order in its own source.
       frame_fields => [drone, x, y, z, yaw, health, state],
       munition_fields => [drone, x, y, z, guided],
+      %% ⚠ WHERE THE TOWERS STOOD, AND EMPTY WHEN THERE WERE NONE. A raider
+      %% fights over somebody else's ground with no stations of its own, and
+      %% that asymmetry is what prices a raid; if it never reaches the wire it
+      %% is invisible on the exhibit and readable only in a log, which is the
+      %% same as asking an audience to take the interesting part on trust.
+      %%
+      %% Once per fight rather than once per frame: phase 1 placement does not
+      %% move, and repeating five fixed positions across 600 frames would be
+      %% three thousand numbers saying one thing.
+      ground_fields => [x, y, z],
+      ground => lists:append([[metres(X), metres(Y), metres(Z)]
+                              || #{x := X, y := Y, z := Z}
+                                 <- maps:get(ground, Result, [])]),
       arena => [metres(maps:get(arena_x, Limits)),
                 metres(maps:get(arena_y, Limits)),
                 metres(maps:get(arena_z, Limits))],

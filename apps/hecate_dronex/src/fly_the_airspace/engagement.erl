@@ -30,6 +30,11 @@
                     %% run in which nothing was transmitted invalidates any claim
                     %% about coordination rather than producing a null.
                     signal_volume := non_neg_integer(),
+                    %% ⚠ WHERE THE GROUND STOOD, AND `[]' FOR AN AWAY GAME. A
+                    %% raider fights over somebody else's volume with no stations
+                    %% of its own, and a result that did not say so would leave
+                    %% the asymmetry that prices a raid readable only in a log.
+                    ground := [#{x := integer(), y := integer(), z := integer()}],
                     frames := [#arena{}] | false}.
 
 %% @doc Build a controller from a genome or a drill kind.

@@ -690,12 +690,10 @@ hosted({error, Why}, _D, _R, Req, Island) ->
                    [maps:get(raid_id, Req), Why]),
     gen_server:cast(Island, {published, settle(Req, draw, [])});
 hosted({ok, Arena, Controllers, Pairs}, Defenders, Raiders, Req, Island) ->
-    %% ⚠ THE DEFENDER FIGHTS AT HOME WITH ITS NETWORK, and the attacker flew in
-    %% without one. That is the second price of raiding, on top of the airframes:
-    %% an island's sensors defend its own airspace only, so choosing to attack is
-    %% choosing to fight without the thing that makes you strong.
-    Result = engagement:run(Arena, Controllers,
-                            #{frames => true, network => network:home()}),
+    %% The defender fights at home with its network and the attacker flew in
+    %% without one. `defence:host/1' owns that, because it is a fact about
+    %% defending rather than a fact about this process.
+    Result = (defence:host(Controllers))(Arena),
     Fates = defence:fates(maps:get(attackers, Pairs), Result),
     Survivors = defence:survivors(maps:get(defenders, Pairs), Result),
     Meta = #{from => maps:get(attacker, Req), raid => maps:get(raid_id, Req),
