@@ -49,6 +49,20 @@
 %% link is not perpetually downloading one.
 -define(DEFAULT_BOUT_MS, 20000).
 
+%% ⚠ THE ABLATION IS FOUR TIMES THE COST OF THE FIGHTS IT MEASURES, which is why
+%% it has its own slow clock rather than riding the bout timer. Twelve swarm
+%% engagements run four ways is forty-eight, against the benchmark's 288, and
+%% both run off-process on a four-core Celeron.
+-define(DEFAULT_ABLATE_MS, 300000).
+
+%% ⚠ SWARM, NOT DUEL, AND A DUEL WOULD HAVE MADE THE MEASUREMENT MEANINGLESS. In
+%% a one-against-one fight there is no friendly to talk to, so the friendly bank
+%% is structurally zero and muting it cannot change anything. An ablation run on
+%% duels would report `comms do not matter' with perfect consistency, and it
+%% would be an artefact of the formation rather than a finding about the channel.
+-define(ABLATE_PER_SIDE, 3).
+-define(ABLATE_STARTS, 4).
+
 start_link() -> gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
 %% @doc The published shape, without needing a mesh. What a local page would draw.
@@ -83,7 +97,11 @@ init([]) ->
     schedule(benchmark, ?DEFAULT_BENCH_MS),
     schedule(snapshot, ?DEFAULT_SNAPSHOT_MS),
     schedule(bout, ?DEFAULT_BOUT_MS),
-    {ok, #{island => Island, sent => 0, failed => 0, sitting => false}}.
+    %% Offset from the benchmark's first firing so the two heavy jobs do not
+    %% start together on a node with four slow cores.
+    schedule(ablate, ?DEFAULT_ABLATE_MS div 2),
+    {ok, #{island => Island, sent => 0, failed => 0, sitting => false,
+           ablating => false}}.
 
 %% A store that is not there yet, or a log that cannot be read, is an island that
 %% starts fresh rather than an island that refuses to start. The roster depth it
@@ -148,6 +166,19 @@ handle_info(bout, #{island := I} = S) ->
     schedule(bout, ?DEFAULT_BOUT_MS),
     {noreply, counted(publish_bout(I), S)};
 
+%% ⚠ SPAWNED WITHOUT A LINK, for the same reason the benchmark is: an instrument
+%% that crashes must cost the island a stale reading, never its life. The
+%% previously published report simply stands, and the exercise count beside it
+%% stops rising, which is what makes the staleness visible.
+handle_info(ablate, #{island := I, ablating := false} = S) ->
+    schedule(ablate, ?DEFAULT_ABLATE_MS),
+    {noreply, S#{ablating := ablate_off_process(I)}};
+handle_info(ablate, S) ->
+    schedule(ablate, ?DEFAULT_ABLATE_MS),
+    {noreply, S};
+handle_info({ablated, Report}, #{island := I} = S) ->
+    {noreply, S#{island := island:ablated(I, Report), ablating := false}};
+
 handle_info(snapshot, #{island := I} = S) ->
     schedule(snapshot, ?DEFAULT_SNAPSHOT_MS),
     _ = roster_log:snapshot(hecate_dronex_service:store_id(), island:roster_of(I)),
@@ -198,6 +229,61 @@ asked(Entry, Back) ->
 
 sat({ok, Profile}) -> Profile;
 sat({error, _Why}) -> benchmark:empty().
+
+%% @doc Ask whether this island's own controllers are using the channel.
+%%
+%% ⚠ SELF-PLAY, NOT THE LADDER, AND THAT IS FORCED RATHER THAN CHOSEN. The drills
+%% are scripted and never transmit, so an ablation against them is void by
+%% construction: see `ablation_tests'. The only fights on this island where
+%% anything is said are the ones its own controllers fly against each other.
+ablate_off_process(I) -> ablating(roster:best(island:roster_of(I)), I, self()).
+
+ablating(undefined, _I, _Back) -> false;
+ablating(Best, I, Back) ->
+    Fights = swarm_fights(Best, opponent_of(I, Best), island:tick_of(I)),
+    _ = spawn(fun () -> Back ! {ablated, ablation:measure(Fights)} end),
+    true.
+
+%% The best against the worst that is not itself, so the pair is deterministic
+%% from the roster rather than drawn, and reproducible from the published tick.
+opponent_of(I, Best) ->
+    Others = [E || E <- roster:entries(island:roster_of(I)),
+                   roster:entry_id(E) =/= roster:entry_id(Best)],
+    first_or(Others, Best).
+
+first_or([E | _], _Fallback) -> E;
+first_or([], Fallback) -> Fallback.
+
+%% ⚠ ONE GENOME PER SIDE, FLOWN BY EVERY DRONE ON IT. The population is
+%% homogeneous by design: a sum-not-slot radio is invariant to swarm size
+%% precisely so that one controller flies as three or as twelve without per-slot
+%% specialists, and a heterogeneous swarm here would fold `which genome' into a
+%% number that is supposed to be about `which channel'.
+swarm_fights(Mine, Theirs, Tick) ->
+    Starts = [(Tick + N) rem drone_starts:count() || N <- lists:seq(0, ?ABLATE_STARTS - 1)],
+    lists:filtermap(fun (Ix) -> composed(Mine, Theirs, Ix) end, Starts).
+
+composed(Mine, Theirs, Index) ->
+    Placed = drone_starts:place(?ABLATE_PER_SIDE, ?ABLATE_PER_SIDE, Index),
+    manned(Placed, roster:entry_genome(Mine), roster:entry_genome(Theirs)).
+
+%% A genome that will not fly is dropped rather than scored, exactly as the
+%% trainer refuses one rather than giving it a zero: a dropped fight lowers the
+%% exercise count, and a zero would silently move the delta.
+manned(Placed, A, D) -> crewed(Placed, A, D, engagement:controller(A),
+                               engagement:controller(D)).
+
+crewed(_Placed, _A, _D, {error, _Why}, _Theirs) -> false;
+crewed(_Placed, _A, _D, _Mine, {error, _Why}) -> false;
+crewed(Placed, A, D, {ok, _}, {ok, _}) ->
+    %% ⚠ A FRESH CONTROLLER PER DRONE, NOT ONE SHARED. A pilot carries the
+    %% network's recurrent state, so handing the same one to three drones would
+    %% have them share a memory and the swarm would behave as one animal.
+    Cs = maps:from_list([{Id, fresh(Side, A, D)} || {Id, Side, _, _, _, _} <- Placed]),
+    {true, {airspace:new(Placed), Cs}}.
+
+fresh(attacker, A, _D) -> element(2, engagement:controller(A));
+fresh(defender, _A, D) -> element(2, engagement:controller(D)).
 
 %% ⚠ COUNTED RATHER THAN LOGGED. CHARTER.md rule 4: a capacity that was never
 %% exercised is not evidence of anything, so the exercise count is available

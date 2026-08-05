@@ -81,6 +81,10 @@ encode(Meta, Result, Frames, Limits) ->
       entrants => maps:get(entrants, Meta, []),
       winner => maps:get(winner, Result, draw),
       ticks => maps:get(ticks, Result, 0),
+      %% How much was said during this fight. A recording in which nobody
+      %% transmitted is not evidence about coordination, and a spectator that
+      %% narrates one as if it were would be reading tea leaves.
+      signal_volume => maps:get(signal_volume, Result, 0),
       survivors => [name(Id) || Id <- maps:get(survivors, Result, [])],
       withdrawn => [name(Id) || Id <- maps:get(withdrawn, Result, [])],
       %% Names travel with the vectors, because a reader must never have to

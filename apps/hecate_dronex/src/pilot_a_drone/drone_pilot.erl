@@ -135,14 +135,21 @@ stepped(Outputs) when is_list(Outputs) -> {Outputs, undefined}.
 %% must not trust a caller at all, and a genome from a stranger reaches it through
 %% this same function.
 -spec commands([float()]) -> #intent{}.
-commands([F, L, V, Y, R, La | _Comms]) ->
-    #{max_accel := A, max_yaw_rate := Rate} = airspace:limits(),
+commands([F, L, V, Y, R, La | Comms]) ->
+    #{max_accel := A, max_yaw_rate := Rate, signal_max := Max} = airspace:limits(),
     #intent{thrust_fwd = round(F * A),
             thrust_lat = round(L * A),
             thrust_vert = round(V * A),
             yaw_rate = round(Y * Rate),
             release = trigger(R),
-            launch = trigger(La)};
+            launch = trigger(La),
+            %% ⚠ THE LAST FOUR OUTPUTS WERE DISCARDED UNTIL ITEM 6 AND ARE NOT
+            %% ANY MORE. Nothing here interprets them: they are scaled onto the
+            %% channel's range and transmitted verbatim, and what they MEAN is
+            %% decoded afterwards by correlating them against the rest of a
+            %% frame. Charter rule 8 is at its sharpest here, because a named
+            %% channel would have been the most natural thing in the world.
+            signal = [round(C * Max) || C <- Comms]};
 %% A short vector is a null command rather than a crash, because the alternative
 %% is a host taken down by a genome it accepted. `drone_genome:validate/1' is what
 %% is supposed to make this unreachable, and this clause is what makes the

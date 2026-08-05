@@ -24,10 +24,33 @@ the_island_id_is_never_in_a_topic_test() ->
 only_what_exists_is_published_test() ->
     Fact = with_data_dir(fun () -> dronex_facts:vitals(island:new(#{})) end),
     Keys = lists:sort(maps:keys(Fact)),
-    ?assertEqual([admissions, benchmark_draws, benchmark_losses, benchmark_rungs,
+    ?assertEqual([ablation_delta_air, ablation_delta_all, ablation_delta_ground,
+                  ablation_void, ablations, admissions,
+                  benchmark_draws, benchmark_losses, benchmark_rungs,
                   benchmark_starts, benchmark_wins, capacity, fact_version,
                   generation, island, island_id, roster, rounds,
+                  signal_entropy, signal_volume,
                   station_connected, station_host, station_id, tick], Keys).
+
+%% ⚠ AN ISLAND THAT HAS NEVER ABLATED PUBLISHES ZEROS WITH A ZERO COUNT, and that
+%% is the whole reason `ablations' exists. Without it a delta of zero from an
+%% instrument that has never run is indistinguishable from a delta of zero from a
+%% channel nobody depends on, and those are opposite conclusions.
+a_never_ablated_island_says_so_rather_than_reporting_a_zero_delta_test() ->
+    Fact = with_data_dir(fun () -> dronex_facts:vitals(island:new(#{})) end),
+    ?assertEqual(0, maps:get(ablations, Fact)),
+    ?assert(maps:get(ablation_void, Fact)),
+    ?assertEqual(0, maps:get(signal_volume, Fact)),
+    ?assertEqual(0, maps:get(signal_entropy, Fact)).
+
+%% And once it has, the count rises and the report is the one it measured.
+an_ablated_island_publishes_the_measurement_test() ->
+    Report = ablation:measure([]),
+    I = island:ablated(island:new(#{}), Report#{volume := 12, void := false}),
+    Fact = with_data_dir(fun () -> dronex_facts:vitals(I) end),
+    ?assertEqual(1, maps:get(ablations, Fact)),
+    ?assertNot(maps:get(ablation_void, Fact)),
+    ?assertEqual(12, maps:get(signal_volume, Fact)).
 
 %% ⚠ CHARTER.md rule 4. An island with an empty roster and an island that does
 %% not report a roster look identical unless the zero goes out.

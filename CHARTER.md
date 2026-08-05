@@ -190,20 +190,20 @@ noun has to carry that or the physics will drift back to the ground.
 
 ## Order of work
 
-| # | work | kind | why here |
-|---|---|---|---|
-| 1 | the hecate_om spine: service, mesh, identity, facts, server, store, container, CI | **BUILD** | the tedious end is finished before the interesting end starts, so no increment waits on plumbing. Copied in shape from `hecate-society` |
-| 2 | the airspace: flight, battery, hits, the arena, determinism | **BUILD** | everything stands on it |
-| 3 | the drone: sensors, actuators, the brain, the genome wire form | **BUILD** | |
-| 4 | the frozen benchmark: scripted drills, fixed starts, the published score | **BUILD**, before any breeding | rule: a rising number against a moving exam is an artifact, and it cannot be added to history later |
-| 5 | the trainer and the roster, persisted | **BUILD** | |
-| 6 | comms, with the ablation instrument in the same commit | **BUILD** | the instrument is not a follow-up. Without it the channel is decoration |
-| 7 | the raid protocol, and the defender keeping what attacked it | **BUILD** | |
-| 8 | **static defence phase 1**: one non-cooperative modality, fixed placement, fixed confirmation threshold, the ground bank, the three-way ablation | **BUILD** | the smallest thing that makes the asymmetry real. It lands before the map so coverage is drawn from the start rather than retrofitted |
-| 9 | the map | **BUILD** | |
-| 10 | **static defence phase 2**: the confirmation threshold evolves | **BUILD** | one integer, and it is the genuine counter-drone tradeoff: cue at ghosts and waste battery, or see too late |
-| 11 | **static defence phase 3**: placement evolves, is persisted, is published, is drawn | **BUILD** | this is what makes islands visibly different places |
-| 12 | ONNX export of a champion, flown against the simulator through the exported artifact | **BUILD** | this is what makes the framing true rather than aspirational, and it is a test rather than a claim |
+| # | work | kind | done | why here |
+|---|---|---|---|---|
+| 1 | the hecate_om spine: service, mesh, identity, facts, server, store, container, CI | **BUILD** | ✅ | the tedious end is finished before the interesting end starts, so no increment waits on plumbing. Copied in shape from `hecate-society` |
+| 2 | the airspace: flight, battery, hits, the arena, determinism | **BUILD** | ✅ | everything stands on it |
+| 3 | the drone: sensors, actuators, the brain, the genome wire form | **BUILD** | ✅ | |
+| 4 | the frozen benchmark: scripted drills, fixed starts, the published score | **BUILD**, before any breeding | ✅ | rule: a rising number against a moving exam is an artifact, and it cannot be added to history later |
+| 5 | the trainer and the roster, persisted | **BUILD** | ✅ | |
+| 6 | comms, with the ablation instrument in the same commit | **BUILD** | ✅ | the instrument is not a follow-up. Without it the channel is decoration. Four channels, three banks, one tick late, summed. `ablation` ships in the same commit and its three numbers are on every vitals fact |
+| 7 | the raid protocol, and the defender keeping what attacked it | **BUILD** | | |
+| 8 | **static defence phase 1**: one non-cooperative modality, fixed placement, fixed confirmation threshold, the ground bank, the three-way ablation | **BUILD** |  | the smallest thing that makes the asymmetry real. It lands before the map so coverage is drawn from the start rather than retrofitted |
+| 9 | the map | **BUILD** | | |
+| 10 | **static defence phase 2**: the confirmation threshold evolves | **BUILD** |  | one integer, and it is the genuine counter-drone tradeoff: cue at ghosts and waste battery, or see too late |
+| 11 | **static defence phase 3**: placement evolves, is persisted, is published, is drawn | **BUILD** |  | this is what makes islands visibly different places |
+| 12 | ONNX export of a champion, flown against the simulator through the exported artifact | **BUILD** |  | this is what makes the framing true rather than aspirational, and it is a test rather than a claim |
 
 ⚠ **Items 8, 10 and 11 are staged deliberately**, because the static defence
 roughly doubles the surface of the build and only phase 1 is needed for the game

@@ -135,6 +135,33 @@ The delta in the outcome is the measurement. It is cheap because the replay
 machinery exists anyway, it is exact because the engine is deterministic, and it
 is impossible to add to history later.
 
+### Two things the build changed, and the design was wrong about both
+
+⚠ **The mute is per side, not global.** As written above, "mute the two air
+banks" reads as silencing everybody, and that would have produced a false zero in
+the most important case. Whatever coordination is worth in a self-play match, it
+is worth to both sides, so silencing both leaves the win rate roughly where it
+started and the instrument reports *no effect* most loudly in exactly the
+situation where the channel mattered most. The attacker is silenced and the
+defender is left alone, so the number is what the channel is worth **to the side
+that lost it**. `engagement:muting/1`; a bare atom still means both, because the
+benchmark's opponents are scripted drills that never speak and there the two are
+the same thing.
+
+⚠ **The ablation is run on swarms, never on duels.** With one drone a side there
+is no friendly to talk to, the friendly bank is structurally zero, and muting it
+cannot change anything. An ablation on duels would report *comms do not matter*
+with perfect consistency, and it would be an artefact of the formation rather
+than a finding about the channel. Three a side, four starts, and one genome per
+side flown by every drone on it: the population is homogeneous by design, which
+is what a sum-not-slot radio buys.
+
+Two further consequences fell out rather than being chosen. **The drills hear and
+never speak**, so the hostile bank is zero throughout the frozen exam and any
+reading of what a controller does with hostile traffic has to come from a raid or
+from self-play. And **an ablation against the ladder is void by construction**,
+which `ablation_tests` asserts, because the silent opponent makes it so.
+
 Three numbers are published from every island:
 
 | number | what a zero means |
@@ -145,7 +172,38 @@ Three numbers are published from every island:
 
 Charter rule 4 applies to all three: publish the exercise count beside the null.
 A run where the ablation was never performed and a run where it came back zero
-must not look the same.
+must not look the same. The count is `ablations` on the vitals fact, and an
+island that has never measured publishes zeros beside a zero count rather than
+publishing nothing.
+
+⚠ **The entropy figure is a function of its binning and the binning is part of
+the number.** Sixteen bins over the channel's full range, so four bits is the
+ceiling; `ablation:buckets/0` and `ablation:max_entropy/0` are exported rather
+than buried so a reader can see the ceiling instead of inferring it. A controller
+that splits its output into more than sixteen meaningfully distinct values reads
+as saturated here.
+
+### What is on the wire
+
+| key | on | meaning of zero |
+|---|---|---|
+| `signal_volume` | vitals **and** every bout | nothing was said; anything else about that period is void |
+| `signal_entropy` | vitals | the channel is driven with a constant |
+| `ablation_delta_air` | vitals | drone-to-drone traffic is depended on by nothing |
+| `ablation_delta_ground` | vitals | expected until item 8: nothing on the ground transmits yet |
+| `ablation_delta_all` | vitals | the joint effect, and with the two above, the interaction |
+| `ablations` | vitals | **the measurement has never been taken**, which is not a finding |
+
+The island runs it off-process on its own slow clock, offset from the benchmark
+so two heavy jobs do not start together on four slow cores, and unlinked for the
+same reason the benchmark is: an instrument that crashes must cost a stale
+reading, never the island. Staleness is visible because the exercise count stops
+rising while the report stands.
+
+`scripts/does_anybody_listen.escript` runs the whole thing on a bred population
+and prints the three numbers. It is a **smoke check on the instrument, not an
+answer**: whether drones evolve a signalling convention is a CLAIM, and a claim
+gets pre-registration and an adversarial gate before a runner is written.
 
 ## What is worth measuring later, borrowed rather than invented
 

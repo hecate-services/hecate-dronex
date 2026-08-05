@@ -162,16 +162,26 @@ only_the_three_nearest_are_reported_test() ->
 %% Comms
 %%==============================================================================
 
-%% ⚠ THE GUARD THAT HAS TO BE UPDATED AT ITEM 6, WHICH IS THE POINT OF IT.
-%% Twelve channels exist and are zero, because the genome's width is fixed by the
-%% channel count and growing it later would invalidate every genome bred and
-%% persisted at item 5. Carrying the width from the start costs twelve zeros per
-%% evaluation and saves throwing a roster away. When comms land this test goes
-%% red, which is a reminder rather than a lie that rots.
-the_comms_channels_exist_and_are_silent_test() ->
-    V = vec(world([])),
+%% ⚠ THIS WAS THE ITEM 6 REMINDER AND ITEM 6 HAS LANDED. Until comms existed it
+%% asserted twelve reserved zeros, so that the width could not quietly grow later
+%% and invalidate every genome bred and persisted at item 5. It now asserts the
+%% other half of the same bargain: the width did NOT change, and the channels
+%% carry `radio''s output rather than a placeholder.
+the_comms_channels_are_the_radio_test() ->
     ?assertEqual(12, drone_senses:comms_width()),
-    ?assertEqual(lists:duplicate(12, 0.0), lists:sublist(V, 30, 12)).
+    ?assertEqual(radio:width(), drone_senses:comms_width()),
+    ?assertEqual(lists:duplicate(12, 0.0),
+                 lists:sublist(vec(world([])), 30, 12)),
+    %% A saturated bank reads one, and one drone at full volume reads an eighth,
+    %% so the COUNT survives normalisation up to the saturation point.
+    #{heard_max := Max, signal_max := S} = airspace:limits(),
+    Loud = [Max | lists:duplicate(11, 0)],
+    ?assertEqual(1.0, hd(lists:sublist(sensed(Loud), 30, 12))),
+    ?assertEqual(S / Max, hd(lists:sublist(sensed([S | lists:duplicate(11, 0)]), 30, 12))).
+
+sensed(Comms) ->
+    A = world([]),
+    drone_senses:sense(self_of(A), [], Comms).
 
 %% And the width is enforced rather than assumed: a wrong-length comms list is
 %% silence, not a shifted vector.

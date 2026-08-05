@@ -27,6 +27,7 @@
 -export([new/1, run/2, train/1, seed_if_empty/1, benchmarked/2, with_roster/2]).
 -export([tick_of/1, roster_depth/1, capacity/1, seed_of/1, roster_of/1]).
 -export([generation_of/1, benchmark_of/1, rounds_of/1, admissions_of/1]).
+-export([ablated/2, ablation_of/1, ablations_of/1]).
 
 -export_type([island/0]).
 
@@ -51,7 +52,13 @@
     %% every proposal was rejected are different situations and look identical
     %% without these.
     rounds = 0 :: non_neg_integer(),
-    admissions = 0 :: non_neg_integer()
+    admissions = 0 :: non_neg_integer(),
+    %% ⚠ `undefined' IS NOT THE SAME AS A VOID REPORT AND THE DIFFERENCE IS
+    %% PUBLISHED. Charter rule 4: an island that has never ablated and an island
+    %% whose ablation came back zero must not look the same, so the report starts
+    %% absent and the exercise count starts at nought.
+    ablation :: undefined | ablation:report(),
+    ablations = 0 :: non_neg_integer()
 }).
 
 -opaque island() :: #island{}.
@@ -135,6 +142,17 @@ generation_of(#island{roster = R}) -> roster:generation_of(R).
 
 -spec benchmark_of(island()) -> map().
 benchmark_of(#island{benchmark = B}) -> B.
+
+%% @doc Record the result of an ablation.
+-spec ablated(island(), ablation:report()) -> island().
+ablated(#island{ablations = N} = I, Report) ->
+    I#island{ablation = Report, ablations = N + 1}.
+
+-spec ablation_of(island()) -> undefined | ablation:report().
+ablation_of(#island{ablation = A}) -> A.
+
+-spec ablations_of(island()) -> non_neg_integer().
+ablations_of(#island{ablations = N}) -> N.
 
 -spec rounds_of(island()) -> non_neg_integer().
 rounds_of(#island{rounds = N}) -> N.

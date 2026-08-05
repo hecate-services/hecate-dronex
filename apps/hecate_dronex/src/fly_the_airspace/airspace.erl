@@ -127,6 +127,15 @@
 %% 200 J a shot. The cooldown is what limits the rate; this is what makes a drone
 %% that fires wildly land sooner.
 -define(MUNITION_COST, 20000).
+%% How loud one drone can be on one channel, and how loud a whole sky can get
+%% before a listener saturates. Eight drones at full volume, so the SUM carries a
+%% crude count of how many are shouting up to eight and saturates beyond it.
+-define(SIGNAL_MAX, 1024).
+-define(HEARD_MAX, 8192).
+%% 300 m. Range is what makes position and formation matter: a drone that flies
+%% away from its swarm goes quiet to it, which is a cost nobody had to design.
+-define(COMMS_RANGE, 6144000).
+
 -define(RELEASE_COOL, 20).
 -define(RELEASE_THRESHOLD, 1).
 
@@ -266,7 +275,24 @@ out(#drone{withdrawn = true}) -> true;
 out(#drone{}) -> false.
 
 fly(#drone{} = D, _I) when D#drone.dead; D#drone.withdrawn -> D;
-fly(#drone{} = D, #intent{} = I) -> thrusting(D, thrust(D, I), yawed(D, I)).
+fly(#drone{} = D, #intent{} = I) ->
+    transmitted(thrusting(D, thrust(D, I), yawed(D, I)), I).
+
+%% ⚠ RECORDED HERE AND READ NEXT TICK, WHICH IS WHERE THE ONE-TICK DELAY COMES
+%% FROM. Nothing else enforces it: the delay is a consequence of a signal being
+%% stored on the drone and every listener seeing the stored value, not a timer.
+%%
+%% ⚠⚠ TRANSMITTING COSTS NO BATTERY, DELIBERATELY. Real radio costs a rounding
+%% error next to flight, and inventing a number would be a physics constant
+%% nobody measured. The cost of transmitting is strategic, which is disclosure,
+%% and it is paid in `radio''s hostile bank rather than here.
+transmitted(#drone{} = D, #intent{signal = S}) -> D#drone{signal = bounded_signal(S)}.
+
+%% A malformed signal is silence rather than a crash: a genome from a stranger
+%% reaches this through the same path as one bred here.
+bounded_signal(S) when is_list(S), length(S) =:= 4 ->
+    [fixed:clamp(V, -?SIGNAL_MAX, ?SIGNAL_MAX) || V <- S];
+bounded_signal(_Malformed) -> [0, 0, 0, 0].
 
 %% Yaw first, so thrust is applied in the heading the drone commanded this tick
 %% rather than the one it had last tick. Either is defensible; this one is
@@ -709,6 +735,8 @@ limits() ->
       interceptor_damage => ?INTERCEPTOR_DAMAGE, launch_cool => ?LAUNCH_COOL,
       magazine => ?MAGAZINE, lock_range => ?LOCK_RANGE, seeker_cos => ?SEEKER_COS,
       seeker_fov_cos => ?SEEKER_FOV_COS,
+      signal_max => ?SIGNAL_MAX, heard_max => ?HEARD_MAX,
+      comms_range => ?COMMS_RANGE,
       withdraw_speed => ?WITHDRAW_SPEED, withdraw_margin => ?WITHDRAW_MARGIN,
       withdraw_ticks => ?WITHDRAW_TICKS,
       max_ticks => ?MAX_TICKS}.

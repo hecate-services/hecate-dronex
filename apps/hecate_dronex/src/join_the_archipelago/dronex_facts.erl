@@ -125,7 +125,34 @@ vitals(Island) ->
         %% look identical without these, and they are different situations.
         rounds => island:rounds_of(Island),
         admissions => island:admissions_of(Island)},
-      maps:merge(station(), frozen(island:benchmark_of(Island)))).
+      maps:merge(station(),
+                 maps:merge(frozen(island:benchmark_of(Island)),
+                            ablation(island:ablation_of(Island),
+                                     island:ablations_of(Island))))).
+
+%% ⚠ THE THREE NUMBERS FROM `DESIGN_DRONES_THAT_TALK.md', AND THE FOURTH THAT
+%% MAKES THEM READABLE. Volume, delta and entropy each mean something specific
+%% when they are zero, and none of those meanings is available unless the reader
+%% can also tell whether the measurement was ever taken. `ablations' is that, and
+%% it is why an island that has not ablated publishes zeros with a zero count
+%% rather than publishing nothing.
+ablation(undefined, Count) ->
+    #{signal_volume => 0, signal_entropy => 0, ablation_void => true,
+      ablation_delta_air => 0, ablation_delta_ground => 0, ablation_delta_all => 0,
+      ablations => Count};
+ablation(Report, Count) ->
+    #{air := Air, ground := Ground, all := All} = maps:get(delta, Report),
+    #{mean := Entropy} = maps:get(entropy, Report),
+    %% ⚠ FLAT KEYS RATHER THAN A NESTED MAP. A spectator reads these beside the
+    %% benchmark rungs, which are already flat, and a nested map would make the
+    %% page's decoder branch on shape for no gain on the wire.
+    #{signal_volume => maps:get(volume, Report),
+      signal_entropy => Entropy,
+      ablation_void => maps:get(void, Report),
+      ablation_delta_air => Air,
+      ablation_delta_ground => Ground,
+      ablation_delta_all => All,
+      ablations => Count}.
 
 %% ⚠ THE RUNG NAMES TRAVEL WITH THE NUMBERS. A sibling shipped positional lists,
 %% appended a field, and the reader's mirror did not follow: the earlier indexes

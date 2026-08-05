@@ -186,9 +186,15 @@ empty() -> 0.0.
 %% the width from the start costs twelve zeros per evaluation and saves throwing
 %% a roster away. `drone_senses_tests' asserts they are currently zero, which is
 %% a guard that has to be updated when comms arrive rather than a lie that rots.
-heard(Comms) when length(Comms) =:= ?COMMS_WIDTH ->
-    [float(C) / 1024.0 || C <- Comms];
+heard(Comms) when length(Comms) =:= ?COMMS_WIDTH -> [scaled_heard(C) || C <- Comms];
 heard(_Comms) -> lists:duplicate(?COMMS_WIDTH, 0.0).
+
+%% Divided by what a saturated sky sounds like, so one drone at full volume reads
+%% about an eighth and eight of them read one. The COUNT is preserved up to the
+%% saturation point, which is the whole reason the bank is a sum.
+scaled_heard(C) ->
+    #{heard_max := Max} = airspace:limits(),
+    clampf(C / Max, -1.0, 1.0).
 
 %%==============================================================================
 %% Scaling

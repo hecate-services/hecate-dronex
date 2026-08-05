@@ -57,6 +57,12 @@
     %% Withdrawal is sustained slow flight in the margin instead, which cannot be
     %% arrived at by accident and costs two seconds of predictable flying.
     withdraw_hold = 0 :: non_neg_integer(),
+    %% ⚠ WHAT IT SAID LAST TICK, AND THE DELAY IS THE POINT. A controller reads
+    %% this from OTHER drones, so what it hears is always one tick old. Zero
+    %% latency would not be communication, it would be a shared brain: a signal
+    %% has to be about the PAST for acting on it to be a problem worth solving,
+    %% and it is what makes memory in the controller load-bearing.
+    signal = [0, 0, 0, 0] :: [integer()],
     %% Proprioception of being hurt, reset every tick. It CONFLATES being hit,
     %% striking a wall, hitting the ground and colliding with another drone, and
     %% that conflation is deliberate: a real airframe cannot cleanly tell them
@@ -107,7 +113,14 @@
     %% nowhere else, which would have made every engagement a knife fight and
     %% left "learned to shoot at range" unreachable rather than unlearned.
     release = 0 :: integer(),
-    launch = 0 :: integer()
+    launch = 0 :: integer(),
+    %% ⚠ FOUR INTEGERS WHOSE MEANING NOTHING DECLARES. A channel that carried
+    %% something named, "my position" or "target bearing", would be a hand-coded
+    %% tactic with evolution reduced to tuning its gain, and it would foreclose
+    %% the only interesting outcome. What a signal means is decoded afterwards by
+    %% correlating it against everything else in the frame, and if it correlates
+    %% with nothing then nothing was being said.
+    signal = [0, 0, 0, 0] :: [integer()]
 }).
 
 %% The whole world at one tick. Everything needed to produce the next one.

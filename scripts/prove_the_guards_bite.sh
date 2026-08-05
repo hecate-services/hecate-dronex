@@ -7,6 +7,12 @@
 # assertions in this repository are boundaries rather than behaviour, and a
 # boundary that cannot be shown to bite is a comment with a function's syntax.
 #
+# ⚠ ITEM 6 IS THE REASON THE LAST THREE PROBES EXIST. `radio.erl' was written into
+# a directory that did not exist, so the module was never on disk, and every
+# module downstream compiled cleanly BECAUSE it was absent. An ablation of zero
+# from an instrument that is not connected is indistinguishable from an ablation
+# of zero from a channel nobody uses, and only one of those is a finding.
+#
 # ⚠⚠ TWO TRAPS THIS SCRIPT IS BUILT AROUND, both recorded on siblings.
 #
 #   A perturbation that only breaks the COMPILE is not a red check. Every
@@ -33,6 +39,8 @@ AIRSPACE=apps/hecate_dronex/src/fly_the_airspace/airspace.erl
 SENSES=apps/hecate_dronex/src/pilot_a_drone/drone_senses.erl
 PILOT=apps/hecate_dronex/src/pilot_a_drone/drone_pilot.erl
 GENOME=apps/hecate_dronex/src/pilot_a_drone/drone_genome.erl
+RADIO=apps/hecate_dronex/src/speak_between_drones/radio.erl
+ENGAGE=apps/hecate_dronex/src/fly_the_airspace/engagement.erl
 
 FAILURES=0
 BROKEN=""
@@ -61,7 +69,7 @@ restore() {
     rm -rf _build/test
 }
 
-trap 'restore "$SVC" "$MESH" "$FACTS" "$ISLAND" "$FIXED" "$AIRSPACE" "$SENSES" "$GENOME" "$PILOT"' EXIT
+trap 'restore "$SVC" "$MESH" "$FACTS" "$ISLAND" "$FIXED" "$AIRSPACE" "$SENSES" "$GENOME" "$PILOT" "$RADIO" "$ENGAGE"' EXIT
 
 # Run one perturbation. $1 is the name, $2 the file, $3 a perl one-liner that
 # breaks it, $4 the eunit module that must go red.
@@ -155,8 +163,15 @@ probe "a zero count is omitted from the fact" "$FACTS" \
 #    Both are the trap named at the top of this file, and both were caught by
 #    this script's own compile check rather than by reading the output as a
 #    result. A probe that does not compile is not evidence about anything.
+#    ⚠⚠⚠ AND IT ROTTED ANYWAY, WHICH IS THE FIFTH FIRING OF THE SAME TRAP. The
+#    first version named the export list `[tick_of/1, roster_depth/1, capacity/1,
+#    seed_of/1]'. Item 5 added `roster_of/1' to that line, so the export edit
+#    silently stopped matching while the appended function still landed, and the
+#    probe went from `bites' to `does not compile' with nothing announcing it.
+#    Anchored on `-export_type' now: a line with one entry that has no reason to
+#    grow, rather than a list that grows every time the module does.
 probe "a module reaches into mnesia" "$ISLAND" \
-  's/-export\(\[tick_of\/1, roster_depth\/1, capacity\/1, seed_of\/1\]\)\./-export([tick_of\/1, roster_depth\/1, capacity\/1, seed_of\/1]).\n-export([tables\/0])./; s/\z/\ntables() -> mnesia:system_info(tables).\n/' \
+  's/-export_type\(\[island\/0\]\)\./-export([tables\/0]).\n-export_type([island\/0])./; s/\z/\ntables() -> mnesia:system_info(tables).\n/' \
   faber_boundary_tests
 
 # ⚠ PROBES 7 TO 9 EACH BROKE THE COMPILE ON THEIR FIRST WRITING, ALL THREE FOR
@@ -242,11 +257,37 @@ probe "the time constants fall back to the generator" "$PILOT" \
   's/    network_evaluator:set_neuron_meta\(Weighted, meta\(Hidden, Out, Taus\)\)\./    _Unused = meta(Hidden, Out, Taus),\n    Weighted./' \
   drone_pilot_tests
 
+# 14. The radio must have a horizon. Without one a swarm coordinates across the
+#     whole arena for free, dispersing costs nothing, and the channel stops being
+#     a trade. The perturbation makes everyone audible everywhere.
+#     ⚠ THE WHOLE CLAUSE IS REPLACED, NOT JUST ITS LAST LINE. Cutting only the
+#     comparison orphans the six coordinates bound in the head, and an unused
+#     variable is a warning against warnings_as_errors. Same trap as probes 7-9.
+probe "the radio has no horizon" "$RADIO" \
+  's/in_earshot\(#drone\{x = X, y = Y, z = Z\}, #drone\{x = Ox, y = Oy, z = Oz\}\) ->\n    #\{comms_range := R\} = airspace:limits\(\),\n    fixed:mag3\(Ox - X, Oy - Y, Oz - Z\) =< R\./in_earshot(#drone{}, #drone{}) ->\n    #{comms_range := R} = airspace:limits(),\n    R > 0./s' \
+  radio_tests
+
+# 15. The mute must reach the engine. This is the failure that actually happened:
+#     with the mute dropped, every ablation arm is the baseline, every delta is
+#     zero, and the report says `the channel is depended on by nothing' with
+#     total confidence about a measurement it never took.
+probe "the ablation mute never reaches the drones" "$ENGAGE" \
+  's/ask\(#drone\{id = Id, side = Side\} = D, Ds, Cs, Mute, \{Intents, Next\}\) ->\n    Others = others\(Id, Ds\),\n    answered\(Id, maps:get\(Id, Cs, undefined\), D, Others,\n             radio:heard\(D, Others, maps:get\(Side, Mute\)\), \{Intents, Next\}\)\./ask(#drone{id = Id} = D, Ds, Cs, _Mute, {Intents, Next}) ->\n    Others = others(Id, Ds),\n    answered(Id, maps:get(Id, Cs, undefined), D, Others,\n             radio:heard(D, Others, none), {Intents, Next})./s' \
+  ablation_tests
+
+# 16. The two sides must mute independently. A global mute cancels in self-play:
+#     whatever coordination is worth, it is worth it to both, so the arm that
+#     silences everybody reports no effect most loudly in exactly the case where
+#     the channel mattered most.
+probe "muting one side silences both" "$ENGAGE" \
+  's/muting\(Map\) when is_map\(Map\) -> maps:merge\(#\{attacker => none, defender => none\}, Map\)\./muting(Map) when is_map(Map) ->\n    Bank = hd([B || B <- maps:values(Map), B =\/= none] ++ [none]),\n    #{attacker => Bank, defender => Bank}./' \
+  ablation_tests
+
 echo
 rebar3 compile >/dev/null 2>&1
 
 if [ "$FAILURES" -eq 0 ]; then
-    echo "All thirteen guards bit."
+    echo "All sixteen guards bit."
     exit 0
 fi
 

@@ -160,6 +160,55 @@ survey.**
 the top drawer. There were three hammers in the drawer underneath. The rule is
 to open every drawer before saying what is not in the toolbox.
 
+## I.9: a file written into a directory that does not exist leaves everything green
+
+`radio.erl` was written into `src/speak_between_drones/`. The directory had never
+been created, the write failed with `no such file or directory`, and the next
+`rebar3 compile` was **clean** — because the module was absent, nothing referred
+to it yet, and the failure scrolled past in a batch of output that ended in four
+green lines.
+
+⚠ **The dangerous part is what would have happened next.** The ablation is an
+instrument whose whole output is a delta, and a delta of zero from a mute that
+reaches nothing is indistinguishable from a delta of zero from a channel nobody
+depends on. One is a broken instrument and the other is a finding, and the report
+would have printed the finding.
+
+**What it changed.** Three probes were added to
+`scripts/prove_the_guards_bite.sh`: the radio's horizon, the mute reaching the
+drones, and the two sides muting independently. Each is verified to compile and
+then verified to turn a suite red, so a disconnected instrument now fails loudly
+instead of reporting confidently.
+
+**ELI5.** Somebody built a thermometer, forgot to attach the sensor, and the
+display still read a perfectly reasonable twenty degrees. Nothing looked broken.
+The room could have been on fire.
+
+## I.10: a probe rotted when an export list grew, and only the compile check noticed
+
+The `a module reaches into mnesia` probe worked by naming `island.erl`'s export
+list verbatim and adding one entry to it, then appending a function that used
+mnesia. Item 5 added `roster_of/1` to that line. The export edit silently stopped
+matching; the appended function still landed; an unexported function nobody calls
+is an unused-function warning, and this tree builds with `warnings_as_errors`.
+
+So a probe that had been biting for weeks became a probe that did not compile,
+and nothing announced it. It was reported as `SKIPPED` — which the script counts
+as a failure precisely because of INHERITED-3 — the first time the guards were run
+after item 5.
+
+⚠ **This is the fifth firing of the same trap in this one file**, and the first
+where the perturbation rotted rather than being written wrong. The rule the file
+already carried was *leave the call graph intact*. The rule it gains is narrower:
+**anchor a perturbation on text that has no reason to grow.** It is anchored on
+`-export_type([island/0]).` now, a line with one entry, rather than on a list that
+gains a name every time the module gains a capability.
+
+**ELI5.** The fire alarm was tested by pressing a button, and the button was
+described as "third from the left". Somebody added a switch to the panel. The
+instructions still said third from the left, so the test went on being performed,
+on the wrong switch, and the report kept saying the test was done.
+
 ---
 
 # D: findings about the world
