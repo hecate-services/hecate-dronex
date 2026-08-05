@@ -185,6 +185,39 @@ flew into the far wall of the room. Because nobody let go of the throttle, it
 kept pushing against the wall until it broke. The measurement was fine. The room
 is just smaller than the test was patient.
 
+## D.7: breeding works, and the frozen ladder is beaten inside 120 rounds
+
+The first real measurement of the trainer. 24 seeded controllers, 120 steady-state
+rounds, with the best entry sitting the frozen ladder every 30. Wins out of 6:
+
+```
+round   0     4  6  4  1  1  0
+round  30     5  4  5  3  2  4
+round  60     5  4  5  3  2  4
+round  90     5  4  5  3  2  4
+round 120     6  5  6  6  6  5
+```
+
+**The population improved against an exam it never trains on**, which is the one
+thing item 4 was built ahead of item 5 to be able to say. Deepest generation 9,
+roster full throughout.
+
+⚠ **And it confirms `D.6` with a real population rather than random probes: the
+ladder is very nearly beaten within 120 rounds**, which is minutes of wall clock.
+The frozen exam has a useful life measured in an hour, not a month, and after
+that it reports a flat line whatever the drones do.
+
+The plateau from round 30 to 90 followed by a jump at 120 is worth noticing and
+is NOT explained: it could be the search finding a new basin, or it could be the
+6-start sample being too coarse to see steady progress. Both are testable and
+neither has been tested.
+
+**ELI5.** They taught the machines to fly by letting them compete, and checked
+their progress against a fixed set of practice opponents nobody was allowed to
+train against. The machines got better, which is the good news. The bad news is
+that they beat the whole practice set in about two minutes, so from then on the
+practice set says "full marks" no matter what happens next.
+
 ## D.6: the guided interceptor dominates, and it has now flattened two instruments
 
 Eight random controllers over 16 starts, against the six-rung ladder:

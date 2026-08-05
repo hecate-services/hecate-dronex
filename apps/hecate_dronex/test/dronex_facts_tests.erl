@@ -18,10 +18,15 @@ the_island_id_is_never_in_a_topic_test() ->
     Id = with_data_dir(fun dronex_identity:island_id/0),
     [?assertEqual(nomatch, binary:match(T, Id)) || T <- dronex_facts:topics()].
 
+%% ⚠ THE KEY LIST IS EXHAUSTIVE ON PURPOSE, so a field cannot be added to the
+%% wire without somebody deciding it means something. `dronex_facts' refuses to
+%% publish what does not exist yet, and this is the guard on that refusal.
 only_what_exists_is_published_test() ->
     Fact = with_data_dir(fun () -> dronex_facts:vitals(island:new(#{})) end),
     Keys = lists:sort(maps:keys(Fact)),
-    ?assertEqual([capacity, fact_version, island, island_id, roster,
+    ?assertEqual([admissions, benchmark_draws, benchmark_losses, benchmark_rungs,
+                  benchmark_starts, benchmark_wins, capacity, fact_version,
+                  generation, island, island_id, roster, rounds,
                   station_connected, station_host, station_id, tick], Keys).
 
 %% ⚠ CHARTER.md rule 4. An island with an empty roster and an island that does

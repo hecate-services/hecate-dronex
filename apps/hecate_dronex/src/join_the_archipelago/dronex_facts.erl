@@ -48,8 +48,14 @@
 
 %% ⚠ BUMPED WHENEVER THE SHAPE CHANGES, INCLUDING AN APPEND. A reader has no
 %% other way to ask "is the field I want in this frame, or am I talking to an
-%% island that predates it". 1 is the first fact this track ever published.
--define(FACT_VERSION, 1).
+%% island that predates it".
+%%
+%% 2 adds the trainer and the frozen exam: `generation', `rounds', `admissions',
+%% and the benchmark profile with its rung names beside it. They arrive together
+%% because they arrived together in the code: an island that breeds without
+%% publishing what it sat is an island whose numbers cannot be read.
+%% 1 was the first fact this track ever published.
+-define(FACT_VERSION, 2).
 
 -spec fact_version() -> pos_integer().
 fact_version() -> ?FACT_VERSION.
@@ -103,8 +109,31 @@ vitals(Island) ->
         %% empty roster and an island that does not report a roster look
         %% identical otherwise.
         roster => island:roster_depth(Island),
-        capacity => island:capacity(Island)},
-      station()).
+        capacity => island:capacity(Island),
+        generation => island:generation_of(Island),
+        %% ⚠ EXERCISE COUNTS BESIDE EVERY NULL. CHARTER.md rule 4. A trainer that
+        %% has proposed nothing and a trainer whose every proposal was rejected
+        %% look identical without these, and they are different situations.
+        rounds => island:rounds_of(Island),
+        admissions => island:admissions_of(Island)},
+      maps:merge(station(), frozen(island:benchmark_of(Island)))).
+
+%% ⚠ THE RUNG NAMES TRAVEL WITH THE NUMBERS. A sibling shipped positional lists,
+%% appended a field, and the reader's mirror did not follow: the earlier indexes
+%% went on decoding correctly, so nothing looked wrong.
+%%
+%% ⚠⚠ AND THE PROFILE IS NEVER SUMMED ON THE WIRE ANY MORE THAN IT IS IN MEMORY.
+%% There is no `benchmark_score' field and there will not be one: a single number
+%% needs weights, and weights are a judgement about which rung matters smuggled
+%% into a measurement.
+frozen(Profile) ->
+    #{benchmark_rungs => maps:get(rungs, Profile, []),
+      benchmark_wins => maps:get(wins, Profile, []),
+      benchmark_draws => maps:get(draws, Profile, []),
+      benchmark_losses => maps:get(losses, Profile, []),
+      %% Zero means the exam has not been sat, which a reader must be able to
+      %% tell from having sat it and lost everything.
+      benchmark_starts => maps:get(starts, Profile, 0)}.
 
 %% A door that cannot be read is reported as unknown rather than omitted. A key
 %% that appears only sometimes is a field a chart silently drops.
