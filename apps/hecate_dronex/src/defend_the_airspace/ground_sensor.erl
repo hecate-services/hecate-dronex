@@ -41,7 +41,7 @@
 %%
 %% The consequence worth stating: a given drone at a given tick is either seen
 %% or not seen, and it is the SAME answer on both machines and on every replay.
--module(sensor).
+-module(ground_sensor).
 
 -behaviour(dronex_sensor_model).
 

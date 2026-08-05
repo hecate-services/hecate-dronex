@@ -502,7 +502,7 @@ flown(I, Entry, Kind, Index, {ok, Mine}) ->
     %% A training bout is flown at home like every other training fight, so the
     %% exhibit shows the island's towers standing in its own airspace.
     Result = engagement:run(airspace:new(Placed), #{AId => Mine, DId => Theirs},
-                            #{frames => true, network => network:home()}),
+                            #{frames => true, network => ground_network:home()}),
     Meta = #{kind => training, bout => island:tick_of(I), start_index => Index,
              entrants => [roster:entry_id(Entry), atom_to_binary(Kind, utf8)]},
     dronex_mesh:publish(dronex_facts:topic(bout),

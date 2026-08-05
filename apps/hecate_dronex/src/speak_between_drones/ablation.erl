@@ -78,7 +78,7 @@ arms() -> [air, ground, all].
 -spec measure([{#arena{}, #{term() => engagement:controller()}}]) -> report().
 measure([]) -> empty();
 measure(Fights) ->
-    Base = [engagement:run(A, C, #{frames => true, network => network:home()})
+    Base = [engagement:run(A, C, #{frames => true, network => ground_network:home()})
             || {A, C} <- Fights],
     Muted = maps:from_list([{Arm, scored(silenced(Fights, Arm))} || Arm <- arms()]),
     Rate = scored(Base),
@@ -101,7 +101,7 @@ measure(Fights) ->
 %% and look like a finding. It reported exactly that from item 6 until the static
 %% defence landed, correctly and uselessly.
 silenced(Fights, Arm) ->
-    [engagement:run(A, C, #{mute => #{attacker => Arm}, network => network:home()})
+    [engagement:run(A, C, #{mute => #{attacker => Arm}, network => ground_network:home()})
      || {A, C} <- Fights].
 
 empty() ->

@@ -52,7 +52,7 @@ run(Arena, Controllers) -> run(Arena, Controllers, #{}).
 -spec run(#arena{}, #{term() => controller()}, map()) -> result().
 run(Arena, Controllers, Opts) ->
     loop(Arena, Controllers, collector(Opts), muting(maps:get(mute, Opts, none)), 0,
-         maps:get(network, Opts, network:none())).
+         maps:get(network, Opts, ground_network:none())).
 
 %% ⚠ THE MUTE IS PER SIDE, AND MAKING IT GLOBAL WOULD HAVE PRODUCED A FALSE ZERO.
 %% Silencing both sides of a self-play match leaves the win rate at about half
@@ -80,7 +80,7 @@ stepped(false, A, Cs, Frames, Mute, Vol, Net) ->
     %% rather than the last one. It is still a tick behind what it is looking at
     %% by the time a drone acts on it, which is the same delay the drones' own
     %% comms carry and is a property of broadcasting rather than an accident.
-    Looked = network:observe(Net, airspace:drones(A), airspace:tick_of(A)),
+    Looked = ground_network:observe(Net, airspace:drones(A), airspace:tick_of(A)),
     {Intents, Next} = commanded(A, Cs, Mute, Looked),
     Advanced = airspace:step(A, Intents),
     loop(Advanced, Next, kept(Frames, Advanced), Mute, Vol + said(Advanced), Looked).
@@ -116,7 +116,7 @@ gone(#drone{}) -> false.
 ask(#drone{id = Id, side = Side} = D, Ds, Cs, Mute, Net, {Intents, Next}) ->
     Others = others(Id, Ds),
     answered(Id, maps:get(Id, Cs, undefined), D, Others,
-             radio:heard(D, Others, maps:get(Side, Mute), network:transmission(Net, D)),
+             radio:heard(D, Others, maps:get(Side, Mute), ground_network:transmission(Net, D)),
              {Intents, Next}).
 
 others(Id, Ds) -> [O || O <- Ds, O#drone.id =/= Id].
@@ -147,7 +147,7 @@ report(A, Frames, Vol, Net) ->
       %% prices a raid is invisible on the exhibit and only readable in a log,
       %% and an audience cannot be asked to take the interesting part on trust.
       %% Empty is the honest answer for an away game.
-      ground => [maps:with([x, y, z], S) || S <- network:sensors(Net)],
+      ground => [maps:with([x, y, z], S) || S <- ground_network:sensors(Net)],
       frames => ordered(Frames)}.
 
 ordered(false) -> false;

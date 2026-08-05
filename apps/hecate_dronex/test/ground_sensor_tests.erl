@@ -1,5 +1,5 @@
 %% @doc What one sensor reports, and what it refuses to report.
--module(sensor_tests).
+-module(ground_sensor_tests).
 
 -include_lib("eunit/include/eunit.hrl").
 -include("airspace.hrl").
@@ -12,7 +12,7 @@ s(Id) -> #{id => Id, x => 1000 * ?M, y => 1000 * ?M, z => 0}.
 
 truth(Id, Xm) -> #{id => Id, x => 1000 * ?M + Xm * ?M, y => 1000 * ?M, z => 0}.
 
-seen(Id, Xm, Tick) -> sensor:observe(truth(Id, Xm), s(one), #{tick => Tick}).
+seen(Id, Xm, Tick) -> ground_sensor:observe(truth(Id, Xm), s(one), #{tick => Tick}).
 
 %% Over many ticks, how often a target at this distance is reported at all.
 hits(Xm, Ticks) ->
@@ -112,14 +112,14 @@ seen_at_some_tick(Xm) -> first_hit(Xm).
 %%==============================================================================
 
 the_network_is_a_ring_and_a_centre_test() ->
-    Placed = sensor:place(5),
+    Placed = ground_sensor:place(5),
     ?assertEqual(5, length(Placed)),
     ?assertEqual([centre, {ring, 1}, {ring, 2}, {ring, 3}, {ring, 4}],
                  [maps:get(id, S) || S <- Placed]).
 
 placement_is_asked_of_the_physics_not_redeclared_test() ->
     #{arena_x := Ax, arena_y := Ay} = airspace:limits(),
-    [#{x := Cx, y := Cy} | Ring] = sensor:place(5),
+    [#{x := Cx, y := Cy} | Ring] = ground_sensor:place(5),
     ?assertEqual(Ax div 2, Cx),
     ?assertEqual(Ay div 2, Cy),
     %% Every station stands inside the arena. A ring computed against a stale
@@ -131,7 +131,7 @@ placement_is_asked_of_the_physics_not_redeclared_test() ->
      end || #{x := X, y := Y} <- Ring].
 
 sensors_stand_on_the_ground_test() ->
-    [?assertEqual(0, maps:get(z, S)) || S <- sensor:place(5)].
+    [?assertEqual(0, maps:get(z, S)) || S <- ground_sensor:place(5)].
 
 the_count_is_physics_and_lands_in_the_fingerprint_test() ->
     %% ⚠ SO TWO ISLANDS WITH DIFFERENT NETWORKS REFUSE EACH OTHER. Sensor count
@@ -146,37 +146,37 @@ the_count_is_physics_and_lands_in_the_fingerprint_test() ->
 %%==============================================================================
 
 the_network_sometimes_sees_things_that_are_not_there_test() ->
-    Ghosts = lists:flatten([sensor:ghosts(sensor:place(5), T) || T <- lists:seq(1, 400)]),
+    Ghosts = lists:flatten([ground_sensor:ghosts(ground_sensor:place(5), T) || T <- lists:seq(1, 400)]),
     %% Without false alarms, any confirmation threshold above one is strictly
     %% worse than one: more evidence would mean later and never safer, and the
     %% number this phase exists to tune would decide nothing.
     ?assert(length(Ghosts) > 0).
 
 ghosts_are_rare_enough_to_be_ghosts_test() ->
-    Ghosts = lists:flatten([sensor:ghosts(sensor:place(5), T) || T <- lists:seq(1, 400)]),
+    Ghosts = lists:flatten([ground_sensor:ghosts(ground_sensor:place(5), T) || T <- lists:seq(1, 400)]),
     %% Five sensors, 400 ticks. A network mostly reporting fiction is not a
     %% network, and the tracker would confirm noise as fast as it confirms
     %% aircraft.
     ?assert(length(Ghosts) < 400).
 
 a_ghost_is_indistinguishable_from_a_contact_test() ->
-    [G | _] = lists:flatten([sensor:ghosts(sensor:place(5), T) || T <- lists:seq(1, 400)]),
+    [G | _] = lists:flatten([ground_sensor:ghosts(ground_sensor:place(5), T) || T <- lists:seq(1, 400)]),
     %% Same fields, same shape. A false alarm that could be told apart from a
     %% detection by inspecting it would make the threshold pointless: the
     %% tracker would simply filter on the tell.
     ?assertEqual([confidence, sensor, tick, x, y, z], lists:sort(maps:keys(G))).
 
 ghosts_appear_inside_the_range_that_invented_them_test() ->
-    Placed = sensor:place(5),
+    Placed = ground_sensor:place(5),
     Byid = maps:from_list([{Id, S} || #{id := Id} = S <- Placed]),
     [begin
          #{x := Sx, y := Sy} = maps:get(Id, Byid),
          ?assert(fixed:mag3(Gx - Sx, Gy - Sy, 0) =< ?SENSOR_RANGE + 1)
      end
      || #{sensor := Id, x := Gx, y := Gy}
-        <- lists:flatten([sensor:ghosts(Placed, T) || T <- lists:seq(1, 200)])].
+        <- lists:flatten([ground_sensor:ghosts(Placed, T) || T <- lists:seq(1, 200)])].
 
 ghosts_are_deterministic_too_test() ->
-    Placed = sensor:place(5),
-    ?assertEqual([sensor:ghosts(Placed, T) || T <- lists:seq(1, 100)],
-                 [sensor:ghosts(Placed, T) || T <- lists:seq(1, 100)]).
+    Placed = ground_sensor:place(5),
+    ?assertEqual([ground_sensor:ghosts(Placed, T) || T <- lists:seq(1, 100)],
+                 [ground_sensor:ghosts(Placed, T) || T <- lists:seq(1, 100)]).

@@ -1,6 +1,6 @@
 %% @doc The island's static defence: what it sees, what it says, and the
 %% asymmetry that prices a raid.
--module(network_tests).
+-module(ground_network_tests).
 
 -include_lib("eunit/include/eunit.hrl").
 -include("airspace.hrl").
@@ -16,35 +16,35 @@ at_the_centre(Side) ->
 %% Fly a drone past the middle of the arena for N ticks, letting the network look
 %% at it each tick.
 watched(Net, Drone, Ticks) ->
-    lists:foldl(fun (T, N) -> network:observe(N, [Drone], T) end, Net,
+    lists:foldl(fun (T, N) -> ground_network:observe(N, [Drone], T) end, Net,
                 lists:seq(1, Ticks)).
 
-loud(Net, D) -> network:transmission(Net, D) =/= [0, 0, 0, 0].
+loud(Net, D) -> ground_network:transmission(Net, D) =/= [0, 0, 0, 0].
 
 %%==============================================================================
 %% ⚠ AWAY MEANS NO GROUND AT ALL
 %%==============================================================================
 
 no_network_sees_nothing_and_says_nothing_test() ->
-    N = network:none(),
-    ?assertEqual([], network:sensors(N)),
-    ?assertEqual([], network:tracks_of(N)),
-    ?assertEqual(N, network:observe(N, [at_the_centre(attacker)], 5)),
+    N = ground_network:none(),
+    ?assertEqual([], ground_network:sensors(N)),
+    ?assertEqual([], ground_network:tracks_of(N)),
+    ?assertEqual(N, ground_network:observe(N, [at_the_centre(attacker)], 5)),
     %% An attacker in somebody else's volume has no ground support whatever.
     %% This is the second price of raiding, on top of spending airframes.
-    ?assertEqual([0, 0, 0, 0], network:transmission(N, at_the_centre(attacker))).
+    ?assertEqual([0, 0, 0, 0], ground_network:transmission(N, at_the_centre(attacker))).
 
 a_home_network_has_stations_test() ->
-    ?assertEqual(?SENSORS, length(network:sensors(network:home()))),
-    ?assertEqual(3, length(network:sensors(network:home(3)))).
+    ?assertEqual(?SENSORS, length(ground_network:sensors(ground_network:home()))),
+    ?assertEqual(3, length(ground_network:sensors(ground_network:home(3)))).
 
 the_count_comes_from_the_physics_test() ->
     %% Not a private constant in this module. A second copy on one release
     %% cadence is CHARTER rule 2's failure in miniature, and it would also fall
     %% out of the engine fingerprint.
     #{sensors := N} = airspace:limits(),
-    ?assertEqual(length(network:sensors(network:home(N))),
-                 length(network:sensors(network:home()))).
+    ?assertEqual(length(ground_network:sensors(ground_network:home(N))),
+                 length(ground_network:sensors(ground_network:home()))).
 
 %%==============================================================================
 %% ⚠⚠ SILENT UNTIL CONFIRMED
@@ -54,11 +54,11 @@ a_fresh_network_says_nothing_test() ->
     %% It has stations and no picture. A network that transmitted its tentative
     %% picture would broadcast its ghosts, and the confirmation threshold — the
     %% number this phase exists to tune — would decide nothing.
-    ?assertNot(loud(network:home(), at_the_centre(defender))).
+    ?assertNot(loud(ground_network:home(), at_the_centre(defender))).
 
 %% ⚠ A FRESH NETWORK HAS NO TRACKS AT ALL, so the test above passes whether the
 %% threshold is respected or ignored — a guard probe that replaced
-%% `tracks:confirmed(T)' with `T' left it green. This one puts a TENTATIVE track
+%% `ground_tracks:confirmed(T)' with `T' left it green. This one puts a TENTATIVE track
 %% in the picture and nothing else, which is the only state that tells the two
 %% apart.
 %%
@@ -69,9 +69,9 @@ a_fresh_network_says_nothing_test() ->
 %% the tentative state long enough to test it.
 a_network_with_only_a_tentative_track_says_nothing_test() ->
     D = at_the_centre(attacker),
-    Seen = seen_for(network:home(1), D, ?CONFIRM_EVIDENCE - 1),
+    Seen = seen_for(ground_network:home(1), D, ?CONFIRM_EVIDENCE - 1),
     ?assert(seen_something(Seen)),
-    ?assertEqual([], network:tracks_of(Seen)),
+    ?assertEqual([], ground_network:tracks_of(Seen)),
     ?assertNot(loud(Seen, at_the_centre(defender))).
 
 %% ⚠ WHAT A NETWORK IS ACTUALLY FOR, and it falls out of the design rather than
@@ -81,14 +81,14 @@ a_network_with_only_a_tentative_track_says_nothing_test() ->
 %% coincide inside the gate. Agreement is the evidence.
 several_stations_agreeing_confirm_faster_than_one_test() ->
     D = at_the_centre(attacker),
-    ?assert(ticks_to_confirm(network:home(), D) < ticks_to_confirm(network:home(1), D)).
+    ?assert(ticks_to_confirm(ground_network:home(), D) < ticks_to_confirm(ground_network:home(1), D)).
 
 ticks_to_confirm(Net, Drone) -> ticks_to_confirm(Net, Drone, 1).
 
 ticks_to_confirm(_Net, _Drone, T) when T > 300 -> never;
 ticks_to_confirm(Net, Drone, T) ->
-    Next = network:observe(Net, [Drone], T),
-    reached(network:tracks_of(Next), Next, Drone, T).
+    Next = ground_network:observe(Net, [Drone], T),
+    reached(ground_network:tracks_of(Next), Next, Drone, T).
 
 reached([], Net, Drone, T) -> ticks_to_confirm(Net, Drone, T + 1);
 reached(_Confirmed, _Net, _Drone, T) -> T.
@@ -103,7 +103,7 @@ maybe_look(Net, Drone, Tick, Evidence) ->
     stopped(evidence_in(Net) >= Evidence, Net, Drone, Tick).
 
 stopped(true, Net, _Drone, _Tick) -> Net;
-stopped(false, Net, Drone, Tick) -> network:observe(Net, [Drone], Tick).
+stopped(false, Net, Drone, Tick) -> ground_network:observe(Net, [Drone], Tick).
 
 evidence_in(#{tracks := Ts}) -> lists:max([0 | [E || #{evidence := E} <- Ts]]).
 
@@ -111,13 +111,13 @@ seen_something(#{tracks := Ts}) -> Ts =/= [].
 
 after_watching_something_for_long_enough_it_speaks_test() ->
     D = at_the_centre(attacker),
-    Net = watched(network:home(), D, 60),
-    ?assert(network:tracks_of(Net) =/= []),
+    Net = watched(ground_network:home(), D, 60),
+    ?assert(ground_network:tracks_of(Net) =/= []),
     ?assert(loud(Net, at_the_centre(defender))).
 
 what_it_says_is_four_integers_like_any_other_transmission_test() ->
-    Net = watched(network:home(), at_the_centre(attacker), 60),
-    Said = network:transmission(Net, at_the_centre(defender)),
+    Net = watched(ground_network:home(), at_the_centre(attacker), 60),
+    Said = ground_network:transmission(Net, at_the_centre(defender)),
     ?assertEqual(4, length(Said)),
     #{signal_max := Max} = airspace:limits(),
     %% ⚠ NOT A NEW SENSOR CHANNEL. Extra channels for defenders would mean two
@@ -135,19 +135,19 @@ the_network_tracks_the_defenders_too_test() ->
     %% A non-cooperative sensor does not learn whose aircraft it is looking at.
     %% Filtering by side would hand a defending controller an answer no real
     %% sensor could give it, which is why Remote-ID was the wrong first modality.
-    Net = watched(network:home(), at_the_centre(defender), 60),
-    ?assert(network:tracks_of(Net) =/= []).
+    Net = watched(ground_network:home(), at_the_centre(defender), 60),
+    ?assert(ground_network:tracks_of(Net) =/= []).
 
 %%==============================================================================
 %% ⚠ THE ATTACKER HEARS IT TOO
 %%==============================================================================
 
 a_network_that_talks_reveals_that_it_has_seen_you_test() ->
-    Net = watched(network:home(), at_the_centre(attacker), 60),
-    Heard = network:transmission(Net, at_the_centre(attacker)),
+    Net = watched(ground_network:home(), at_the_centre(attacker), 60),
+    Heard = ground_network:transmission(Net, at_the_centre(attacker)),
     %% Going loud is a decision rather than a default, and an attacker can learn
     %% WHEN IT HAS BEEN SEEN — a real capability nobody had to design in.
-    ?assertEqual(network:transmission(Net, at_the_centre(defender)), Heard),
+    ?assertEqual(ground_network:transmission(Net, at_the_centre(defender)), Heard),
     ?assertNotEqual([0, 0, 0, 0], Heard).
 
 %%==============================================================================
@@ -156,7 +156,7 @@ a_network_that_talks_reveals_that_it_has_seen_you_test() ->
 
 a_drone_out_of_comms_range_hears_nothing_test() ->
     #{arena_x := Ax, arena_y := Ay, arena_z := Az} = airspace:limits(),
-    Net = watched(network:home(), at_the_centre(attacker), 60),
+    Net = watched(ground_network:home(), at_the_centre(attacker), 60),
     Corner = #drone{id = far, side = attacker, x = Ax - 1, y = Ay - 1, z = Az - 1,
                     signal = [0, 0, 0, 0]},
     %% Flying wide is a way to stop being cued at and, for an attacker, a way to
@@ -171,14 +171,14 @@ a_drone_out_of_comms_range_hears_nothing_test() ->
 
 two_islands_looking_at_the_same_fight_see_the_same_thing_test() ->
     D = at_the_centre(attacker),
-    ?assertEqual(watched(network:home(), D, 40), watched(network:home(), D, 40)).
+    ?assertEqual(watched(ground_network:home(), D, 40), watched(ground_network:home(), D, 40)).
 
 %%==============================================================================
 %% ⚠⚠⚠ THE WIRING. WITHOUT THESE THE MODULE COMPILES AND DEFENDS NOTHING
 %%==============================================================================
 
 %% ⚠ THIS IS THE ONE THAT MATTERS. Item 8 was built, compiled, tested and wired
-%% into nothing for a while: `network:home/1' was called from no production
+%% into nothing for a while: `ground_network:home/1' was called from no production
 %% module, so every fight ran with `none' and the whole static defence was dead
 %% code with green tests behind it. A test that only exercises the modules
 %% directly cannot see that, because it supplies the network itself.
@@ -187,9 +187,9 @@ the_ground_reaches_the_result_test() ->
     Placed = drone_starts:place(1, 1, 0),
     [{A, _, _, _, _, _}, {B, _, _, _, _, _}] = Placed,
     Home = engagement:run(airspace:new(Placed), #{A => C, B => C},
-                          #{network => network:home()}),
+                          #{network => ground_network:home()}),
     Away = engagement:run(airspace:new(Placed), #{A => C, B => C},
-                          #{network => network:none()}),
+                          #{network => ground_network:none()}),
     ?assertEqual(?SENSORS, length(maps:get(ground, Home))),
     %% Empty is the honest answer for an away game, and it is what lets a
     %% spectator see that a raider fought without towers.
@@ -200,8 +200,8 @@ a_network_actually_changes_what_a_swarm_hears_test() ->
     %% If the cue never reached a controller's input, everything above would pass
     %% and the ground bank would still be twelve zeroes for ever.
     D = at_the_centre(defender),
-    Net = watched(network:home(), at_the_centre(attacker), 60),
-    Cued = radio:heard(D, [], none, network:transmission(Net, D)),
+    Net = watched(ground_network:home(), at_the_centre(attacker), 60),
+    Cued = radio:heard(D, [], none, ground_network:transmission(Net, D)),
     ?assertNotEqual(radio:silence(), Cued),
     ?assertEqual(radio:width(), length(Cued)),
     %% And it lands in the GROUND bank, not in one of the air banks.
@@ -215,17 +215,17 @@ the_benchmark_is_an_away_game_test() ->
     %% rung would move the day placement changed, and the one fixed thing in the
     %% system would stop being fixed.
     Bin = source(benchmark),
-    ?assert(binary:match(Bin, <<"network:none()">>) =/= nomatch),
-    ?assertEqual(nomatch, binary:match(Bin, <<"network:home">>)).
+    ?assert(binary:match(Bin, <<"ground_network:none()">>) =/= nomatch),
+    ?assertEqual(nomatch, binary:match(Bin, <<"ground_network:home">>)).
 
 training_happens_under_the_islands_own_network_test() ->
     %% Selection cannot favour using a cue that is never present. Without this
     %% the ground bank would be four zeroes for every generation that ever ran,
     %% and the ablation's ground arm would read zero honestly and uselessly.
-    ?assert(binary:match(source(trainer), <<"network:home()">>) =/= nomatch).
+    ?assert(binary:match(source(trainer), <<"ground_network:home()">>) =/= nomatch).
 
 %% ⚠ CALLED, NOT GREPPED. This assertion used to read `island_server.erl' for the
-%% string `network:home()' and passed while the raid path was perturbed to
+%% string `ground_network:home()' and passed while the raid path was perturbed to
 %% `none', because the same string also appears on the training-bout path a few
 %% hundred lines away. A textual probe cannot tell two occurrences apart, which
 %% is half the reason hosting moved into `defence' — the other half is that how a
@@ -260,13 +260,13 @@ the_towers_reach_the_wire_test() ->
                              #{frames => true, network => Net})
           end,
     Enc = fun (R) -> dronex_bout:encode(#{}, R, maps:get(frames, R), airspace:limits()) end,
-    Home = Enc(Run(network:home())),
+    Home = Enc(Run(ground_network:home())),
     ?assertEqual([x, y, z], maps:get(ground_fields, Home)),
     ?assertEqual(?SENSORS * 3, length(maps:get(ground, Home))),
     %% Metres, like the arena and the frames, so a reader never mixes units.
     #{arena_x := Ax} = airspace:limits(),
     [?assert(V >= 0 andalso V =< Ax div 20480) || V <- maps:get(ground, Home)],
-    ?assertEqual([], maps:get(ground, Enc(Run(network:none())))),
+    ?assertEqual([], maps:get(ground, Enc(Run(ground_network:none())))),
     %% The reach travels too, because five dots without it is a picture of the
     %% towers rather than a picture of the defence.
     #{sensor_range := R} = airspace:limits(),

@@ -157,7 +157,7 @@ against(Mine, {ok, Theirs}, Index) ->
     %% island's, in this island's airspace, so both being cued is the truthful
     %% arrangement rather than a concession.
     Result = engagement:run(airspace:new(Placed), #{AId => Mine, DId => Theirs},
-                            #{network => network:home()}),
+                            #{network => ground_network:home()}),
     points(maps:get(winner, Result)).
 
 -spec points(attacker | defender | draw) -> integer().

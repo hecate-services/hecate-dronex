@@ -32,7 +32,7 @@
 %% per-drone aggregate cost one store write per reposition, and that judgement
 %% stands: a fight is a fold over 1200 ticks and cannot afford a round trip per
 %% observation.
--module(tracks).
+-module(ground_tracks).
 
 -include("airspace.hrl").
 
@@ -80,7 +80,7 @@ confirmed(Tracks) ->
 %% association would drop a track on the same tick a contact arrived for it, so a
 %% target at the edge of a network — seen, lost, seen — would never accumulate
 %% anything and the fringe of the network would be worth nothing at all.
--spec advance(state(), [sensor:contact()], non_neg_integer()) -> state().
+-spec advance(state(), [ground_sensor:contact()], non_neg_integer()) -> state().
 advance(Tracks, Contacts, Tick) ->
     Updated = lists:foldl(fun (C, Acc) -> absorb(C, Acc, Tick) end, predicted(Tracks), Contacts),
     [T || #{seen := Seen} = T <- Updated, Tick - Seen =< ?TRACK_DROP_TICKS].

@@ -125,5 +125,5 @@ one(Genome, Kind, Index) ->
     %% would leave that commitment resting on a default somebody could flip.
     Result = engagement:run(airspace:new(Placed),
                             #{AttackerId => Pilot, DefenderId => Drill},
-                            #{network => network:none()}),
+                            #{network => ground_network:none()}),
     maps:get(winner, Result).

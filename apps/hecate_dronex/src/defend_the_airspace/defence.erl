@@ -61,7 +61,7 @@
 host(Controllers) ->
     fun (Arena) ->
         engagement:run(Arena, Controllers,
-                       #{frames => true, network => network:home()})
+                       #{frames => true, network => ground_network:home()})
     end.
 
 -spec compose([roster:entry()], [{binary(), drone_genome:genome()}], non_neg_integer()) ->

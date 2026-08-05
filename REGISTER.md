@@ -160,6 +160,40 @@ survey.**
 the top drawer. There were three hammers in the drawer underneath. The rule is
 to open every drawer before saying what is not in the toolbox.
 
+## I.16: three green checks and a release that would not assemble
+
+`sensor` is a module in `faber_tweann`, which is a dependency. The BEAM has one
+flat module namespace, so `sensor` in this tree and `sensor` in that one are the
+same name, and `rebar3 release` refuses to assemble with:
+
+    Duplicated modules: sensor specified in faber_tweann and hecate_dronex
+
+Nothing local objected. `rebar3 compile` was clean, 337 tests passed, Dialyzer
+was clean, elvis was clean, and twenty-three guard probes bit. **Every one of
+those runs the application, and none of them builds the release.** The failure
+appeared eight minutes after the push, in CI, at the one step nobody runs by
+hand.
+
+The rule that follows is small: **`rebar3 as prod release` is part of the local
+check, not part of CI's job.** It is the only command in this repository that has
+an opinion about the global namespace.
+
+The naming lesson is the larger half. `sensor`, `network` and `tracks` are all
+names that describe a *kind of thing* rather than a *thing this repository does*,
+and in a flat namespace shared with every dependency that is a collision waiting
+for a dependency to be added. Only `sensor` collided; all three were renamed
+`ground_sensor`, `ground_network`, `ground_tracks`, which is a better answer on
+its own terms — `ground_sensor` says what distinguishes it from `drone_senses`,
+which `sensor` never did. Screaming architecture is usually argued as a
+navigation property. Here it is also a correctness one.
+
+**ELI5.** Everyone in a small village is on first-name terms, and someone called
+their new baby by a name a neighbour's child already had. Inside the house it was
+never a problem: the family always knew which child they meant. It only broke
+when the whole village was called together and two children answered to the same
+name. The fix was to use a fuller name that also happens to say something about
+who the child is.
+
 ## I.14: a whole subsystem was built, tested, and connected to nothing
 
 `sensor`, `tracks` and `network` were written, compiled, and covered by their own

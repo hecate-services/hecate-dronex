@@ -41,9 +41,9 @@ PILOT=apps/hecate_dronex/src/pilot_a_drone/drone_pilot.erl
 GENOME=apps/hecate_dronex/src/pilot_a_drone/drone_genome.erl
 RADIO=apps/hecate_dronex/src/speak_between_drones/radio.erl
 ENGAGE=apps/hecate_dronex/src/fly_the_airspace/engagement.erl
-SENSOR=apps/hecate_dronex/src/defend_the_airspace/sensor.erl
-TRACKS=apps/hecate_dronex/src/defend_the_airspace/tracks.erl
-NETWORK=apps/hecate_dronex/src/defend_the_airspace/network.erl
+SENSOR=apps/hecate_dronex/src/defend_the_airspace/ground_sensor.erl
+TRACKS=apps/hecate_dronex/src/defend_the_airspace/ground_tracks.erl
+NETWORK=apps/hecate_dronex/src/defend_the_airspace/ground_network.erl
 BENCH=apps/hecate_dronex/src/sit_the_benchmark/benchmark.erl
 ISLANDSRV=apps/hecate_dronex/src/advance_an_island/island_server.erl
 TRAINER=apps/hecate_dronex/src/breed_a_roster/trainer.erl
@@ -308,52 +308,52 @@ probe "muting one side silences both" "$ENGAGE" \
 #     network themselves cannot see that, which is why this probe exists at the
 #     wiring rather than at the modules.
 probe "a hosted raid is fought without the island's network" "$DEFENCE" \
-  's/#\{frames => true, network => network:home\(\)\}/#{frames => true, network => network:none()}/' \
-  network_tests
+  's/#\{frames => true, network => ground_network:home\(\)\}/#{frames => true, network => ground_network:none()}/' \
+  ground_network_tests
 
 # 18. Training must happen under the island's own network. Selection cannot
 #     favour using a cue that is never present, so with this reverted the ground
 #     bank is four zeroes for every generation that ever runs and the ablation's
 #     ground arm reports zero honestly and uselessly for ever.
 probe "training never sees the ground" "$TRAINER" \
-  's/#\{network => network:home\(\)\}/#{network => network:none()}/' \
-  network_tests
+  's/#\{network => ground_network:home\(\)\}/#{network => ground_network:none()}/' \
+  ground_network_tests
 
 # 19. ⚠ AND THE BENCHMARK MUST STAY AWAY. The frozen ladder measures the
 #     CONTROLLER. A network here scores an island's terrain instead: every rung
 #     moves the day placement changes, and the one fixed thing in the system
 #     stops being fixed without anything failing.
 probe "the frozen benchmark is fought at home" "$BENCH" \
-  's/#\{network => network:none\(\)\}/#{network => network:home()}/' \
-  network_tests
+  's/#\{network => ground_network:none\(\)\}/#{network => ground_network:home()}/' \
+  ground_network_tests
 
 # 20. A sensor's range must be a hard edge. One that occasionally saw past it
 #     would leave no corridors, and the approach path is the only counterplay to
 #     a network this design offers.
 probe "the sensor can see past its own range" "$SENSOR" \
   's/ranged\(D, _Sensor, _DroneId, _Tick, _X, _Y, _Z\) when D > \?SENSOR_RANGE ->\n    miss;/ranged(D, _Sensor, _DroneId, _Tick, _X, _Y, _Z) when D > ?SENSOR_RANGE * 4 ->\n    miss;/s' \
-  sensor_tests
+  ground_sensor_tests
 
 # 21. The confirmation threshold must bite. At one piece of evidence every ghost
 #     is a target, the network cues at its own false alarms, and the number this
 #     phase exists to tune decides nothing.
 probe "a single contact confirms a track" "$TRACKS" \
   's/graduated\(E, S\) when E >= \?CONFIRM_EVIDENCE ->/graduated(E, S) when E >= 1 ->/' \
-  tracks_tests
+  ground_tracks_tests
 
 # 22. The network must be silent until it is sure. Transmitting the tentative
 #     picture broadcasts its ghosts, which is the same failure as 21 arriving
 #     one module later.
 probe "the network broadcasts its tentative picture" "$NETWORK" \
-  's/heard_from\(in_earshot\(Sensors, D\), tracks:confirmed\(Tracks\)\)\./heard_from(in_earshot(Sensors, D), Tracks)./' \
-  network_tests
+  's/heard_from\(in_earshot\(Sensors, D\), ground_tracks:confirmed\(Tracks\)\)\./heard_from(in_earshot(Sensors, D), Tracks)./' \
+  ground_network_tests
 
 # 23. The ground is a transmitter with a horizon, like every other transmitter.
 #     Without it, flying wide stops being a way to avoid being cued at and an
 #     attacker can never get out from under an island's voice.
 probe "the ground can be heard everywhere" "$NETWORK" \
   's/in_earshot\(Sensors, #drone\{x = X, y = Y, z = Z\}\) ->\n    #\{comms_range := R\} = airspace:limits\(\),\n    \[S \|\| #\{x := Sx, y := Sy, z := Sz\} = S <- Sensors,\n          fixed:mag3\(Sx - X, Sy - Y, Sz - Z\) =< R\]\./in_earshot(Sensors, #drone{}) ->\n    #{comms_range := R} = airspace:limits(),\n    [S || S <- Sensors, R > 0]./s' \
-  network_tests
+  ground_network_tests
 
 echo
 rebar3 compile >/dev/null 2>&1

@@ -46,7 +46,7 @@
 %%   a real capability nobody had to design
 %%
 %%   one genome shape survives
--module(network).
+-module(ground_network).
 
 -include("airspace.hrl").
 
@@ -54,7 +54,7 @@
 
 -export_type([network/0]).
 
--type network() :: none | #{sensors := [sensor:sensor()], tracks := tracks:state()}.
+-type network() :: none | #{sensors := [ground_sensor:sensor()], tracks := ground_tracks:state()}.
 
 %% @doc No network at all, which is what an attacker has in somebody else's
 %% airspace and what the frozen benchmark always runs with.
@@ -72,15 +72,15 @@ home() ->
     home(N).
 
 -spec home(pos_integer()) -> network().
-home(N) -> #{sensors => sensor:place(N), tracks => tracks:empty()}.
+home(N) -> #{sensors => ground_sensor:place(N), tracks => ground_tracks:empty()}.
 
--spec sensors(network()) -> [sensor:sensor()].
+-spec sensors(network()) -> [ground_sensor:sensor()].
 sensors(none) -> [];
 sensors(#{sensors := S}) -> S.
 
--spec tracks_of(network()) -> [tracks:track()].
+-spec tracks_of(network()) -> [ground_tracks:track()].
 tracks_of(none) -> [];
-tracks_of(#{tracks := T}) -> tracks:confirmed(T).
+tracks_of(#{tracks := T}) -> ground_tracks:confirmed(T).
 
 %%==============================================================================
 %% One tick of looking
@@ -100,12 +100,12 @@ observe(none, _Drones, _Tick) ->
     none;
 observe(#{sensors := Sensors, tracks := Tracks}, Drones, Tick) ->
     Contacts = seen(Sensors, [D || D <- Drones, not D#drone.dead], Tick)
-               ++ sensor:ghosts(Sensors, Tick),
-    #{sensors => Sensors, tracks => tracks:advance(Tracks, Contacts, Tick)}.
+               ++ ground_sensor:ghosts(Sensors, Tick),
+    #{sensors => Sensors, tracks => ground_tracks:advance(Tracks, Contacts, Tick)}.
 
 seen(Sensors, Drones, Tick) ->
     [C || S <- Sensors, D <- Drones,
-          {ok, C} <- [sensor:observe(truth(D), S, #{tick => Tick})]].
+          {ok, C} <- [ground_sensor:observe(truth(D), S, #{tick => Tick})]].
 
 %% The sensor behaviour takes ground truth as a map, because that is the shape a
 %% real sensor's driver would be handed. The drone record is the truth.
@@ -131,7 +131,7 @@ truth(#drone{id = Id, x = X, y = Y, z = Z}) -> #{id => Id, x => X, y => Y, z => 
 transmission(none, _Drone) ->
     silence();
 transmission(#{sensors := Sensors, tracks := Tracks}, #drone{} = D) ->
-    heard_from(in_earshot(Sensors, D), tracks:confirmed(Tracks)).
+    heard_from(in_earshot(Sensors, D), ground_tracks:confirmed(Tracks)).
 
 silence() -> [0, 0, 0, 0].
 
