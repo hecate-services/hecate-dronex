@@ -312,8 +312,8 @@ handle_info(benchmark, #{island := I, sitting := false} = S) ->
 handle_info(benchmark, S) ->
     schedule(benchmark, ?DEFAULT_BENCH_MS),
     {noreply, S};
-handle_info({benchmarked, Profile}, #{island := I} = S) ->
-    {noreply, S#{island := island:benchmarked(I, Profile), sitting := false}};
+handle_info({benchmarked, Profile, Origin}, #{island := I} = S) ->
+    {noreply, S#{island := island:benchmarked(I, Profile, Origin), sitting := false}};
 
 %% ⚠ RUN INLINE AND WITH FRAMES ON, WHICH IS THE ONE PLACE THAT IS TRUE. An
 %% engagement with the frame accumulator running allocates an arena per tick, so
@@ -516,7 +516,12 @@ sit_off_process(I) -> asked(roster:best(island:roster_of(I)), self()).
 asked(undefined, _Back) -> false;
 asked(Entry, Back) ->
     Genome = roster:entry_genome(Entry),
-    _ = spawn(fun () -> Back ! {benchmarked, sat(benchmark:sit(Genome))} end),
+    %% ⚠ THE ORIGIN TRAVELS WITH THE SCORE. Read here rather than later, because
+    %% by the time the profile comes back the roster has bred on and `best' may
+    %% be a different entry — the answer would be about whoever is champion NOW
+    %% and not about whoever actually sat it.
+    Origin = roster:entry_origin(Entry),
+    _ = spawn(fun () -> Back ! {benchmarked, sat(benchmark:sit(Genome)), Origin} end),
     true.
 
 sat({ok, Profile}) -> Profile;

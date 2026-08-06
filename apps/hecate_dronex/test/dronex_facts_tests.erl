@@ -27,6 +27,7 @@ only_what_exists_is_published_test() ->
     ?assertEqual([ablation_delta_air, ablation_delta_all, ablation_delta_ground,
                   ablation_void, ablations, admissions, advertising,
                   benchmark_draws, benchmark_losses, benchmark_rungs,
+                  benchmark_sitter,
                   benchmark_starts, benchmark_wins, capacity, captures, defences,
                   fact_version, generation, island, island_id, listening, open,
                   raids, raids_home, raids_lost, roster,

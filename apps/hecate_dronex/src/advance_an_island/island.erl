@@ -24,9 +24,10 @@
 %% result about the release it was measured on, and the Containerfile says which.
 -module(island).
 
--export([new/1, run/2, train/1, seed_if_empty/1, benchmarked/2, with_roster/2]).
+-export([new/1, run/2, train/1, seed_if_empty/1, benchmarked/3, with_roster/2]).
 -export([tick_of/1, roster_depth/1, capacity/1, seed_of/1, roster_of/1]).
 -export([generation_of/1, benchmark_of/1, rounds_of/1, admissions_of/1]).
+-export([sitter_of/1]).
 -export([ablated/2, ablation_of/1, ablations_of/1]).
 -export([muster/2, aim/3, returned/3, defended/5, can_defend/2]).
 -export([raids_of/1, raids_home_of/1, raids_lost_of/1, defences_of/1, captures_of/1]).
@@ -50,6 +51,13 @@
     %% been sat. CHARTER.md rule 4: a reader must be able to tell "sat it and lost
     %% everything" from "has not sat it", which is what a `starts' of zero says.
     benchmark :: map(),
+    %% ⚠ WHO SAT IT. `roster:best/1' is the sitter, and `raid:absorb/3' admits
+    %% CAPTURED genomes into the same roster — so the island's exam score can be
+    %% the score of a controller bred on somebody else's machine, and nothing
+    %% published said which. beam03 sat 288/288 one morning and 1/288 nine hours
+    %% later while absorbing 2,113 foreign genomes, and the exhibit had no field
+    %% that could tell an evolutionary collapse from a change of champion.
+    sitter = unknown :: term(),
     %% Exercise counts. A trainer that has proposed nothing and a trainer whose
     %% every proposal was rejected are different situations and look identical
     %% without these.
@@ -127,8 +135,16 @@ counted(#{outcome := admitted}, N) -> N + 1;
 counted(_Report, N) -> N.
 
 %% @doc Record a frozen-benchmark profile.
--spec benchmarked(island(), map()) -> island().
-benchmarked(#island{} = I, Profile) -> I#island{benchmark = Profile}.
+-spec benchmarked(island(), map(), term()) -> island().
+benchmarked(#island{} = I, Profile, Origin) ->
+    I#island{benchmark = Profile, sitter = Origin}.
+
+%% @doc The provenance of the controller that sat the last exam.
+%%
+%% `{bred, _}' means this island made it. `{captured, From, _}' means it flew
+%% here in somebody else's raiding party and was kept.
+-spec sitter_of(island()) -> term().
+sitter_of(#island{sitter = O}) -> O.
 
 %% @doc Replace the roster, for the log to restore into.
 -spec with_roster(island(), roster:roster()) -> island().

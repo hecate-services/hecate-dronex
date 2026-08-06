@@ -160,6 +160,13 @@ vitals(Island, Runtime) ->
         %% ⚠ EXERCISE COUNTS BESIDE EVERY NULL. CHARTER.md rule 4. A trainer that
         %% has proposed nothing and a trainer whose every proposal was rejected
         %% look identical without these, and they are different situations.
+        %% ⚠ WHO SAT THE EXAM, because `roster:best/1' can be a CAPTURED genome.
+        %% A raid admits foreign controllers into the same roster the champion is
+        %% chosen from, so an island's headline score can belong to a controller
+        %% bred on another machine — and without this field a reader cannot tell
+        %% an evolutionary collapse from a change of champion. Two words on the
+        %% wire against a number nobody could interpret.
+        benchmark_sitter => sitter(island:sitter_of(Island)),
         rounds => island:rounds_of(Island),
         admissions => island:admissions_of(Island),
         %% CHARTER.md rule 4 again, for the mechanism the whole repository is
@@ -281,6 +288,13 @@ described({error, _Why}) ->
 %% The two extra fields each turn a wasted raid into a filter: an incompatible
 %% ENGINE would refuse on arrival, and an island near its ROSTER floor would
 %% refuse for want of anybody to field.
+%% Bred here, captured from a neighbour, or an island that has not sat one yet.
+%% Deliberately NOT the raid id or the opponent: this is a provenance flag for a
+%% public page, and the fleet's raid ids are not its business.
+sitter({bred, _Whose}) -> <<"bred">>;
+sitter({captured, _From, _Raid}) -> <<"captured">>;
+sitter(_unknown) -> <<"unknown">>.
+
 -spec opened(island:island()) -> map().
 opened(Island) ->
     #{fact_version => ?FACT_VERSION,

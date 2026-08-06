@@ -246,6 +246,12 @@ training_advances_the_counts_test() ->
 an_island_has_not_sat_the_exam_until_it_has_test() ->
     I = island:new(#{seed => 35}),
     ?assertEqual(0, maps:get(starts, island:benchmark_of(I))),
+    ?assertEqual(unknown, island:sitter_of(I)),
     Sat = island:benchmarked(I, #{rungs => [], wins => [], draws => [],
-                                  losses => [], starts => 4}),
-    ?assertEqual(4, maps:get(starts, island:benchmark_of(Sat))).
+                                  losses => [], starts => 4},
+                             {captured, <<"beam01">>, <<"r1">>}),
+    ?assertEqual(4, maps:get(starts, island:benchmark_of(Sat))),
+    %% ⚠ AND WHO SAT IT. `roster:best/1' can be a captured genome, so a score
+    %% without a provenance cannot distinguish an evolutionary collapse from a
+    %% change of champion.
+    ?assertMatch({captured, _From, _Raid}, island:sitter_of(Sat)).
