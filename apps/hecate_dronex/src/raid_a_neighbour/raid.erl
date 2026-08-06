@@ -33,7 +33,7 @@
 %% it gets is the attacker's genomes, which is worth more than airframes.
 -module(raid).
 
--export([sortie/3, target/2, settle/3, absorb/3]).
+-export([sortie/3, target/3, settle/3, absorb/3]).
 -export([floor_of/0, party/0]).
 
 %% ⚠ THE FLOOR STOPS AN ISLAND RAIDING ITSELF TO EXTINCTION, which is a real risk
@@ -99,11 +99,43 @@ counted(R, Taken) ->
 %% protection, it is a consequence: there is no directory, and the public realm is
 %% the only place islands become visible to each other. An island that is silent
 %% is not attacked, and an island that raids is by definition one that listens.
--spec target([binary()], binary()) -> {ok, binary()} | none.
-target(Heard, Self) -> chosen([H || H <- Heard, H =/= Self]).
+%%
+%% ⚠⚠ DRAWN, AND IT USED TO BE `hd/1'. THAT MADE THE ARCHIPELAGO'S SHAPE A
+%% FUNCTION OF RANDOM IDENTITY BITS AND NOTHING ELSE.
+%%
+%% The candidate list is built by `island_server:targets/1' from
+%% `maps:to_list(open_islands)'. A map of 32 keys or fewer is a FLATMAP, and a
+%% flatmap yields its keys in sorted term order — so `hd/1' did not mean "any of
+%% them", it meant "whichever island minted the lowest id", for ever.
+%%
+%% Measured on the four-island fleet, 2026-08-06, after twelve hours. Every
+%% admission filter in `targets/1' passed for every pair: all four held all three
+%% neighbours' leases, every engine fingerprint was identical, every roster was
+%% above the floor. The graph could have been all-pairs. What ran instead was
+%% four near-fixed edges, and `beam03' — whose id `e649…' sorts last for all
+%% three of its neighbours — was everybody's third choice and was raided THREE
+%% times where the most-attacked islands were raided about four hundred and
+%% eighty. It topped the exhibit's leaderboard at 100% while being, in effect,
+%% not in the archipelago at all.
+%%
+%% Nothing reported this. Every filter said yes and the selector quietly said
+%% "the first one" to a list nobody knew was sorted.
+%%
+%% ⚠⚠⚠ AND THE GENERATOR IS THREADED, NEVER THE PROCESS-GLOBAL ONE. Register
+%% `D.5': one unrecorded draw was enough to make a run irreproducible. This is
+%% the same rule `island:muster/2' follows and for the same reason — a run must
+%% stay a pure function of its seed, and whom an island chose to attack is part
+%% of the run. The state goes in and comes back out; nothing here touches
+%% `rand:uniform/1'.
+-spec target([binary()], binary(), rand:state()) ->
+    {{ok, binary()} | none, rand:state()}.
+target(Heard, Self, S) -> chosen([H || H <- Heard, H =/= Self], S).
 
-chosen([]) -> none;
-chosen(Others) -> {ok, hd(Others)}.
+chosen([], S) -> {none, S};
+
+chosen(Others, S) ->
+    {N, S1} = rand:uniform_s(length(Others), S),
+    {{ok, lists:nth(N, Others)}, S1}.
 
 %%==============================================================================
 %% Coming home

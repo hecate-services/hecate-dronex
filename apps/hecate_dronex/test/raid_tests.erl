@@ -130,6 +130,63 @@ absorbing_the_same_genome_twice_changes_nothing_test() ->
 %% consequence of the public realm being the only place islands become visible to
 %% each other rather than a protection anybody designed.
 a_target_is_someone_else_who_has_been_heard_test() ->
-    ?assertEqual({ok, <<"b">>}, raid:target([<<"a">>, <<"b">>], <<"a">>)),
-    ?assertEqual(none, raid:target([<<"a">>], <<"a">>)),
-    ?assertEqual(none, raid:target([], <<"a">>)).
+    S = seed(),
+    ?assertMatch({{ok, <<"b">>}, _}, raid:target([<<"a">>, <<"b">>], <<"a">>, S)),
+    ?assertMatch({none, _}, raid:target([<<"a">>], <<"a">>, S)),
+    ?assertMatch({none, _}, raid:target([], <<"a">>, S)).
+
+seed() -> rand:seed_s(exsss, {1, 2, 3}).
+
+%% Draw `N' targets, threading the generator the way the island does.
+picks(Heard, Self, N) ->
+    {Picks, _S} =
+        lists:foldl(fun (_, {Acc, S}) ->
+                        {{ok, T}, S1} = raid:target(Heard, Self, S),
+                        {[T | Acc], S1}
+                    end, {[], seed()}, lists:seq(1, N)),
+        Picks.
+
+%% ⚠⚠ THE TEST THAT WOULD HAVE CAUGHT THE ARCHIPELAGO COLLAPSING TO FOUR EDGES.
+%%
+%% `chosen/1' was `hd/1', and the list it was handed comes from
+%% `maps:to_list/1' on a flatmap, which yields keys in SORTED order. So the old
+%% code answers `<<"a">>' three hundred times out of three hundred and this
+%% assertion fails on its first clause.
+%%
+%% Written as a spread and not as "is it random", because the defect was never
+%% that the choice was predictable — it was that two of three candidates were
+%% UNREACHABLE. On the fleet that meant beam03 was raided three times where its
+%% neighbours were raided four hundred and eighty, while every admission filter
+%% said it was a perfectly good target.
+a_target_is_drawn_so_every_candidate_is_reachable_test() ->
+    Heard = [<<"a">>, <<"b">>, <<"c">>],
+    Picks = picks(Heard, <<"self">>, 300),
+
+    ?assertEqual([<<"a">>, <<"b">>, <<"c">>], lists:usort(Picks)),
+
+    %% and none of them is a rounding error: at 300 draws over 3 candidates,
+    %% fewer than 50 is far outside anything a fair draw produces.
+    lists:foreach(fun (C) ->
+                      ?assert(length([X || X <- Picks, X =:= C]) > 50)
+                  end, Heard).
+
+%% ⚠ THE SELF-EXCLUSION MUST SURVIVE THE DRAW. An island that could draw itself
+%% would raid its own procedure, and the call would answer.
+a_target_is_never_oneself_however_often_it_is_drawn_test() ->
+    Picks = picks([<<"a">>, <<"self">>, <<"c">>], <<"self">>, 200),
+    ?assertEqual([<<"a">>, <<"c">>], lists:usort(Picks)).
+
+%% Register `D.5': a run is a pure function of its seed, and whom an island chose
+%% to attack is part of the run. A process-global draw would pass every other
+%% test in this file and fail this one.
+the_draw_is_reproducible_from_its_seed_test() ->
+    ?assertEqual(picks([<<"a">>, <<"b">>, <<"c">>], <<"self">>, 50),
+                 picks([<<"a">>, <<"b">>, <<"c">>], <<"self">>, 50)).
+
+%% The caller's bound must exceed the callee's, or a slow-but-living defender
+%% accepts and fights a party the attacker has already taken back.
+the_handshake_timeouts_are_ordered_test() ->
+    ?assert(dronex_raid:call_timeout_ms() > dronex_raid:muster_timeout_ms()),
+    %% and both are a handshake's length, not an engagement's. The old value was
+    %% 120000 with a comment about the callee fighting.
+    ?assert(dronex_raid:call_timeout_ms() =< 30000).

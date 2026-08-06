@@ -28,7 +28,7 @@
 -export([tick_of/1, roster_depth/1, capacity/1, seed_of/1, roster_of/1]).
 -export([generation_of/1, benchmark_of/1, rounds_of/1, admissions_of/1]).
 -export([ablated/2, ablation_of/1, ablations_of/1]).
--export([muster/2, returned/3, defended/5, can_defend/2]).
+-export([muster/2, aim/3, returned/3, defended/5, can_defend/2]).
 -export([raids_of/1, raids_home_of/1, raids_lost_of/1, defences_of/1, captures_of/1]).
 
 -export_type([island/0]).
@@ -176,6 +176,26 @@ can_defend(#island{roster = R}, N) -> roster:depth(R) - N >= raid:floor_of().
 muster(#island{roster = R, rand = S} = I, N) ->
     {Party, R1, S1} = raid:sortie(R, S, N),
     {mustered(Party, I#island{roster = R1, rand = S1}), Party}.
+
+%% @doc Pick whom to attack from the islands currently worth attacking.
+%%
+%% ⚠ HERE FOR THE SAME REASON `muster/2' IS HERE: THE RANDOM STATE ADVANCES.
+%% Choosing a target is a draw, and every draw an island makes threads through
+%% this record so that a run stays a pure function of its seed (Register `D.5').
+%% Putting the draw in `raid' with a process-global generator would have been
+%% shorter and would have broken exactly that.
+%%
+%% The choice used to be `hd/1' over a sorted list, which is why this function
+%% did not need to exist. See `raid:target/3' for what that cost.
+%%
+%% ⚠ `Self' IS PASSED IN, NOT READ. This module is pure — no processes, no clock,
+%% no mesh — and the first version called `dronex_identity:island_id()' from here,
+%% which would have put a disk read behind a function whose whole value is that
+%% it can be tested over two terms.
+-spec aim(island(), [binary()], binary()) -> {island(), {ok, binary()} | none}.
+aim(#island{rand = S} = I, Heard, Self) ->
+    {Choice, S1} = raid:target(Heard, Self, S),
+    {I#island{rand = S1}, Choice}.
 
 %% Counted only when somebody actually left, so an island sitting below the floor
 %% does not accumulate raids it never flew.

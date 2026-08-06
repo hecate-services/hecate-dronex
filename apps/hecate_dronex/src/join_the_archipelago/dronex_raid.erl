@@ -46,6 +46,7 @@
 -export([fingerprint/0, fingerprint_parts/0]).
 -export([request/4, accepted/1, decode_request/1, decode_reply/1]).
 -export([validate_request/2, protocol_version/0, procedure/1]).
+-export([muster_timeout_ms/0, call_timeout_ms/0]).
 
 -export_type([sortie/0, fate/0]).
 
@@ -59,6 +60,42 @@
 %% place islands become visible to each other — and calls this procedure on the
 %% FLEET realm, which is why a stranger cannot start a fight.
 -define(PROC_PREFIX, <<"dronex.raid.">>).
+
+%% ==========================================================================
+%% ⚠ TWO TIMEOUTS, AND THE ORDER BETWEEN THEM IS THE CORRECTNESS CONDITION
+%% ==========================================================================
+%%
+%% The handshake is: the caller CALLs, the callee validates the request and asks
+%% its own island for a defending party, and answers. Both are fast, and the
+%% fight is spawned AFTER the answer goes back, so neither number has anything to
+%% do with the length of an engagement.
+%%
+%% ⚠ THE CALLER'S BOUND MUST EXCEED THE CALLEE'S, and this is not tidiness. If a
+%% caller gives up while a slow-but-living defender is still deciding, the
+%% defender goes on to accept, publish its commitment and fight, while the
+%% attacker treats the raid as refused and puts its party BACK in the roster
+%% (`handshook, refused' does exactly that). The archipelago then holds a
+%% recording of twelve drones that, according to their own island, never left.
+%%
+%% Ordered as they are, a caller timeout can only mean the message never landed,
+%% because a defender that is merely slow times out its own muster first and
+%% answers with an explicit error.
+%%
+%% Both are SHORT on purpose. A timeout costs nothing but a skipped raid: the
+%% party stays home and the next raid timer comes round in two minutes. A LONG
+%% timeout is what costs, because it holds a process and twelve packed genomes
+%% for its whole duration against a target that may simply be gone.
+-define(MUSTER_TIMEOUT_MS, 5000).
+-define(CALL_TIMEOUT_MS, 10000).
+
+%% @doc How long a defender may take to validate and muster before it refuses.
+-spec muster_timeout_ms() -> pos_integer().
+muster_timeout_ms() -> ?MUSTER_TIMEOUT_MS.
+
+%% @doc How long an attacker waits for the handshake. Must exceed
+%% `muster_timeout_ms/0'; see the note above for what happens when it does not.
+-spec call_timeout_ms() -> pos_integer().
+call_timeout_ms() -> ?CALL_TIMEOUT_MS.
 
 -type sortie() :: #{id := binary(), genome := binary()}.
 -type fate() :: survived | lost.
@@ -213,6 +250,14 @@ named(Real, Claimed, _Packed, _Rest, I) -> {error, {id_mismatch, I, Claimed, Rea
 %% and a committed party is the entire price of a raid. Every refusal is
 %% instant — wrong protocol, wrong engine, bad genome, nobody left to field — so
 %% the timeout can go back to being a real one.
+%%
+%% ⚠⚠⚠ AND IT DID NOT, FOR MONTHS. The paragraph above was written when the
+%% protocol changed and the constant was left at 120 seconds, with a comment in
+%% `dronex_mesh' still explaining that the callee was fighting. Two comments in
+%% one repository, each describing a different design, and the stale one was
+%% attached to the number that actually ran. Measured on beam03, 2026-08-06: a
+%% target whose route was dead cost the attacker two minutes of a blocked process
+%% per attempt, about every two minutes, all day.
 %%
 %% The outcome arrives later, as a fact, on `dronex/raid_settled'.
 -spec accepted(binary()) -> map().

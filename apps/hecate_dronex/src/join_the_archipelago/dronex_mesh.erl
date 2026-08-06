@@ -44,10 +44,9 @@
 
 %% Longer than an engagement can take. `max_ticks' is 1200 at 20 Hz, and the
 %% defender validates a whole sortie before it starts.
--define(RAID_TIMEOUT_MS, 120000).
 
 -export([publish/2, available/0, publish_realm/1, station/0]).
--export([advertise/2, call/2, subscribe/2]).
+-export([advertise/2, call/3, subscribe/2]).
 -export([publish_between_islands/2, subscribe_between_islands/2]).
 
 %% ==========================================================================
@@ -102,25 +101,28 @@ offered(Procedure, Handler, {ok, Pool}, {ok, Realm}) ->
 
 %% @doc Call another island's raid procedure.
 %%
-%% ⚠ A LONG TIMEOUT, BECAUSE THE CALLEE IS FIGHTING. The defender validates every
-%% genome, then runs a whole engagement of up to 1200 ticks before it can answer.
-%% A five-second default would report `timeout' for a raid that is going
-%% perfectly, and the attacker would count its party lost while the defender
-%% counted it beaten.
+%% ⚠ THE TIMEOUT IS THE CALLER'S TO SET, AND IT USED TO LIVE HERE AS 120 SECONDS.
+%% The comment justifying that said "the callee is fighting", which stopped being
+%% true when the handshake was split from the engagement: `island_server' answers
+%% before a single tick is simulated and spawns the fight. The number outlived
+%% its reason by months because it sat in the TRANSPORT, where nobody reading the
+%% protocol would meet it. A bound that depends on what the callee does belongs
+%% with the protocol that knows — see `dronex_raid:call_timeout_ms/0'.
 %% ⚠ NO SEPARATE ISLAND ARGUMENT. The first version took one, validated it in a
 %% guard and never read it: `dronex_raid:procedure/1' already encodes the target,
 %% so the island was a second copy of the address that nothing compared against
 %% the first. A guard counts as a use, so the compiler said nothing — which is
 %% REGISTER I.7 exactly, where `breed:random/2' carried a parameter every caller
 %% passed zero to and dialyzer's warnings were about anything but the defect.
--spec call(binary(), term()) -> {ok, term()} | {error, term()}.
-call(Procedure, Payload) when is_binary(Procedure) ->
-    dialled(Procedure, Payload, endpoint(), fleet_realm()).
+-spec call(binary(), term(), pos_integer()) -> {ok, term()} | {error, term()}.
+call(Procedure, Payload, TimeoutMs)
+  when is_binary(Procedure), is_integer(TimeoutMs), TimeoutMs > 0 ->
+    dialled(Procedure, Payload, TimeoutMs, endpoint(), fleet_realm()).
 
-dialled(_P, _Payload, {error, _} = E, _Realm) -> E;
-dialled(_P, _Payload, _Pool, {error, _} = E) -> E;
-dialled(Procedure, Payload, {ok, Pool}, {ok, Realm}) ->
-    try macula:call(Pool, Realm, Procedure, Payload, ?RAID_TIMEOUT_MS)
+dialled(_P, _Payload, _T, {error, _} = E, _Realm) -> E;
+dialled(_P, _Payload, _T, _Pool, {error, _} = E) -> E;
+dialled(Procedure, Payload, TimeoutMs, {ok, Pool}, {ok, Realm}) ->
+    try macula:call(Pool, Realm, Procedure, Payload, TimeoutMs)
     catch Class:Reason -> {error, {call_failed, Class, Reason}}
     end.
 

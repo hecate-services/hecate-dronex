@@ -205,7 +205,7 @@ announced(ok, false, S) ->
 announced(ok, true, S) ->
     S;
 announced({error, Why}, true, S) ->
-    logger:warning("[island] can no longer advertise for raids: ~p", [Why]),
+    logger:warning("[island] can no longer advertise for raids: ~s", [terse(Why)]),
     S#{advertising := false};
 announced({error, _Why}, false, S) ->
     S.
@@ -392,7 +392,7 @@ handle_info(_Msg, S) ->
 
 written_off([], I) -> I;
 written_off([{RaidId, Party} | Rest], I) ->
-    logger:warning("[island] raid ~p never settled, party written off", [RaidId]),
+    logger:warning("[island] raid ~s never settled, party written off", [RaidId]),
     written_off(Rest, island:returned(I, Party, #{fates => []})).
 
 %% What the server knows about itself, as opposed to what the island knows about
@@ -587,10 +587,15 @@ fresh(defender, _A, D) -> element(2, engagement:controller(D)).
 %% defender fights, and doing that here would stop the clock, the trainer and the
 %% publisher for the whole engagement — which is exactly how the first deployed
 %% island wedged itself on a store write.
-launched(I, S) -> aimed(raid:target(targets(S), dronex_identity:island_id()), I, S).
+%% ⚠ THE ISLAND COMES BACK EVEN WHEN NOTHING IS AIMED AT, because choosing is a
+%% DRAW and the generator advanced. Dropping the returned island on the `none'
+%% path would replay the same draw next tick for as long as the archipelago
+%% stayed empty.
+launched(I, S) ->
+    aimed(island:aim(I, targets(S), dronex_identity:island_id()), S).
 
-aimed(none, _I, S) -> S;
-aimed({ok, Target}, I, S) -> mustered(island:muster(I, raid:party()), Target, S).
+aimed({I2, none}, S) -> S#{island := I2};
+aimed({I2, {ok, Target}}, S) -> mustered(island:muster(I2, raid:party()), Target, S).
 
 %% Below the floor, or nothing to send: stay home and breed. The floor is what
 %% stops an island raiding itself to extinction.
@@ -609,8 +614,9 @@ away(Target, RaidId, Party, Back) ->
     Sorties = [#{id => roster:entry_id(E),
                  genome => drone_genome:pack(roster:entry_genome(E))} || E <- Party],
     Request = dronex_raid:request(dronex_identity:island_id(), RaidId, Sorties, 0),
-    Reply = dronex_mesh:call(dronex_raid:procedure(Target), Request),
-    Answer = accepted(RaidId, Reply),
+    Reply = dronex_mesh:call(dronex_raid:procedure(Target), Request,
+                             dronex_raid:call_timeout_ms()),
+    Answer = accepted(RaidId, Target, Reply),
     _ = announce_commitment(Answer, RaidId, Target, length(Party), Back),
     gen_server:cast(Back, {handshook, RaidId, Party, Answer}).
 
@@ -624,9 +630,10 @@ announce_commitment(refused, _RaidId, _Target, _Airframes, _Back) ->
 %% ⚠ ONLY TWO ANSWERS NOW, AND NEITHER OF THEM IS AN OUTCOME. Accepted means the
 %% party is committed and the result will arrive as a fact. Anything else means
 %% it never engaged, so it never left the ground.
-accepted(RaidId, {ok, Reply}) -> decoded(RaidId, dronex_raid:decode_reply(Reply));
-accepted(RaidId, {error, Why}) ->
-    logger:warning("[island] raid ~p was not accepted: ~p", [RaidId, Why]),
+accepted(RaidId, _Target, {ok, Reply}) -> decoded(RaidId, dronex_raid:decode_reply(Reply));
+accepted(RaidId, Target, {error, Why}) ->
+    logger:warning("[island] raid ~s on ~s was not accepted: ~s",
+                   [RaidId, Target, terse(Why)]),
     refused.
 
 decoded(_RaidId, {ok, _Accepted}) -> accepted;
@@ -636,8 +643,25 @@ decoded(_RaidId, {ok, _Accepted}) -> accepted;
 %% disagreement the same as a massacre, and an island on a stale build would
 %% bleed its whole roster into neighbours that kept politely saying no.
 decoded(RaidId, {error, Why}) ->
-    logger:warning("[island] raid ~p was refused, party stays home: ~p", [RaidId, Why]),
+    logger:warning("[island] raid ~s was refused, party stays home: ~s",
+                   [RaidId, terse(Why)]),
     refused.
+
+%% ⚠⚠ NEVER `~p' A RAID FAILURE. THE REASON CONTAINS THE REQUEST, AND THE REQUEST
+%% CONTAINS TWELVE PACKED GENOMES.
+%%
+%% `dronex_mesh:call/3' wraps whatever went wrong, and a lost call carries the
+%% arguments back inside the exit reason — so `~p' printed the whole raiding
+%% party. Measured on beam03, 2026-08-06: ONE refused raid was about 34,000 lines
+%% and 18 MB, and twelve hours of them made a 5.9-million-line log in which the
+%% only human-readable lines were 175 warnings that no `grep' could reach in
+%% reasonable time. Diagnosing the raid defect meant working around this log
+%% first.
+%%
+%% `~P' with a depth bounds ANY shape, which matters because the interesting
+%% failures are the ones whose shape nobody predicted. Depth 4 keeps
+%% `{call_failed, exit, {timeout, ...}}' legible and stops at the payload.
+terse(Why) -> io_lib:format("~P", [Why, 4]).
 
 new_raid_id() -> string:lowercase(binary:encode_hex(crypto:strong_rand_bytes(16))).
 
@@ -657,7 +681,8 @@ answered({error, Why}, _Island) -> {error, Why};
 answered({ok, Req}, Island) -> checked(dronex_raid:validate_request(Req, raid:party() * 2), Req, Island).
 
 checked({error, Why}, _Req, _Island) -> {error, Why};
-checked(ok, Req, Island) -> defended(gen_server:call(Island, {defend, Req}, 30000), Req, Island).
+checked(ok, Req, Island) -> defended(gen_server:call(Island, {defend, Req},
+                                     dronex_raid:muster_timeout_ms()), Req, Island).
 
 %% ⚠ THE CALL RETURNS HERE, BEFORE A SINGLE TICK IS SIMULATED. Validation and
 %% mustering are the whole of the synchronous part, and both are fast. The fight
@@ -686,8 +711,8 @@ commit(RaidId, Role, Against) ->
 hosted({error, Why}, _D, _R, Req, Island) ->
     %% The attacker was told yes and its party is committed, so a defender-side
     %% failure still owes it an answer. Total loss is the truth: nothing flew.
-    logger:warning("[island] accepted raid ~p then could not host it: ~p",
-                   [maps:get(raid_id, Req), Why]),
+    logger:warning("[island] accepted raid ~s then could not host it: ~s",
+                   [maps:get(raid_id, Req), terse(Why)]),
     gen_server:cast(Island, {published, settle(Req, draw, [])});
 hosted({ok, Arena, Controllers, Pairs}, Defenders, Raiders, Req, Island) ->
     %% The defender fights at home with its network and the attacker flew in

@@ -1,0 +1,3451 @@
+=== VITALS ===
+
+--- beam00 ---
+  ablation_delta_air        -75
+  ablation_delta_all        0
+  ablation_delta_ground     0
+  ablation_void             false
+  ablations                 148
+  admissions                3361
+  advertising               true
+  benchmark_draws           [0, 0, 0, 0, 0, 0]
+  benchmark_losses          [0, 0, 0, 0, 0, 0]
+  benchmark_rungs           ["hoverer", "orbiter", "evader", "chaser", "duellist", "sniper"]
+  benchmark_starts          48
+  benchmark_wins            [48, 48, 48, 48, 48, 48]
+  capacity                  240
+  captures                  5134
+  defences                  499
+  fact_version              3
+  generation                11
+  island                    "beam00"
+  island_id                 "8ddd1f43ca9fc41a363d12c3c140a16d"
+  listening                 true
+  open                      false
+  raids                     866
+  raids_home                115
+  raids_lost                2021
+  roster                    226
+  roster_write_failures     0
+  roster_writes             367
+  roster_writes_dropped     0
+  rounds                    27991
+  signal_entropy            1942
+  signal_volume             18897184
+  station_connected         true
+  station_host              "station-de-falkenstein.macula.io"
+  station_id                "da0ebb0323a2f88e4cf21a4bca3040f69fe7de27a37d123097bd6bd843ab603b"
+  tick                      27992
+
+--- beam01 ---
+  ablation_delta_air        50
+  ablation_delta_all        75
+  ablation_delta_ground     0
+  ablation_void             false
+  ablations                 148
+  admissions                4256
+  advertising               true
+  benchmark_draws           [0, 0, 0, 0, 0, 0]
+  benchmark_losses          [10, 10, 10, 0, 0, 10]
+  benchmark_rungs           ["hoverer", "orbiter", "evader", "chaser", "duellist", "sniper"]
+  benchmark_starts          48
+  benchmark_wins            [38, 38, 38, 48, 48, 38]
+  capacity                  240
+  captures                  1918
+  defences                  163
+  fact_version              3
+  generation                77
+  island                    "beam01"
+  island_id                 "a6b1605a0f8f82d8dde1bfa260e41168"
+  listening                 false
+  open                      false
+  raids                     519
+  raids_home                363
+  raids_lost                3897
+  roster                    132
+  roster_write_failures     0
+  roster_writes             366
+  roster_writes_dropped     0
+  rounds                    28542
+  signal_entropy            2365
+  signal_volume             17016319
+  station_connected         true
+  station_host              "station-de-falkenstein.macula.io"
+  station_id                "da0ebb0323a2f88e4cf21a4bca3040f69fe7de27a37d123097bd6bd843ab603b"
+  tick                      28543
+
+--- beam02 ---
+  ablation_delta_air        0
+  ablation_delta_all        0
+  ablation_delta_ground     0
+  ablation_void             false
+  ablations                 148
+  admissions                4206
+  advertising               true
+  benchmark_draws           [0, 0, 0, 0, 0, 0]
+  benchmark_losses          [0, 0, 0, 0, 1, 2]
+  benchmark_rungs           ["hoverer", "orbiter", "evader", "chaser", "duellist", "sniper"]
+  benchmark_starts          48
+  benchmark_wins            [48, 48, 48, 48, 47, 46]
+  capacity                  240
+  captures                  5682
+  defences                  491
+  fact_version              3
+  generation                13
+  island                    "beam02"
+  island_id                 "60ac48650c12ea0b9b25ebc6255d2481"
+  listening                 true
+  open                      true
+  raids                     857
+  raids_home                357
+  raids_lost                4011
+  roster                    227
+  roster_write_failures     0
+  roster_writes             366
+  roster_writes_dropped     0
+  rounds                    28409
+  signal_entropy            3269
+  signal_volume             13546803
+  station_connected         true
+  station_host              "station-de-falkenstein.macula.io"
+  station_id                "da0ebb0323a2f88e4cf21a4bca3040f69fe7de27a37d123097bd6bd843ab603b"
+  tick                      28410
+
+--- beam03 ---
+  ablation_delta_air        -25
+  ablation_delta_all        -25
+  ablation_delta_ground     -25
+  ablation_void             false
+  ablations                 148
+  admissions                4379
+  advertising               true
+  benchmark_draws           [0, 0, 0, 0, 0, 0]
+  benchmark_losses          [0, 0, 0, 0, 0, 0]
+  benchmark_rungs           ["hoverer", "orbiter", "evader", "chaser", "duellist", "sniper"]
+  benchmark_starts          48
+  benchmark_wins            [48, 48, 48, 48, 48, 48]
+  capacity                  240
+  captures                  12
+  defences                  3
+  fact_version              3
+  generation                53
+  island                    "beam03"
+  island_id                 "e649229946edce4883dec30091566da5"
+  listening                 true
+  open                      true
+  raids                     365
+  raids_home                177
+  raids_lost                2043
+  roster                    204
+  roster_write_failures     0
+  roster_writes             367
+  roster_writes_dropped     0
+  rounds                    28622
+  signal_entropy            2254
+  signal_volume             12553938
+  station_connected         true
+  station_host              "station-de-falkenstein.macula.io"
+  station_id                "da0ebb0323a2f88e4cf21a4bca3040f69fe7de27a37d123097bd6bd843ab603b"
+  tick                      28623
+
+=== RAIDS (no frames) ===
+%{
+  parts: %{
+    committed: [
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam00",
+        "island_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "opponent_id" => "a6b1605a0f8f82d8dde1bfa260e41168",
+        "raid_id" => "5391a8a344e1937ff33218e55fccd1b9",
+        "role" => "attacker"
+      }
+    ],
+    raid: [
+      %{
+        "arena" => [1000, 1000, 300],
+        "attacker_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "bout" => 0,
+        "defenders" => 12,
+        "defenders_home" => 2,
+        "entrants" => ["8ddd1f43ca9fc41a363d12c3c140a16d",
+         "a6b1605a0f8f82d8dde1bfa260e41168"],
+        "fact_version" => 3,
+        "frame_count" => 274,
+        "frame_fields" => ["drone", "x", "y", "z", "yaw", "health", "state"],
+        "ground" => [500, 500, 0, 500, 750, 0, 250, 500, 0, 500, 250, 0, 750,
+         500, 0],
+        "ground_fields" => ["x", "y", "z"],
+        "ground_range" => 350,
+        "island" => "beam01",
+        "island_id" => "a6b1605a0f8f82d8dde1bfa260e41168",
+        "kind" => "raid",
+        "munition_fields" => ["drone", "x", "y", "z", "guided"],
+        "raid_id" => "5391a8a344e1937ff33218e55fccd1b9",
+        "raiders" => 12,
+        "raiders_home" => 0,
+        "signal_volume" => 19014259,
+        "start_index" => 0,
+        "survivors" => [5, 9],
+        "ticks" => 547,
+        "track_fields" => ["x", "y", "z"],
+        "winner" => "defender",
+        "withdrawn" => []
+      }
+    ]
+  },
+  raid: "5391a8a344e1937ff33218e55fccd1b9"
+}
+%{
+  parts: %{
+    committed: [
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam03",
+        "island_id" => "e649229946edce4883dec30091566da5",
+        "opponent_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "raid_id" => "d0269d4489fe6e90f74013fb16bc18de",
+        "role" => "attacker"
+      }
+    ],
+    raid: [
+      %{
+        "arena" => [1000, 1000, 300],
+        "attacker_id" => "e649229946edce4883dec30091566da5",
+        "bout" => 0,
+        "defenders" => 12,
+        "defenders_home" => 0,
+        "entrants" => ["e649229946edce4883dec30091566da5",
+         "8ddd1f43ca9fc41a363d12c3c140a16d"],
+        "fact_version" => 3,
+        "frame_count" => 213,
+        "frame_fields" => ["drone", "x", "y", "z", "yaw", "health", "state"],
+        "ground" => [500, 500, 0, 500, 750, 0, 250, 500, 0, 500, 250, 0, 750,
+         500, 0],
+        "ground_fields" => ["x", "y", "z"],
+        "ground_range" => 350,
+        "island" => "beam00",
+        "island_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "kind" => "raid",
+        "munition_fields" => ["drone", "x", "y", "z", "guided"],
+        "raid_id" => "d0269d4489fe6e90f74013fb16bc18de",
+        "raiders" => 12,
+        "raiders_home" => 3,
+        "signal_volume" => 16692993,
+        "start_index" => 0,
+        "survivors" => [14, 18, 20],
+        "ticks" => 426,
+        "track_fields" => ["x", "y", "z"],
+        "winner" => "attacker",
+        "withdrawn" => []
+      }
+    ]
+  },
+  raid: "d0269d4489fe6e90f74013fb16bc18de"
+}
+%{
+  parts: %{
+    committed: [
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam01",
+        "island_id" => "a6b1605a0f8f82d8dde1bfa260e41168",
+        "opponent_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "raid_id" => "9932027ef79b7a78bd31da99438fcccf",
+        "role" => "attacker"
+      }
+    ],
+    raid: [
+      %{
+        "arena" => [1000, 1000, 300],
+        "attacker_id" => "a6b1605a0f8f82d8dde1bfa260e41168",
+        "bout" => 0,
+        "defenders" => 12,
+        "defenders_home" => 3,
+        "entrants" => ["a6b1605a0f8f82d8dde1bfa260e41168",
+         "60ac48650c12ea0b9b25ebc6255d2481"],
+        "fact_version" => 3,
+        "frame_count" => 169,
+        "frame_fields" => ["drone", "x", "y", "z", "yaw", "health", "state"],
+        "ground" => [500, 500, 0, 500, 750, 0, 250, 500, 0, 500, 250, 0, 750,
+         500, 0],
+        "ground_fields" => ["x", "y", "z"],
+        "ground_range" => 350,
+        "island" => "beam02",
+        "island_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "kind" => "raid",
+        "munition_fields" => ["drone", "x", "y", "z", "guided"],
+        "raid_id" => "9932027ef79b7a78bd31da99438fcccf",
+        "raiders" => 12,
+        "raiders_home" => 0,
+        "signal_volume" => 18137760,
+        "start_index" => 0,
+        "survivors" => [11, 13, 19],
+        "ticks" => 338,
+        "track_fields" => ["x", "y", "z"],
+        "winner" => "defender",
+        "withdrawn" => []
+      }
+    ]
+  },
+  raid: "9932027ef79b7a78bd31da99438fcccf"
+}
+%{
+  parts: %{
+    committed: [
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam02",
+        "island_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "opponent_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "raid_id" => "afe7f9e234989263437e15704f151ba9",
+        "role" => "attacker"
+      }
+    ],
+    raid: [
+      %{
+        "arena" => [1000, 1000, 300],
+        "attacker_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "bout" => 0,
+        "defenders" => 12,
+        "defenders_home" => 1,
+        "entrants" => ["60ac48650c12ea0b9b25ebc6255d2481",
+         "8ddd1f43ca9fc41a363d12c3c140a16d"],
+        "fact_version" => 3,
+        "frame_count" => 305,
+        "frame_fields" => ["drone", "x", "y", "z", "yaw", "health", "state"],
+        "ground" => [500, 500, 0, 500, 750, 0, 250, 500, 0, 500, 250, 0, 750,
+         500, 0],
+        "ground_fields" => ["x", "y", "z"],
+        "ground_range" => 350,
+        "island" => "beam00",
+        "island_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "kind" => "raid",
+        "munition_fields" => ["drone", "x", "y", "z", "guided"],
+        "raid_id" => "afe7f9e234989263437e15704f151ba9",
+        "raiders" => 12,
+        "raiders_home" => 0,
+        "signal_volume" => 21825660,
+        "start_index" => 0,
+        "survivors" => [21],
+        "ticks" => 609,
+        "track_fields" => ["x", "y", "z"],
+        "winner" => "defender",
+        "withdrawn" => []
+      }
+    ]
+  },
+  raid: "afe7f9e234989263437e15704f151ba9"
+}
+%{
+  parts: %{
+    committed: [
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam00",
+        "island_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "opponent_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "raid_id" => "773c2bd023218b690c7b32a3dbe9b0d2",
+        "role" => "attacker"
+      },
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam02",
+        "island_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "opponent_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "raid_id" => "773c2bd023218b690c7b32a3dbe9b0d2",
+        "role" => "defender"
+      }
+    ],
+    raid: [
+      %{
+        "arena" => [1000, 1000, 300],
+        "attacker_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "bout" => 0,
+        "defenders" => 12,
+        "defenders_home" => 0,
+        "entrants" => ["8ddd1f43ca9fc41a363d12c3c140a16d",
+         "60ac48650c12ea0b9b25ebc6255d2481"],
+        "fact_version" => 3,
+        "frame_count" => 255,
+        "frame_fields" => ["drone", "x", "y", "z", "yaw", "health", "state"],
+        "ground" => [500, 500, 0, 500, 750, 0, 250, 500, 0, 500, 250, 0, 750,
+         500, 0],
+        "ground_fields" => ["x", "y", "z"],
+        "ground_range" => 350,
+        "island" => "beam02",
+        "island_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "kind" => "raid",
+        "munition_fields" => ["drone", "x", "y", "z", "guided"],
+        "raid_id" => "773c2bd023218b690c7b32a3dbe9b0d2",
+        "raiders" => 12,
+        "raiders_home" => 2,
+        "signal_volume" => 16704128,
+        "start_index" => 0,
+        "survivors" => [6, 8],
+        "ticks" => 509,
+        "track_fields" => ["x", "y", "z"],
+        "winner" => "attacker",
+        "withdrawn" => []
+      }
+    ]
+  },
+  raid: "773c2bd023218b690c7b32a3dbe9b0d2"
+}
+%{
+  parts: %{
+    committed: [
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam03",
+        "island_id" => "e649229946edce4883dec30091566da5",
+        "opponent_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "raid_id" => "83648d8ed49e41a0ee31efcd14b31818",
+        "role" => "attacker"
+      }
+    ],
+    raid: [
+      %{
+        "arena" => [1000, 1000, 300],
+        "attacker_id" => "e649229946edce4883dec30091566da5",
+        "bout" => 0,
+        "defenders" => 12,
+        "defenders_home" => 1,
+        "entrants" => ["e649229946edce4883dec30091566da5",
+         "8ddd1f43ca9fc41a363d12c3c140a16d"],
+        "fact_version" => 3,
+        "frame_count" => 316,
+        "frame_fields" => ["drone", "x", "y", "z", "yaw", "health", "state"],
+        "ground" => [500, 500, 0, 500, 750, 0, 250, 500, 0, 500, 250, 0, 750,
+         500, 0],
+        "ground_fields" => ["x", "y", "z"],
+        "ground_range" => 350,
+        "island" => "beam00",
+        "island_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "kind" => "raid",
+        "munition_fields" => ["drone", "x", "y", "z", "guided"],
+        "raid_id" => "83648d8ed49e41a0ee31efcd14b31818",
+        "raiders" => 12,
+        "raiders_home" => 0,
+        "signal_volume" => 17248779,
+        "start_index" => 0,
+        "survivors" => [3],
+        "ticks" => 631,
+        "track_fields" => ["x", "y", "z"],
+        "winner" => "defender",
+        "withdrawn" => []
+      }
+    ]
+  },
+  raid: "83648d8ed49e41a0ee31efcd14b31818"
+}
+%{
+  parts: %{
+    committed: [
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam01",
+        "island_id" => "a6b1605a0f8f82d8dde1bfa260e41168",
+        "opponent_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "raid_id" => "55943c7716de1c5b0c5ff3be038a089e",
+        "role" => "attacker"
+      }
+    ],
+    raid: [
+      %{
+        "arena" => [1000, 1000, 300],
+        "attacker_id" => "a6b1605a0f8f82d8dde1bfa260e41168",
+        "bout" => 0,
+        "defenders" => 12,
+        "defenders_home" => 2,
+        "entrants" => ["a6b1605a0f8f82d8dde1bfa260e41168",
+         "60ac48650c12ea0b9b25ebc6255d2481"],
+        "fact_version" => 3,
+        "frame_count" => 246,
+        "frame_fields" => ["drone", "x", "y", "z", "yaw", "health", "state"],
+        "ground" => [500, 500, 0, 500, 750, 0, 250, 500, 0, 500, 250, 0, 750,
+         500, 0],
+        "ground_fields" => ["x", "y", "z"],
+        "ground_range" => 350,
+        "island" => "beam02",
+        "island_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "kind" => "raid",
+        "munition_fields" => ["drone", "x", "y", "z", "guided"],
+        "raid_id" => "55943c7716de1c5b0c5ff3be038a089e",
+        "raiders" => 12,
+        "raiders_home" => 0,
+        "signal_volume" => 19939126,
+        "start_index" => 0,
+        "survivors" => [7, 11],
+        "ticks" => 492,
+        "track_fields" => ["x", "y", "z"],
+        "winner" => "defender",
+        "withdrawn" => []
+      }
+    ]
+  },
+  raid: "55943c7716de1c5b0c5ff3be038a089e"
+}
+%{
+  parts: %{
+    committed: [
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam02",
+        "island_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "opponent_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "raid_id" => "cb64ee2843e79deb44a9bc9dfc2e76f9",
+        "role" => "attacker"
+      },
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam00",
+        "island_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "opponent_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "raid_id" => "cb64ee2843e79deb44a9bc9dfc2e76f9",
+        "role" => "defender"
+      }
+    ],
+    raid: [
+      %{
+        "arena" => [1000, 1000, 300],
+        "attacker_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "bout" => 0,
+        "defenders" => 12,
+        "defenders_home" => 6,
+        "entrants" => ["60ac48650c12ea0b9b25ebc6255d2481",
+         "8ddd1f43ca9fc41a363d12c3c140a16d"],
+        "fact_version" => 3,
+        "frame_count" => 133,
+        "frame_fields" => ["drone", "x", "y", "z", "yaw", "health", "state"],
+        "ground" => [500, 500, 0, 500, 750, 0, 250, 500, 0, 500, 250, 0, 750,
+         500, 0],
+        "ground_fields" => ["x", "y", "z"],
+        "ground_range" => 350,
+        "island" => "beam00",
+        "island_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "kind" => "raid",
+        "munition_fields" => ["drone", "x", "y", "z", "guided"],
+        "raid_id" => "cb64ee2843e79deb44a9bc9dfc2e76f9",
+        "raiders" => 12,
+        "raiders_home" => 0,
+        "signal_volume" => 14688928,
+        "start_index" => 0,
+        "survivors" => [3, 5, 11, 13, 15, 17],
+        "ticks" => 266,
+        "track_fields" => ["x", "y", "z"],
+        "winner" => "defender",
+        "withdrawn" => []
+      }
+    ]
+  },
+  raid: "cb64ee2843e79deb44a9bc9dfc2e76f9"
+}
+%{
+  parts: %{
+    committed: [
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam03",
+        "island_id" => "e649229946edce4883dec30091566da5",
+        "opponent_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "raid_id" => "3ff2850620e8f01e3c58950e5ca04f08",
+        "role" => "attacker"
+      },
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam02",
+        "island_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "opponent_id" => "e649229946edce4883dec30091566da5",
+        "raid_id" => "3ff2850620e8f01e3c58950e5ca04f08",
+        "role" => "defender"
+      }
+    ],
+    raid: [
+      %{
+        "arena" => [1000, 1000, 300],
+        "attacker_id" => "e649229946edce4883dec30091566da5",
+        "bout" => 0,
+        "defenders" => 12,
+        "defenders_home" => 3,
+        "entrants" => ["e649229946edce4883dec30091566da5",
+         "60ac48650c12ea0b9b25ebc6255d2481"],
+        "fact_version" => 3,
+        "frame_count" => 250,
+        "frame_fields" => ["drone", "x", "y", "z", "yaw", "health", "state"],
+        "ground" => [500, 500, 0, 500, 750, 0, 250, 500, 0, 500, 250, 0, 750,
+         500, 0],
+        "ground_fields" => ["x", "y", "z"],
+        "ground_range" => 350,
+        "island" => "beam02",
+        "island_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "kind" => "raid",
+        "munition_fields" => ["drone", "x", "y", "z", "guided"],
+        "raid_id" => "3ff2850620e8f01e3c58950e5ca04f08",
+        "raiders" => 12,
+        "raiders_home" => 0,
+        "signal_volume" => 19525724,
+        "start_index" => 0,
+        "survivors" => [7, 9, 11],
+        "ticks" => 499,
+        "track_fields" => ["x", "y", "z"],
+        "winner" => "defender",
+        "withdrawn" => []
+      }
+    ]
+  },
+  raid: "3ff2850620e8f01e3c58950e5ca04f08"
+}
+%{
+  parts: %{
+    committed: [
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam01",
+        "island_id" => "a6b1605a0f8f82d8dde1bfa260e41168",
+        "opponent_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "raid_id" => "ccedd3a1146be57ca77e78fcd7c928fe",
+        "role" => "attacker"
+      },
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam02",
+        "island_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "opponent_id" => "a6b1605a0f8f82d8dde1bfa260e41168",
+        "raid_id" => "ccedd3a1146be57ca77e78fcd7c928fe",
+        "role" => "defender"
+      }
+    ],
+    raid: [
+      %{
+        "arena" => [1000, 1000, 300],
+        "attacker_id" => "a6b1605a0f8f82d8dde1bfa260e41168",
+        "bout" => 0,
+        "defenders" => 12,
+        "defenders_home" => 0,
+        "entrants" => ["a6b1605a0f8f82d8dde1bfa260e41168",
+         "60ac48650c12ea0b9b25ebc6255d2481"],
+        "fact_version" => 3,
+        "frame_count" => 488,
+        "frame_fields" => ["drone", "x", "y", "z", "yaw", "health", "state"],
+        "ground" => [500, 500, 0, 500, 750, 0, 250, 500, 0, 500, 250, 0, 750,
+         500, 0],
+        "ground_fields" => ["x", "y", "z"],
+        "ground_range" => 350,
+        "island" => "beam02",
+        "island_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "kind" => "raid",
+        "munition_fields" => ["drone", "x", "y", "z", "guided"],
+        "raid_id" => "ccedd3a1146be57ca77e78fcd7c928fe",
+        "raiders" => 12,
+        "raiders_home" => 1,
+        "signal_volume" => 22989950,
+        "start_index" => 0,
+        "survivors" => [8],
+        "ticks" => 975,
+        "track_fields" => ["x", "y", "z"],
+        "winner" => "attacker",
+        "withdrawn" => []
+      }
+    ]
+  },
+  raid: "ccedd3a1146be57ca77e78fcd7c928fe"
+}
+%{
+  parts: %{
+    committed: [
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam02",
+        "island_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "opponent_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "raid_id" => "a9e3505d40471710054b48a9818cb2e1",
+        "role" => "attacker"
+      },
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam00",
+        "island_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "opponent_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "raid_id" => "a9e3505d40471710054b48a9818cb2e1",
+        "role" => "defender"
+      }
+    ],
+    raid: [
+      %{
+        "arena" => [1000, 1000, 300],
+        "attacker_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "bout" => 0,
+        "defenders" => 12,
+        "defenders_home" => 1,
+        "entrants" => ["60ac48650c12ea0b9b25ebc6255d2481",
+         "8ddd1f43ca9fc41a363d12c3c140a16d"],
+        "fact_version" => 3,
+        "frame_count" => 387,
+        "frame_fields" => ["drone", "x", "y", "z", "yaw", "health", "state"],
+        "ground" => [500, 500, 0, 500, 750, 0, 250, 500, 0, 500, 250, 0, 750,
+         500, 0],
+        "ground_fields" => ["x", "y", "z"],
+        "ground_range" => 350,
+        "island" => "beam00",
+        "island_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "kind" => "raid",
+        "munition_fields" => ["drone", "x", "y", "z", "guided"],
+        "raid_id" => "a9e3505d40471710054b48a9818cb2e1",
+        "raiders" => 12,
+        "raiders_home" => 0,
+        "signal_volume" => 21989779,
+        "start_index" => 0,
+        "survivors" => [15],
+        "ticks" => 773,
+        "track_fields" => ["x", "y", "z"],
+        "winner" => "defender",
+        "withdrawn" => []
+      }
+    ]
+  },
+  raid: "a9e3505d40471710054b48a9818cb2e1"
+}
+%{
+  parts: %{
+    committed: [
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam03",
+        "island_id" => "e649229946edce4883dec30091566da5",
+        "opponent_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "raid_id" => "efa3fad5c093d963b49ca4da398b5bb0",
+        "role" => "attacker"
+      }
+    ],
+    raid: [
+      %{
+        "arena" => [1000, 1000, 300],
+        "attacker_id" => "e649229946edce4883dec30091566da5",
+        "bout" => 0,
+        "defenders" => 12,
+        "defenders_home" => 3,
+        "entrants" => ["e649229946edce4883dec30091566da5",
+         "60ac48650c12ea0b9b25ebc6255d2481"],
+        "fact_version" => 3,
+        "frame_count" => 206,
+        "frame_fields" => ["drone", "x", "y", "z", "yaw", "health", "state"],
+        "ground" => [500, 500, 0, 500, 750, 0, 250, 500, 0, 500, 250, 0, 750,
+         500, 0],
+        "ground_fields" => ["x", "y", "z"],
+        "ground_range" => 350,
+        "island" => "beam02",
+        "island_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "kind" => "raid",
+        "munition_fields" => ["drone", "x", "y", "z", "guided"],
+        "raid_id" => "efa3fad5c093d963b49ca4da398b5bb0",
+        "raiders" => 12,
+        "raiders_home" => 0,
+        "signal_volume" => 19018164,
+        "start_index" => 0,
+        "survivors" => [5, 7, 13],
+        "ticks" => 412,
+        "track_fields" => ["x", "y", "z"],
+        "winner" => "defender",
+        "withdrawn" => []
+      }
+    ]
+  },
+  raid: "efa3fad5c093d963b49ca4da398b5bb0"
+}
+%{
+  parts: %{
+    committed: [
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam01",
+        "island_id" => "a6b1605a0f8f82d8dde1bfa260e41168",
+        "opponent_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "raid_id" => "3355afba0575734fc820744375dda3c2",
+        "role" => "attacker"
+      }
+    ],
+    raid: [
+      %{
+        "arena" => [1000, 1000, 300],
+        "attacker_id" => "a6b1605a0f8f82d8dde1bfa260e41168",
+        "bout" => 0,
+        "defenders" => 12,
+        "defenders_home" => 0,
+        "entrants" => ["a6b1605a0f8f82d8dde1bfa260e41168",
+         "60ac48650c12ea0b9b25ebc6255d2481"],
+        "fact_version" => 3,
+        "frame_count" => 224,
+        "frame_fields" => ["drone", "x", "y", "z", "yaw", "health", "state"],
+        "ground" => [500, 500, 0, 500, 750, 0, 250, 500, 0, 500, 250, 0, 750,
+         500, 0],
+        "ground_fields" => ["x", "y", "z"],
+        "ground_range" => 350,
+        "island" => "beam02",
+        "island_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "kind" => "raid",
+        "munition_fields" => ["drone", "x", "y", "z", "guided"],
+        "raid_id" => "3355afba0575734fc820744375dda3c2",
+        "raiders" => 12,
+        "raiders_home" => 1,
+        "signal_volume" => 14510198,
+        "start_index" => 0,
+        "survivors" => [10],
+        "ticks" => 448,
+        "track_fields" => ["x", "y", "z"],
+        "winner" => "attacker",
+        "withdrawn" => []
+      }
+    ]
+  },
+  raid: "3355afba0575734fc820744375dda3c2"
+}
+%{
+  parts: %{
+    committed: [
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam02",
+        "island_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "opponent_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "raid_id" => "e152e016ce99f3424e8f8b9787d399a9",
+        "role" => "attacker"
+      }
+    ],
+    raid: [
+      %{
+        "arena" => [1000, 1000, 300],
+        "attacker_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "bout" => 0,
+        "defenders" => 12,
+        "defenders_home" => 0,
+        "entrants" => ["60ac48650c12ea0b9b25ebc6255d2481",
+         "8ddd1f43ca9fc41a363d12c3c140a16d"],
+        "fact_version" => 3,
+        "frame_count" => 148,
+        "frame_fields" => ["drone", "x", "y", "z", "yaw", "health", "state"],
+        "ground" => [500, 500, 0, 500, 750, 0, 250, 500, 0, 500, 250, 0, 750,
+         500, 0],
+        "ground_fields" => ["x", "y", "z"],
+        "ground_range" => 350,
+        "island" => "beam00",
+        "island_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "kind" => "raid",
+        "munition_fields" => ["drone", "x", "y", "z", "guided"],
+        "raid_id" => "e152e016ce99f3424e8f8b9787d399a9",
+        "raiders" => 12,
+        "raiders_home" => 2,
+        "signal_volume" => 13941253,
+        "start_index" => 0,
+        "survivors" => [4, 10],
+        "ticks" => 296,
+        "track_fields" => ["x", "y", "z"],
+        "winner" => "attacker",
+        "withdrawn" => []
+      }
+    ]
+  },
+  raid: "e152e016ce99f3424e8f8b9787d399a9"
+}
+%{
+  parts: %{
+    committed: [
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam03",
+        "island_id" => "e649229946edce4883dec30091566da5",
+        "opponent_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "raid_id" => "88f7258913601dd02aff1ab98ada3f32",
+        "role" => "attacker"
+      },
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam02",
+        "island_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "opponent_id" => "e649229946edce4883dec30091566da5",
+        "raid_id" => "88f7258913601dd02aff1ab98ada3f32",
+        "role" => "defender"
+      }
+    ],
+    raid: [
+      %{
+        "arena" => [1000, 1000, 300],
+        "attacker_id" => "e649229946edce4883dec30091566da5",
+        "bout" => 0,
+        "defenders" => 12,
+        "defenders_home" => 0,
+        "entrants" => ["e649229946edce4883dec30091566da5",
+         "60ac48650c12ea0b9b25ebc6255d2481"],
+        "fact_version" => 3,
+        "frame_count" => 360,
+        "frame_fields" => ["drone", "x", "y", "z", "yaw", "health", "state"],
+        "ground" => [500, 500, 0, 500, 750, 0, 250, 500, 0, 500, 250, 0, 750,
+         500, 0],
+        "ground_fields" => ["x", "y", "z"],
+        "ground_range" => 350,
+        "island" => "beam02",
+        "island_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "kind" => "raid",
+        "munition_fields" => ["drone", "x", "y", "z", "guided"],
+        "raid_id" => "88f7258913601dd02aff1ab98ada3f32",
+        "raiders" => 12,
+        "raiders_home" => 1,
+        "signal_volume" => 20818933,
+        "start_index" => 0,
+        "survivors" => [8],
+        "ticks" => 719,
+        "track_fields" => ["x", "y", "z"],
+        "winner" => "attacker",
+        "withdrawn" => []
+      }
+    ]
+  },
+  raid: "88f7258913601dd02aff1ab98ada3f32"
+}
+%{
+  parts: %{
+    committed: [
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam01",
+        "island_id" => "a6b1605a0f8f82d8dde1bfa260e41168",
+        "opponent_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "raid_id" => "c43af9724b53d72c20469679cad77697",
+        "role" => "attacker"
+      },
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam02",
+        "island_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "opponent_id" => "a6b1605a0f8f82d8dde1bfa260e41168",
+        "raid_id" => "c43af9724b53d72c20469679cad77697",
+        "role" => "defender"
+      }
+    ],
+    raid: [
+      %{
+        "arena" => [1000, 1000, 300],
+        "attacker_id" => "a6b1605a0f8f82d8dde1bfa260e41168",
+        "bout" => 0,
+        "defenders" => 12,
+        "defenders_home" => 0,
+        "entrants" => ["a6b1605a0f8f82d8dde1bfa260e41168",
+         "60ac48650c12ea0b9b25ebc6255d2481"],
+        "fact_version" => 3,
+        "frame_count" => 209,
+        "frame_fields" => ["drone", "x", "y", "z", "yaw", "health", "state"],
+        "ground" => [500, 500, 0, 500, 750, 0, 250, 500, 0, 500, 250, 0, 750,
+         500, 0],
+        "ground_fields" => ["x", "y", "z"],
+        "ground_range" => 350,
+        "island" => "beam02",
+        "island_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "kind" => "raid",
+        "munition_fields" => ["drone", "x", "y", "z", "guided"],
+        "raid_id" => "c43af9724b53d72c20469679cad77697",
+        "raiders" => 12,
+        "raiders_home" => 4,
+        "signal_volume" => 16940538,
+        "start_index" => 0,
+        "survivors" => [6, 8, 12, 20],
+        "ticks" => 417,
+        "track_fields" => ["x", "y", "z"],
+        "winner" => "attacker",
+        "withdrawn" => []
+      }
+    ]
+  },
+  raid: "c43af9724b53d72c20469679cad77697"
+}
+%{
+  parts: %{
+    committed: [
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam02",
+        "island_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "opponent_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "raid_id" => "eb99295d472437f010c55a6efda1901a",
+        "role" => "attacker"
+      }
+    ],
+    raid: [
+      %{
+        "arena" => [1000, 1000, 300],
+        "attacker_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "bout" => 0,
+        "defenders" => 12,
+        "defenders_home" => 0,
+        "entrants" => ["60ac48650c12ea0b9b25ebc6255d2481",
+         "8ddd1f43ca9fc41a363d12c3c140a16d"],
+        "fact_version" => 3,
+        "frame_count" => 131,
+        "frame_fields" => ["drone", "x", "y", "z", "yaw", "health", "state"],
+        "ground" => [500, 500, 0, 500, 750, 0, 250, 500, 0, 500, 250, 0, 750,
+         500, 0],
+        "ground_fields" => ["x", "y", "z"],
+        "ground_range" => 350,
+        "island" => "beam00",
+        "island_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "kind" => "raid",
+        "munition_fields" => ["drone", "x", "y", "z", "guided"],
+        "raid_id" => "eb99295d472437f010c55a6efda1901a",
+        "raiders" => 12,
+        "raiders_home" => 2,
+        "signal_volume" => 12392024,
+        "start_index" => 0,
+        "survivors" => [2, 8],
+        "ticks" => 262,
+        "track_fields" => ["x", "y", "z"],
+        "winner" => "attacker",
+        "withdrawn" => []
+      }
+    ]
+  },
+  raid: "eb99295d472437f010c55a6efda1901a"
+}
+%{
+  parts: %{
+    committed: [
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam00",
+        "island_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "opponent_id" => "a6b1605a0f8f82d8dde1bfa260e41168",
+        "raid_id" => "60743212895647bfdfcd0fe12a8d77e9",
+        "role" => "attacker"
+      }
+    ],
+    raid: [
+      %{
+        "arena" => [1000, 1000, 300],
+        "attacker_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "bout" => 0,
+        "defenders" => 12,
+        "defenders_home" => 1,
+        "entrants" => ["8ddd1f43ca9fc41a363d12c3c140a16d",
+         "a6b1605a0f8f82d8dde1bfa260e41168"],
+        "fact_version" => 3,
+        "frame_count" => 528,
+        "frame_fields" => ["drone", "x", "y", "z", "yaw", "health", "state"],
+        "ground" => [500, 500, 0, 500, 750, 0, 250, 500, 0, 500, 250, 0, 750,
+         500, 0],
+        "ground_fields" => ["x", "y", "z"],
+        "ground_range" => 350,
+        "island" => "beam01",
+        "island_id" => "a6b1605a0f8f82d8dde1bfa260e41168",
+        "kind" => "raid",
+        "munition_fields" => ["drone", "x", "y", "z", "guided"],
+        "raid_id" => "60743212895647bfdfcd0fe12a8d77e9",
+        "raiders" => 12,
+        "raiders_home" => 0,
+        "signal_volume" => 22804956,
+        "start_index" => 0,
+        "survivors" => [17],
+        "ticks" => 1055,
+        "track_fields" => ["x", "y", "z"],
+        "winner" => "defender",
+        "withdrawn" => []
+      }
+    ]
+  },
+  raid: "60743212895647bfdfcd0fe12a8d77e9"
+}
+%{
+  parts: %{
+    committed: [
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam03",
+        "island_id" => "e649229946edce4883dec30091566da5",
+        "opponent_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "raid_id" => "50af5b7d26a59049645c18d660ea714d",
+        "role" => "attacker"
+      },
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam00",
+        "island_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "opponent_id" => "e649229946edce4883dec30091566da5",
+        "raid_id" => "50af5b7d26a59049645c18d660ea714d",
+        "role" => "defender"
+      }
+    ],
+    raid: [
+      %{
+        "arena" => [1000, 1000, 300],
+        "attacker_id" => "e649229946edce4883dec30091566da5",
+        "bout" => 0,
+        "defenders" => 12,
+        "defenders_home" => 0,
+        "entrants" => ["e649229946edce4883dec30091566da5",
+         "8ddd1f43ca9fc41a363d12c3c140a16d"],
+        "fact_version" => 3,
+        "frame_count" => 363,
+        "frame_fields" => ["drone", "x", "y", "z", "yaw", "health", "state"],
+        "ground" => [500, 500, 0, 500, 750, 0, 250, 500, 0, 500, 250, 0, 750,
+         500, 0],
+        "ground_fields" => ["x", "y", "z"],
+        "ground_range" => 350,
+        "island" => "beam00",
+        "island_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "kind" => "raid",
+        "munition_fields" => ["drone", "x", "y", "z", "guided"],
+        "raid_id" => "50af5b7d26a59049645c18d660ea714d",
+        "raiders" => 12,
+        "raiders_home" => 1,
+        "signal_volume" => 19682121,
+        "start_index" => 0,
+        "survivors" => [14],
+        "ticks" => 726,
+        "track_fields" => ["x", "y", "z"],
+        "winner" => "attacker",
+        "withdrawn" => []
+      }
+    ]
+  },
+  raid: "50af5b7d26a59049645c18d660ea714d"
+}
+%{
+  parts: %{
+    committed: [
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam01",
+        "island_id" => "a6b1605a0f8f82d8dde1bfa260e41168",
+        "opponent_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "raid_id" => "8ca9112d16dd087ca69667ac85d9de07",
+        "role" => "attacker"
+      }
+    ],
+    raid: [
+      %{
+        "arena" => [1000, 1000, 300],
+        "attacker_id" => "a6b1605a0f8f82d8dde1bfa260e41168",
+        "bout" => 0,
+        "defenders" => 12,
+        "defenders_home" => 1,
+        "entrants" => ["a6b1605a0f8f82d8dde1bfa260e41168",
+         "60ac48650c12ea0b9b25ebc6255d2481"],
+        "fact_version" => 3,
+        "frame_count" => 245,
+        "frame_fields" => ["drone", "x", "y", "z", "yaw", "health", "state"],
+        "ground" => [500, 500, 0, 500, 750, 0, 250, 500, 0, 500, 250, 0, 750,
+         500, 0],
+        "ground_fields" => ["x", "y", "z"],
+        "ground_range" => 350,
+        "island" => "beam02",
+        "island_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "kind" => "raid",
+        "munition_fields" => ["drone", "x", "y", "z", "guided"],
+        "raid_id" => "8ca9112d16dd087ca69667ac85d9de07",
+        "raiders" => 12,
+        "raiders_home" => 0,
+        "signal_volume" => 16768786,
+        "start_index" => 0,
+        "survivors" => [9],
+        "ticks" => 490,
+        "track_fields" => ["x", "y", "z"],
+        "winner" => "defender",
+        "withdrawn" => []
+      }
+    ]
+  },
+  raid: "8ca9112d16dd087ca69667ac85d9de07"
+}
+%{
+  parts: %{
+    committed: [
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam02",
+        "island_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "opponent_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "raid_id" => "9a011cd0ef78320deff63a4cbd336d91",
+        "role" => "attacker"
+      }
+    ],
+    raid: [
+      %{
+        "arena" => [1000, 1000, 300],
+        "attacker_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "bout" => 0,
+        "defenders" => 12,
+        "defenders_home" => 2,
+        "entrants" => ["60ac48650c12ea0b9b25ebc6255d2481",
+         "8ddd1f43ca9fc41a363d12c3c140a16d"],
+        "fact_version" => 3,
+        "frame_count" => 304,
+        "frame_fields" => ["drone", "x", "y", "z", "yaw", "health", "state"],
+        "ground" => [500, 500, 0, 500, 750, 0, 250, 500, 0, 500, 250, 0, 750,
+         500, 0],
+        "ground_fields" => ["x", "y", "z"],
+        "ground_range" => 350,
+        "island" => "beam00",
+        "island_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "kind" => "raid",
+        "munition_fields" => ["drone", "x", "y", "z", "guided"],
+        "raid_id" => "9a011cd0ef78320deff63a4cbd336d91",
+        "raiders" => 12,
+        "raiders_home" => 0,
+        "signal_volume" => 22420448,
+        "start_index" => 0,
+        "survivors" => [9, 15],
+        "ticks" => 607,
+        "track_fields" => ["x", "y", "z"],
+        "winner" => "defender",
+        "withdrawn" => []
+      }
+    ]
+  },
+  raid: "9a011cd0ef78320deff63a4cbd336d91"
+}
+%{
+  parts: %{
+    committed: [
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam00",
+        "island_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "opponent_id" => "a6b1605a0f8f82d8dde1bfa260e41168",
+        "raid_id" => "a2d7a5c81671e26d455a89319be91b11",
+        "role" => "attacker"
+      },
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam01",
+        "island_id" => "a6b1605a0f8f82d8dde1bfa260e41168",
+        "opponent_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "raid_id" => "a2d7a5c81671e26d455a89319be91b11",
+        "role" => "defender"
+      }
+    ],
+    raid: [
+      %{
+        "arena" => [1000, 1000, 300],
+        "attacker_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "bout" => 0,
+        "defenders" => 12,
+        "defenders_home" => 1,
+        "entrants" => ["8ddd1f43ca9fc41a363d12c3c140a16d",
+         "a6b1605a0f8f82d8dde1bfa260e41168"],
+        "fact_version" => 3,
+        "frame_count" => 454,
+        "frame_fields" => ["drone", "x", "y", "z", "yaw", "health", "state"],
+        "ground" => [500, 500, 0, 500, 750, 0, 250, 500, 0, 500, 250, 0, 750,
+         500, 0],
+        "ground_fields" => ["x", "y", "z"],
+        "ground_range" => 350,
+        "island" => "beam01",
+        "island_id" => "a6b1605a0f8f82d8dde1bfa260e41168",
+        "kind" => "raid",
+        "munition_fields" => ["drone", "x", "y", "z", "guided"],
+        "raid_id" => "a2d7a5c81671e26d455a89319be91b11",
+        "raiders" => 12,
+        "raiders_home" => 0,
+        "signal_volume" => 24972943,
+        "start_index" => 0,
+        "survivors" => [7],
+        "ticks" => 908,
+        "track_fields" => ["x", "y", "z"],
+        "winner" => "defender",
+        "withdrawn" => []
+      }
+    ]
+  },
+  raid: "a2d7a5c81671e26d455a89319be91b11"
+}
+%{
+  parts: %{
+    committed: [
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam03",
+        "island_id" => "e649229946edce4883dec30091566da5",
+        "opponent_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "raid_id" => "9eb6cdfce6ed6549748ffbbb9f7fc072",
+        "role" => "attacker"
+      },
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam00",
+        "island_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "opponent_id" => "e649229946edce4883dec30091566da5",
+        "raid_id" => "9eb6cdfce6ed6549748ffbbb9f7fc072",
+        "role" => "defender"
+      }
+    ],
+    raid: [
+      %{
+        "arena" => [1000, 1000, 300],
+        "attacker_id" => "e649229946edce4883dec30091566da5",
+        "bout" => 0,
+        "defenders" => 12,
+        "defenders_home" => 1,
+        "entrants" => ["e649229946edce4883dec30091566da5",
+         "8ddd1f43ca9fc41a363d12c3c140a16d"],
+        "fact_version" => 3,
+        "frame_count" => 567,
+        "frame_fields" => ["drone", "x", "y", "z", "yaw", "health", "state"],
+        "ground" => [500, 500, 0, 500, 750, 0, 250, 500, 0, 500, 250, 0, 750,
+         500, 0],
+        "ground_fields" => ["x", "y", "z"],
+        "ground_range" => 350,
+        "island" => "beam00",
+        "island_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "kind" => "raid",
+        "munition_fields" => ["drone", "x", "y", "z", "guided"],
+        "raid_id" => "9eb6cdfce6ed6549748ffbbb9f7fc072",
+        "raiders" => 12,
+        "raiders_home" => 0,
+        "signal_volume" => 22894391,
+        "start_index" => 0,
+        "survivors" => [13],
+        "ticks" => 1134,
+        "track_fields" => ["x", "y", "z"],
+        "winner" => "defender",
+        "withdrawn" => []
+      }
+    ]
+  },
+  raid: "9eb6cdfce6ed6549748ffbbb9f7fc072"
+}
+%{
+  parts: %{
+    committed: [
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam01",
+        "island_id" => "a6b1605a0f8f82d8dde1bfa260e41168",
+        "opponent_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "raid_id" => "78864e9b043cad3d51044b6329a62c20",
+        "role" => "attacker"
+      },
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam02",
+        "island_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "opponent_id" => "a6b1605a0f8f82d8dde1bfa260e41168",
+        "raid_id" => "78864e9b043cad3d51044b6329a62c20",
+        "role" => "defender"
+      }
+    ],
+    raid: [
+      %{
+        "arena" => [1000, 1000, 300],
+        "attacker_id" => "a6b1605a0f8f82d8dde1bfa260e41168",
+        "bout" => 0,
+        "defenders" => 12,
+        "defenders_home" => 0,
+        "entrants" => ["a6b1605a0f8f82d8dde1bfa260e41168",
+         "60ac48650c12ea0b9b25ebc6255d2481"],
+        "fact_version" => 3,
+        "frame_count" => 121,
+        "frame_fields" => ["drone", "x", "y", "z", "yaw", "health", "state"],
+        "ground" => [500, 500, 0, 500, 750, 0, 250, 500, 0, 500, 250, 0, 750,
+         500, 0],
+        "ground_fields" => ["x", "y", "z"],
+        "ground_range" => 350,
+        "island" => "beam02",
+        "island_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "kind" => "raid",
+        "munition_fields" => ["drone", "x", "y", "z", "guided"],
+        "raid_id" => "78864e9b043cad3d51044b6329a62c20",
+        "raiders" => 12,
+        "raiders_home" => 2,
+        "signal_volume" => 12811529,
+        "start_index" => 0,
+        "survivors" => [14, 22],
+        "ticks" => 241,
+        "track_fields" => ["x", "y", "z"],
+        "winner" => "attacker",
+        "withdrawn" => []
+      }
+    ]
+  },
+  raid: "78864e9b043cad3d51044b6329a62c20"
+}
+%{
+  parts: %{
+    committed: [
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam02",
+        "island_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "opponent_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "raid_id" => "8da82e496c22d59f26795b7450a43c2b",
+        "role" => "attacker"
+      }
+    ],
+    raid: [
+      %{
+        "arena" => [1000, 1000, 300],
+        "attacker_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "bout" => 0,
+        "defenders" => 12,
+        "defenders_home" => 0,
+        "entrants" => ["60ac48650c12ea0b9b25ebc6255d2481",
+         "8ddd1f43ca9fc41a363d12c3c140a16d"],
+        "fact_version" => 3,
+        "frame_count" => 509,
+        "frame_fields" => ["drone", "x", "y", "z", "yaw", "health", "state"],
+        "ground" => [500, 500, 0, 500, 750, 0, 250, 500, 0, 500, 250, 0, 750,
+         500, 0],
+        "ground_fields" => ["x", "y", "z"],
+        "ground_range" => 350,
+        "island" => "beam00",
+        "island_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "kind" => "raid",
+        "munition_fields" => ["drone", "x", "y", "z", "guided"],
+        "raid_id" => "8da82e496c22d59f26795b7450a43c2b",
+        "raiders" => 12,
+        "raiders_home" => 1,
+        "signal_volume" => 20007313,
+        "start_index" => 0,
+        "survivors" => [14],
+        "ticks" => 1018,
+        "track_fields" => ["x", "y", "z"],
+        "winner" => "attacker",
+        "withdrawn" => []
+      }
+    ]
+  },
+  raid: "8da82e496c22d59f26795b7450a43c2b"
+}
+%{
+  parts: %{
+    committed: [
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam00",
+        "island_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "opponent_id" => "a6b1605a0f8f82d8dde1bfa260e41168",
+        "raid_id" => "120f8d2c38672276754448ae1f7da604",
+        "role" => "attacker"
+      }
+    ],
+    raid: [
+      %{
+        "arena" => [1000, 1000, 300],
+        "attacker_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "bout" => 0,
+        "defenders" => 12,
+        "defenders_home" => 0,
+        "entrants" => ["8ddd1f43ca9fc41a363d12c3c140a16d",
+         "a6b1605a0f8f82d8dde1bfa260e41168"],
+        "fact_version" => 3,
+        "frame_count" => 281,
+        "frame_fields" => ["drone", "x", "y", "z", "yaw", "health", "state"],
+        "ground" => [500, 500, 0, 500, 750, 0, 250, 500, 0, 500, 250, 0, 750,
+         500, 0],
+        "ground_fields" => ["x", "y", "z"],
+        "ground_range" => 350,
+        "island" => "beam01",
+        "island_id" => "a6b1605a0f8f82d8dde1bfa260e41168",
+        "kind" => "raid",
+        "munition_fields" => ["drone", "x", "y", "z", "guided"],
+        "raid_id" => "120f8d2c38672276754448ae1f7da604",
+        "raiders" => 12,
+        "raiders_home" => 3,
+        "signal_volume" => 17531630,
+        "start_index" => 0,
+        "survivors" => [6, 10, 12],
+        "ticks" => 561,
+        "track_fields" => ["x", "y", "z"],
+        "winner" => "attacker",
+        "withdrawn" => []
+      }
+    ]
+  },
+  raid: "120f8d2c38672276754448ae1f7da604"
+}
+%{
+  parts: %{
+    committed: [
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam03",
+        "island_id" => "e649229946edce4883dec30091566da5",
+        "opponent_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "raid_id" => "5e18b2f12353480e79d9606c963e4e59",
+        "role" => "attacker"
+      },
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam00",
+        "island_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "opponent_id" => "e649229946edce4883dec30091566da5",
+        "raid_id" => "5e18b2f12353480e79d9606c963e4e59",
+        "role" => "defender"
+      }
+    ],
+    raid: [
+      %{
+        "arena" => [1000, 1000, 300],
+        "attacker_id" => "e649229946edce4883dec30091566da5",
+        "bout" => 0,
+        "defenders" => 12,
+        "defenders_home" => 0,
+        "entrants" => ["e649229946edce4883dec30091566da5",
+         "8ddd1f43ca9fc41a363d12c3c140a16d"],
+        "fact_version" => 3,
+        "frame_count" => 472,
+        "frame_fields" => ["drone", "x", "y", "z", "yaw", "health", "state"],
+        "ground" => [500, 500, 0, 500, 750, 0, 250, 500, 0, 500, 250, 0, 750,
+         500, 0],
+        "ground_fields" => ["x", "y", "z"],
+        "ground_range" => 350,
+        "island" => "beam00",
+        "island_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "kind" => "raid",
+        "munition_fields" => ["drone", "x", "y", "z", "guided"],
+        "raid_id" => "5e18b2f12353480e79d9606c963e4e59",
+        "raiders" => 12,
+        "raiders_home" => 2,
+        "signal_volume" => 24571636,
+        "start_index" => 0,
+        "survivors" => [2, 10],
+        "ticks" => 943,
+        "track_fields" => ["x", "y", "z"],
+        "winner" => "attacker",
+        "withdrawn" => []
+      }
+    ]
+  },
+  raid: "5e18b2f12353480e79d9606c963e4e59"
+}
+%{
+  parts: %{
+    committed: [
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam01",
+        "island_id" => "a6b1605a0f8f82d8dde1bfa260e41168",
+        "opponent_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "raid_id" => "44ff2c84b37490b12af21ab3cac86bf9",
+        "role" => "attacker"
+      }
+    ],
+    raid: [
+      %{
+        "arena" => [1000, 1000, 300],
+        "attacker_id" => "a6b1605a0f8f82d8dde1bfa260e41168",
+        "bout" => 0,
+        "defenders" => 12,
+        "defenders_home" => 1,
+        "entrants" => ["a6b1605a0f8f82d8dde1bfa260e41168",
+         "60ac48650c12ea0b9b25ebc6255d2481"],
+        "fact_version" => 3,
+        "frame_count" => 297,
+        "frame_fields" => ["drone", "x", "y", "z", "yaw", "health", "state"],
+        "ground" => [500, 500, 0, 500, 750, 0, 250, 500, 0, 500, 250, 0, 750,
+         500, 0],
+        "ground_fields" => ["x", "y", "z"],
+        "ground_range" => 350,
+        "island" => "beam02",
+        "island_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "kind" => "raid",
+        "munition_fields" => ["drone", "x", "y", "z", "guided"],
+        "raid_id" => "44ff2c84b37490b12af21ab3cac86bf9",
+        "raiders" => 12,
+        "raiders_home" => 0,
+        "signal_volume" => 17778515,
+        "start_index" => 0,
+        "survivors" => [7],
+        "ticks" => 593,
+        "track_fields" => ["x", "y", "z"],
+        "winner" => "defender",
+        "withdrawn" => []
+      }
+    ]
+  },
+  raid: "44ff2c84b37490b12af21ab3cac86bf9"
+}
+%{
+  parts: %{
+    committed: [
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam02",
+        "island_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "opponent_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "raid_id" => "d9d06757e16bde2f13683e972e3bad61",
+        "role" => "attacker"
+      }
+    ],
+    raid: [
+      %{
+        "arena" => [1000, 1000, 300],
+        "attacker_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "bout" => 0,
+        "defenders" => 12,
+        "defenders_home" => 2,
+        "entrants" => ["60ac48650c12ea0b9b25ebc6255d2481",
+         "8ddd1f43ca9fc41a363d12c3c140a16d"],
+        "fact_version" => 3,
+        "frame_count" => 174,
+        "frame_fields" => ["drone", "x", "y", "z", "yaw", "health", "state"],
+        "ground" => [500, 500, 0, 500, 750, 0, 250, 500, 0, 500, 250, 0, 750,
+         500, 0],
+        "ground_fields" => ["x", "y", "z"],
+        "ground_range" => 350,
+        "island" => "beam00",
+        "island_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "kind" => "raid",
+        "munition_fields" => ["drone", "x", "y", "z", "guided"],
+        "raid_id" => "d9d06757e16bde2f13683e972e3bad61",
+        "raiders" => 12,
+        "raiders_home" => 0,
+        "signal_volume" => 15539296,
+        "start_index" => 0,
+        "survivors" => [9, 11],
+        "ticks" => 348,
+        "track_fields" => ["x", "y", "z"],
+        "winner" => "defender",
+        "withdrawn" => []
+      }
+    ]
+  },
+  raid: "d9d06757e16bde2f13683e972e3bad61"
+}
+%{
+  parts: %{
+    committed: [
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam03",
+        "island_id" => "e649229946edce4883dec30091566da5",
+        "opponent_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "raid_id" => "75f72fcc083b391db685c67601220add",
+        "role" => "attacker"
+      }
+    ],
+    raid: [
+      %{
+        "arena" => [1000, 1000, 300],
+        "attacker_id" => "e649229946edce4883dec30091566da5",
+        "bout" => 0,
+        "defenders" => 12,
+        "defenders_home" => 0,
+        "entrants" => ["e649229946edce4883dec30091566da5",
+         "60ac48650c12ea0b9b25ebc6255d2481"],
+        "fact_version" => 3,
+        "frame_count" => 128,
+        "frame_fields" => ["drone", "x", "y", "z", "yaw", "health", "state"],
+        "ground" => [500, 500, 0, 500, 750, 0, 250, 500, 0, 500, 250, 0, 750,
+         500, 0],
+        "ground_fields" => ["x", "y", "z"],
+        "ground_range" => 350,
+        "island" => "beam02",
+        "island_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "kind" => "raid",
+        "munition_fields" => ["drone", "x", "y", "z", "guided"],
+        "raid_id" => "75f72fcc083b391db685c67601220add",
+        "raiders" => 12,
+        "raiders_home" => 1,
+        "signal_volume" => 12381473,
+        "start_index" => 0,
+        "survivors" => [4],
+        "ticks" => 255,
+        "track_fields" => ["x", "y", "z"],
+        "winner" => "attacker",
+        "withdrawn" => []
+      }
+    ]
+  },
+  raid: "75f72fcc083b391db685c67601220add"
+}
+%{
+  parts: %{
+    committed: [
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam01",
+        "island_id" => "a6b1605a0f8f82d8dde1bfa260e41168",
+        "opponent_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "raid_id" => "28c00b1afd7432cf1599a111e05c2623",
+        "role" => "attacker"
+      }
+    ],
+    raid: [
+      %{
+        "arena" => [1000, 1000, 300],
+        "attacker_id" => "a6b1605a0f8f82d8dde1bfa260e41168",
+        "bout" => 0,
+        "defenders" => 12,
+        "defenders_home" => 2,
+        "entrants" => ["a6b1605a0f8f82d8dde1bfa260e41168",
+         "60ac48650c12ea0b9b25ebc6255d2481"],
+        "fact_version" => 3,
+        "frame_count" => 242,
+        "frame_fields" => ["drone", "x", "y", "z", "yaw", "health", "state"],
+        "ground" => [500, 500, 0, 500, 750, 0, 250, 500, 0, 500, 250, 0, 750,
+         500, 0],
+        "ground_fields" => ["x", "y", "z"],
+        "ground_range" => 350,
+        "island" => "beam02",
+        "island_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "kind" => "raid",
+        "munition_fields" => ["drone", "x", "y", "z", "guided"],
+        "raid_id" => "28c00b1afd7432cf1599a111e05c2623",
+        "raiders" => 12,
+        "raiders_home" => 0,
+        "signal_volume" => 19501298,
+        "start_index" => 0,
+        "survivors" => [11, 21],
+        "ticks" => 483,
+        "track_fields" => ["x", "y", "z"],
+        "winner" => "defender",
+        "withdrawn" => []
+      }
+    ]
+  },
+  raid: "28c00b1afd7432cf1599a111e05c2623"
+}
+%{
+  parts: %{
+    committed: [
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam02",
+        "island_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "opponent_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "raid_id" => "fe011524750c0b623ffd9c6ca2de22f7",
+        "role" => "attacker"
+      }
+    ],
+    raid: [
+      %{
+        "arena" => [1000, 1000, 300],
+        "attacker_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "bout" => 0,
+        "defenders" => 12,
+        "defenders_home" => 0,
+        "entrants" => ["60ac48650c12ea0b9b25ebc6255d2481",
+         "8ddd1f43ca9fc41a363d12c3c140a16d"],
+        "fact_version" => 3,
+        "frame_count" => 251,
+        "frame_fields" => ["drone", "x", "y", "z", "yaw", "health", "state"],
+        "ground" => [500, 500, 0, 500, 750, 0, 250, 500, 0, 500, 250, 0, 750,
+         500, 0],
+        "ground_fields" => ["x", "y", "z"],
+        "ground_range" => 350,
+        "island" => "beam00",
+        "island_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "kind" => "raid",
+        "munition_fields" => ["drone", "x", "y", "z", "guided"],
+        "raid_id" => "fe011524750c0b623ffd9c6ca2de22f7",
+        "raiders" => 12,
+        "raiders_home" => 3,
+        "signal_volume" => 20706716,
+        "start_index" => 0,
+        "survivors" => [2, 6, 10],
+        "ticks" => 501,
+        "track_fields" => ["x", "y", "z"],
+        "winner" => "attacker",
+        "withdrawn" => []
+      }
+    ]
+  },
+  raid: "fe011524750c0b623ffd9c6ca2de22f7"
+}
+%{
+  parts: %{
+    committed: [
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam03",
+        "island_id" => "e649229946edce4883dec30091566da5",
+        "opponent_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "raid_id" => "032e0343ec0b0a10df6b0aad0eceee27",
+        "role" => "attacker"
+      },
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam02",
+        "island_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "opponent_id" => "e649229946edce4883dec30091566da5",
+        "raid_id" => "032e0343ec0b0a10df6b0aad0eceee27",
+        "role" => "defender"
+      }
+    ],
+    raid: [
+      %{
+        "arena" => [1000, 1000, 300],
+        "attacker_id" => "e649229946edce4883dec30091566da5",
+        "bout" => 0,
+        "defenders" => 12,
+        "defenders_home" => 0,
+        "entrants" => ["e649229946edce4883dec30091566da5",
+         "60ac48650c12ea0b9b25ebc6255d2481"],
+        "fact_version" => 3,
+        "frame_count" => 224,
+        "frame_fields" => ["drone", "x", "y", "z", "yaw", "health", "state"],
+        "ground" => [500, 500, 0, 500, 750, 0, 250, 500, 0, 500, 250, 0, 750,
+         500, 0],
+        "ground_fields" => ["x", "y", "z"],
+        "ground_range" => 350,
+        "island" => "beam02",
+        "island_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "kind" => "raid",
+        "munition_fields" => ["drone", "x", "y", "z", "guided"],
+        "raid_id" => "032e0343ec0b0a10df6b0aad0eceee27",
+        "raiders" => 12,
+        "raiders_home" => 1,
+        "signal_volume" => 14729097,
+        "start_index" => 0,
+        "survivors" => [2],
+        "ticks" => 448,
+        "track_fields" => ["x", "y", "z"],
+        "winner" => "attacker",
+        "withdrawn" => []
+      }
+    ]
+  },
+  raid: "032e0343ec0b0a10df6b0aad0eceee27"
+}
+%{
+  parts: %{
+    committed: [
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam01",
+        "island_id" => "a6b1605a0f8f82d8dde1bfa260e41168",
+        "opponent_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "raid_id" => "ba50aaac08e5af409390f085d972b75f",
+        "role" => "attacker"
+      }
+    ],
+    raid: [
+      %{
+        "arena" => [1000, 1000, 300],
+        "attacker_id" => "a6b1605a0f8f82d8dde1bfa260e41168",
+        "bout" => 0,
+        "defenders" => 12,
+        "defenders_home" => 2,
+        "entrants" => ["a6b1605a0f8f82d8dde1bfa260e41168",
+         "60ac48650c12ea0b9b25ebc6255d2481"],
+        "fact_version" => 3,
+        "frame_count" => 338,
+        "frame_fields" => ["drone", "x", "y", "z", "yaw", "health", "state"],
+        "ground" => [500, 500, 0, 500, 750, 0, 250, 500, 0, 500, 250, 0, 750,
+         500, 0],
+        "ground_fields" => ["x", "y", "z"],
+        "ground_range" => 350,
+        "island" => "beam02",
+        "island_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "kind" => "raid",
+        "munition_fields" => ["drone", "x", "y", "z", "guided"],
+        "raid_id" => "ba50aaac08e5af409390f085d972b75f",
+        "raiders" => 12,
+        "raiders_home" => 0,
+        "signal_volume" => 21413387,
+        "start_index" => 0,
+        "survivors" => [11, 19],
+        "ticks" => 676,
+        "track_fields" => ["x", "y", "z"],
+        "winner" => "defender",
+        "withdrawn" => []
+      }
+    ]
+  },
+  raid: "ba50aaac08e5af409390f085d972b75f"
+}
+%{
+  parts: %{
+    committed: [
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam02",
+        "island_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "opponent_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "raid_id" => "f2ca20c1330291d58510705ceff3bbbd",
+        "role" => "attacker"
+      }
+    ],
+    raid: [
+      %{
+        "arena" => [1000, 1000, 300],
+        "attacker_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "bout" => 0,
+        "defenders" => 12,
+        "defenders_home" => 2,
+        "entrants" => ["60ac48650c12ea0b9b25ebc6255d2481",
+         "8ddd1f43ca9fc41a363d12c3c140a16d"],
+        "fact_version" => 3,
+        "frame_count" => 162,
+        "frame_fields" => ["drone", "x", "y", "z", "yaw", "health", "state"],
+        "ground" => [500, 500, 0, 500, 750, 0, 250, 500, 0, 500, 250, 0, 750,
+         500, 0],
+        "ground_fields" => ["x", "y", "z"],
+        "ground_range" => 350,
+        "island" => "beam00",
+        "island_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "kind" => "raid",
+        "munition_fields" => ["drone", "x", "y", "z", "guided"],
+        "raid_id" => "f2ca20c1330291d58510705ceff3bbbd",
+        "raiders" => 12,
+        "raiders_home" => 0,
+        "signal_volume" => 13947222,
+        "start_index" => 0,
+        "survivors" => [5, 7],
+        "ticks" => 323,
+        "track_fields" => ["x", "y", "z"],
+        "winner" => "defender",
+        "withdrawn" => []
+      }
+    ]
+  },
+  raid: "f2ca20c1330291d58510705ceff3bbbd"
+}
+%{
+  parts: %{
+    committed: [
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam03",
+        "island_id" => "e649229946edce4883dec30091566da5",
+        "opponent_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "raid_id" => "98d7ec2efc7c283c702c9909e3b57bfd",
+        "role" => "attacker"
+      }
+    ],
+    raid: [
+      %{
+        "arena" => [1000, 1000, 300],
+        "attacker_id" => "e649229946edce4883dec30091566da5",
+        "bout" => 0,
+        "defenders" => 12,
+        "defenders_home" => 0,
+        "entrants" => ["e649229946edce4883dec30091566da5",
+         "60ac48650c12ea0b9b25ebc6255d2481"],
+        "fact_version" => 3,
+        "frame_count" => 324,
+        "frame_fields" => ["drone", "x", "y", "z", "yaw", "health", "state"],
+        "ground" => [500, 500, 0, 500, 750, 0, 250, 500, 0, 500, 250, 0, 750,
+         500, 0],
+        "ground_fields" => ["x", "y", "z"],
+        "ground_range" => 350,
+        "island" => "beam02",
+        "island_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "kind" => "raid",
+        "munition_fields" => ["drone", "x", "y", "z", "guided"],
+        "raid_id" => "98d7ec2efc7c283c702c9909e3b57bfd",
+        "raiders" => 12,
+        "raiders_home" => 2,
+        "signal_volume" => 19336708,
+        "start_index" => 0,
+        "survivors" => [6, 14],
+        "ticks" => 648,
+        "track_fields" => ["x", "y", "z"],
+        "winner" => "attacker",
+        "withdrawn" => []
+      }
+    ]
+  },
+  raid: "98d7ec2efc7c283c702c9909e3b57bfd"
+}
+%{
+  parts: %{
+    committed: [
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam01",
+        "island_id" => "a6b1605a0f8f82d8dde1bfa260e41168",
+        "opponent_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "raid_id" => "641a47f5e1b977faa762ac71ebe81eba",
+        "role" => "attacker"
+      }
+    ],
+    raid: [
+      %{
+        "arena" => [1000, 1000, 300],
+        "attacker_id" => "a6b1605a0f8f82d8dde1bfa260e41168",
+        "bout" => 0,
+        "defenders" => 12,
+        "defenders_home" => 1,
+        "entrants" => ["a6b1605a0f8f82d8dde1bfa260e41168",
+         "60ac48650c12ea0b9b25ebc6255d2481"],
+        "fact_version" => 3,
+        "frame_count" => 412,
+        "frame_fields" => ["drone", "x", "y", "z", "yaw", "health", "state"],
+        "ground" => [500, 500, 0, 500, 750, 0, 250, 500, 0, 500, 250, 0, 750,
+         500, 0],
+        "ground_fields" => ["x", "y", "z"],
+        "ground_range" => 350,
+        "island" => "beam02",
+        "island_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "kind" => "raid",
+        "munition_fields" => ["drone", "x", "y", "z", "guided"],
+        "raid_id" => "641a47f5e1b977faa762ac71ebe81eba",
+        "raiders" => 12,
+        "raiders_home" => 0,
+        "signal_volume" => 23667164,
+        "start_index" => 0,
+        "survivors" => [9],
+        "ticks" => 824,
+        "track_fields" => ["x", "y", "z"],
+        "winner" => "defender",
+        "withdrawn" => []
+      }
+    ]
+  },
+  raid: "641a47f5e1b977faa762ac71ebe81eba"
+}
+%{
+  parts: %{
+    committed: [
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam02",
+        "island_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "opponent_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "raid_id" => "90a62c38ff1fc9a6647649106bad6839",
+        "role" => "attacker"
+      }
+    ],
+    raid: [
+      %{
+        "arena" => [1000, 1000, 300],
+        "attacker_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "bout" => 0,
+        "defenders" => 12,
+        "defenders_home" => 0,
+        "entrants" => ["60ac48650c12ea0b9b25ebc6255d2481",
+         "8ddd1f43ca9fc41a363d12c3c140a16d"],
+        "fact_version" => 3,
+        "frame_count" => 179,
+        "frame_fields" => ["drone", "x", "y", "z", "yaw", "health", "state"],
+        "ground" => [500, 500, 0, 500, 750, 0, 250, 500, 0, 500, 250, 0, 750,
+         500, 0],
+        "ground_fields" => ["x", "y", "z"],
+        "ground_range" => 350,
+        "island" => "beam00",
+        "island_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "kind" => "raid",
+        "munition_fields" => ["drone", "x", "y", "z", "guided"],
+        "raid_id" => "90a62c38ff1fc9a6647649106bad6839",
+        "raiders" => 12,
+        "raiders_home" => 5,
+        "signal_volume" => 17246243,
+        "start_index" => 0,
+        "survivors" => [2, 10, 12, 14, 16],
+        "ticks" => 357,
+        "track_fields" => ["x", "y", "z"],
+        "winner" => "attacker",
+        "withdrawn" => []
+      }
+    ]
+  },
+  raid: "90a62c38ff1fc9a6647649106bad6839"
+}
+%{
+  parts: %{
+    committed: [
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam03",
+        "island_id" => "e649229946edce4883dec30091566da5",
+        "opponent_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "raid_id" => "c8092c868b46ade1598ea703102bf557",
+        "role" => "attacker"
+      }
+    ],
+    raid: [
+      %{
+        "arena" => [1000, 1000, 300],
+        "attacker_id" => "e649229946edce4883dec30091566da5",
+        "bout" => 0,
+        "defenders" => 12,
+        "defenders_home" => 4,
+        "entrants" => ["e649229946edce4883dec30091566da5",
+         "60ac48650c12ea0b9b25ebc6255d2481"],
+        "fact_version" => 3,
+        "frame_count" => 127,
+        "frame_fields" => ["drone", "x", "y", "z", "yaw", "health", "state"],
+        "ground" => [500, 500, 0, 500, 750, 0, 250, 500, 0, 500, 250, 0, 750,
+         500, 0],
+        "ground_fields" => ["x", "y", "z"],
+        "ground_range" => 350,
+        "island" => "beam02",
+        "island_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "kind" => "raid",
+        "munition_fields" => ["drone", "x", "y", "z", "guided"],
+        "raid_id" => "c8092c868b46ade1598ea703102bf557",
+        "raiders" => 12,
+        "raiders_home" => 0,
+        "signal_volume" => 14533799,
+        "start_index" => 0,
+        "survivors" => [5, 9, 13, 17],
+        "ticks" => 254,
+        "track_fields" => ["x", "y", "z"],
+        "winner" => "defender",
+        "withdrawn" => []
+      }
+    ]
+  },
+  raid: "c8092c868b46ade1598ea703102bf557"
+}
+%{
+  parts: %{
+    committed: [
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam01",
+        "island_id" => "a6b1605a0f8f82d8dde1bfa260e41168",
+        "opponent_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "raid_id" => "8013f79ea19241379ae7389df97529be",
+        "role" => "attacker"
+      },
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam02",
+        "island_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "opponent_id" => "a6b1605a0f8f82d8dde1bfa260e41168",
+        "raid_id" => "8013f79ea19241379ae7389df97529be",
+        "role" => "defender"
+      }
+    ],
+    raid: [
+      %{
+        "arena" => [1000, 1000, 300],
+        "attacker_id" => "a6b1605a0f8f82d8dde1bfa260e41168",
+        "bout" => 0,
+        "defenders" => 12,
+        "defenders_home" => 1,
+        "entrants" => ["a6b1605a0f8f82d8dde1bfa260e41168",
+         "60ac48650c12ea0b9b25ebc6255d2481"],
+        "fact_version" => 3,
+        "frame_count" => 205,
+        "frame_fields" => ["drone", "x", "y", "z", "yaw", "health", "state"],
+        "ground" => [500, 500, 0, 500, 750, 0, 250, 500, 0, 500, 250, 0, 750,
+         500, 0],
+        "ground_fields" => ["x", "y", "z"],
+        "ground_range" => 350,
+        "island" => "beam02",
+        "island_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "kind" => "raid",
+        "munition_fields" => ["drone", "x", "y", "z", "guided"],
+        "raid_id" => "8013f79ea19241379ae7389df97529be",
+        "raiders" => 12,
+        "raiders_home" => 0,
+        "signal_volume" => 16261829,
+        "start_index" => 0,
+        "survivors" => [5],
+        "ticks" => 410,
+        "track_fields" => ["x", "y", "z"],
+        "winner" => "defender",
+        "withdrawn" => []
+      }
+    ]
+  },
+  raid: "8013f79ea19241379ae7389df97529be"
+}
+%{
+  parts: %{
+    committed: [
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam02",
+        "island_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "opponent_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "raid_id" => "8f69179e3e6cc1e8c2d13329f4fe243b",
+        "role" => "attacker"
+      }
+    ],
+    raid: [
+      %{
+        "arena" => [1000, 1000, 300],
+        "attacker_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "bout" => 0,
+        "defenders" => 12,
+        "defenders_home" => 0,
+        "entrants" => ["60ac48650c12ea0b9b25ebc6255d2481",
+         "8ddd1f43ca9fc41a363d12c3c140a16d"],
+        "fact_version" => 3,
+        "frame_count" => 156,
+        "frame_fields" => ["drone", "x", "y", "z", "yaw", "health", "state"],
+        "ground" => [500, 500, 0, 500, 750, 0, 250, 500, 0, 500, 250, 0, 750,
+         500, 0],
+        "ground_fields" => ["x", "y", "z"],
+        "ground_range" => 350,
+        "island" => "beam00",
+        "island_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "kind" => "raid",
+        "munition_fields" => ["drone", "x", "y", "z", "guided"],
+        "raid_id" => "8f69179e3e6cc1e8c2d13329f4fe243b",
+        "raiders" => 12,
+        "raiders_home" => 3,
+        "signal_volume" => 14419467,
+        "start_index" => 0,
+        "survivors" => [6, 8, 12],
+        "ticks" => 311,
+        "track_fields" => ["x", "y", "z"],
+        "winner" => "attacker",
+        "withdrawn" => []
+      }
+    ]
+  },
+  raid: "8f69179e3e6cc1e8c2d13329f4fe243b"
+}
+%{
+  parts: %{
+    committed: [
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam00",
+        "island_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "opponent_id" => "a6b1605a0f8f82d8dde1bfa260e41168",
+        "raid_id" => "820bcfa2e79566c088f596b18d48ddb9",
+        "role" => "attacker"
+      }
+    ],
+    raid: [
+      %{
+        "arena" => [1000, 1000, 300],
+        "attacker_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "bout" => 0,
+        "defenders" => 12,
+        "defenders_home" => 0,
+        "entrants" => ["8ddd1f43ca9fc41a363d12c3c140a16d",
+         "a6b1605a0f8f82d8dde1bfa260e41168"],
+        "fact_version" => 3,
+        "frame_count" => 129,
+        "frame_fields" => ["drone", "x", "y", "z", "yaw", "health", "state"],
+        "ground" => [500, 500, 0, 500, 750, 0, 250, 500, 0, 500, 250, 0, 750,
+         500, 0],
+        "ground_fields" => ["x", "y", "z"],
+        "ground_range" => 350,
+        "island" => "beam01",
+        "island_id" => "a6b1605a0f8f82d8dde1bfa260e41168",
+        "kind" => "raid",
+        "munition_fields" => ["drone", "x", "y", "z", "guided"],
+        "raid_id" => "820bcfa2e79566c088f596b18d48ddb9",
+        "raiders" => 12,
+        "raiders_home" => 4,
+        "signal_volume" => 14035438,
+        "start_index" => 0,
+        "survivors" => [6, 8, 12, 18],
+        "ticks" => 257,
+        "track_fields" => ["x", "y", "z"],
+        "winner" => "attacker",
+        "withdrawn" => []
+      }
+    ]
+  },
+  raid: "820bcfa2e79566c088f596b18d48ddb9"
+}
+%{
+  parts: %{
+    committed: [
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam03",
+        "island_id" => "e649229946edce4883dec30091566da5",
+        "opponent_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "raid_id" => "d45ba43e7959dfb4f102fd5d65e30945",
+        "role" => "attacker"
+      }
+    ],
+    raid: [
+      %{
+        "arena" => [1000, 1000, 300],
+        "attacker_id" => "e649229946edce4883dec30091566da5",
+        "bout" => 0,
+        "defenders" => 12,
+        "defenders_home" => 2,
+        "entrants" => ["e649229946edce4883dec30091566da5",
+         "8ddd1f43ca9fc41a363d12c3c140a16d"],
+        "fact_version" => 3,
+        "frame_count" => 348,
+        "frame_fields" => ["drone", "x", "y", "z", "yaw", "health", "state"],
+        "ground" => [500, 500, 0, 500, 750, 0, 250, 500, 0, 500, 250, 0, 750,
+         500, 0],
+        "ground_fields" => ["x", "y", "z"],
+        "ground_range" => 350,
+        "island" => "beam00",
+        "island_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "kind" => "raid",
+        "munition_fields" => ["drone", "x", "y", "z", "guided"],
+        "raid_id" => "d45ba43e7959dfb4f102fd5d65e30945",
+        "raiders" => 12,
+        "raiders_home" => 0,
+        "signal_volume" => 19305356,
+        "start_index" => 0,
+        "survivors" => [13, 21],
+        "ticks" => 695,
+        "track_fields" => ["x", "y", "z"],
+        "winner" => "defender",
+        "withdrawn" => []
+      }
+    ]
+  },
+  raid: "d45ba43e7959dfb4f102fd5d65e30945"
+}
+%{
+  parts: %{
+    committed: [
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam01",
+        "island_id" => "a6b1605a0f8f82d8dde1bfa260e41168",
+        "opponent_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "raid_id" => "db7df2ea6be1177da3952c8c0b6d8b42",
+        "role" => "attacker"
+      }
+    ],
+    raid: [
+      %{
+        "arena" => [1000, 1000, 300],
+        "attacker_id" => "a6b1605a0f8f82d8dde1bfa260e41168",
+        "bout" => 0,
+        "defenders" => 12,
+        "defenders_home" => 2,
+        "entrants" => ["a6b1605a0f8f82d8dde1bfa260e41168",
+         "60ac48650c12ea0b9b25ebc6255d2481"],
+        "fact_version" => 3,
+        "frame_count" => 530,
+        "frame_fields" => ["drone", "x", "y", "z", "yaw", "health", "state"],
+        "ground" => [500, 500, 0, 500, 750, 0, 250, 500, 0, 500, 250, 0, 750,
+         500, 0],
+        "ground_fields" => ["x", "y", "z"],
+        "ground_range" => 350,
+        "island" => "beam02",
+        "island_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "kind" => "raid",
+        "munition_fields" => ["drone", "x", "y", "z", "guided"],
+        "raid_id" => "db7df2ea6be1177da3952c8c0b6d8b42",
+        "raiders" => 12,
+        "raiders_home" => 0,
+        "signal_volume" => 26807500,
+        "start_index" => 0,
+        "survivors" => [11, 13],
+        "ticks" => 1059,
+        "track_fields" => ["x", "y", "z"],
+        "winner" => "defender",
+        "withdrawn" => []
+      }
+    ]
+  },
+  raid: "db7df2ea6be1177da3952c8c0b6d8b42"
+}
+%{
+  parts: %{
+    committed: [
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam02",
+        "island_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "opponent_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "raid_id" => "90548099cc3e8ebe7320d4f4b1deb110",
+        "role" => "attacker"
+      }
+    ],
+    raid: [
+      %{
+        "arena" => [1000, 1000, 300],
+        "attacker_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "bout" => 0,
+        "defenders" => 12,
+        "defenders_home" => 2,
+        "entrants" => ["60ac48650c12ea0b9b25ebc6255d2481",
+         "8ddd1f43ca9fc41a363d12c3c140a16d"],
+        "fact_version" => 3,
+        "frame_count" => 175,
+        "frame_fields" => ["drone", "x", "y", "z", "yaw", "health", "state"],
+        "ground" => [500, 500, 0, 500, 750, 0, 250, 500, 0, 500, 250, 0, 750,
+         500, 0],
+        "ground_fields" => ["x", "y", "z"],
+        "ground_range" => 350,
+        "island" => "beam00",
+        "island_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "kind" => "raid",
+        "munition_fields" => ["drone", "x", "y", "z", "guided"],
+        "raid_id" => "90548099cc3e8ebe7320d4f4b1deb110",
+        "raiders" => 12,
+        "raiders_home" => 0,
+        "signal_volume" => 15558073,
+        "start_index" => 0,
+        "survivors" => [3, 15],
+        "ticks" => 350,
+        "track_fields" => ["x", "y", "z"],
+        "winner" => "defender",
+        "withdrawn" => []
+      }
+    ]
+  },
+  raid: "90548099cc3e8ebe7320d4f4b1deb110"
+}
+%{
+  parts: %{
+    committed: [
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam00",
+        "island_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "opponent_id" => "a6b1605a0f8f82d8dde1bfa260e41168",
+        "raid_id" => "23576960b97b816837f5e06b980c45b3",
+        "role" => "attacker"
+      }
+    ],
+    raid: [
+      %{
+        "arena" => [1000, 1000, 300],
+        "attacker_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "bout" => 0,
+        "defenders" => 12,
+        "defenders_home" => 0,
+        "entrants" => ["8ddd1f43ca9fc41a363d12c3c140a16d",
+         "a6b1605a0f8f82d8dde1bfa260e41168"],
+        "fact_version" => 3,
+        "frame_count" => 346,
+        "frame_fields" => ["drone", "x", "y", "z", "yaw", "health", "state"],
+        "ground" => [500, 500, 0, 500, 750, 0, 250, 500, 0, 500, 250, 0, 750,
+         500, 0],
+        "ground_fields" => ["x", "y", "z"],
+        "ground_range" => 350,
+        "island" => "beam01",
+        "island_id" => "a6b1605a0f8f82d8dde1bfa260e41168",
+        "kind" => "raid",
+        "munition_fields" => ["drone", "x", "y", "z", "guided"],
+        "raid_id" => "23576960b97b816837f5e06b980c45b3",
+        "raiders" => 12,
+        "raiders_home" => 1,
+        "signal_volume" => 20086150,
+        "start_index" => 0,
+        "survivors" => [8],
+        "ticks" => 692,
+        "track_fields" => ["x", "y", "z"],
+        "winner" => "attacker",
+        "withdrawn" => []
+      }
+    ]
+  },
+  raid: "23576960b97b816837f5e06b980c45b3"
+}
+%{
+  parts: %{
+    committed: [
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam03",
+        "island_id" => "e649229946edce4883dec30091566da5",
+        "opponent_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "raid_id" => "97f0f669199e15a7d8a1fa84984409fb",
+        "role" => "attacker"
+      }
+    ],
+    raid: [
+      %{
+        "arena" => [1000, 1000, 300],
+        "attacker_id" => "e649229946edce4883dec30091566da5",
+        "bout" => 0,
+        "defenders" => 12,
+        "defenders_home" => 2,
+        "entrants" => ["e649229946edce4883dec30091566da5",
+         "8ddd1f43ca9fc41a363d12c3c140a16d"],
+        "fact_version" => 3,
+        "frame_count" => 162,
+        "frame_fields" => ["drone", "x", "y", "z", "yaw", "health", "state"],
+        "ground" => [500, 500, 0, 500, 750, 0, 250, 500, 0, 500, 250, 0, 750,
+         500, 0],
+        "ground_fields" => ["x", "y", "z"],
+        "ground_range" => 350,
+        "island" => "beam00",
+        "island_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "kind" => "raid",
+        "munition_fields" => ["drone", "x", "y", "z", "guided"],
+        "raid_id" => "97f0f669199e15a7d8a1fa84984409fb",
+        "raiders" => 12,
+        "raiders_home" => 0,
+        "signal_volume" => 15835872,
+        "start_index" => 0,
+        "survivors" => [7, 13],
+        "ticks" => 323,
+        "track_fields" => ["x", "y", "z"],
+        "winner" => "defender",
+        "withdrawn" => []
+      }
+    ]
+  },
+  raid: "97f0f669199e15a7d8a1fa84984409fb"
+}
+%{
+  parts: %{
+    committed: [
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam01",
+        "island_id" => "a6b1605a0f8f82d8dde1bfa260e41168",
+        "opponent_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "raid_id" => "f1170a814a537ee2a3f6e31ad4f8a1a1",
+        "role" => "attacker"
+      }
+    ],
+    raid: [
+      %{
+        "arena" => [1000, 1000, 300],
+        "attacker_id" => "a6b1605a0f8f82d8dde1bfa260e41168",
+        "bout" => 0,
+        "defenders" => 12,
+        "defenders_home" => 0,
+        "entrants" => ["a6b1605a0f8f82d8dde1bfa260e41168",
+         "60ac48650c12ea0b9b25ebc6255d2481"],
+        "fact_version" => 3,
+        "frame_count" => 228,
+        "frame_fields" => ["drone", "x", "y", "z", "yaw", "health", "state"],
+        "ground" => [500, 500, 0, 500, 750, 0, 250, 500, 0, 500, 250, 0, 750,
+         500, 0],
+        "ground_fields" => ["x", "y", "z"],
+        "ground_range" => 350,
+        "island" => "beam02",
+        "island_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "kind" => "raid",
+        "munition_fields" => ["drone", "x", "y", "z", "guided"],
+        "raid_id" => "f1170a814a537ee2a3f6e31ad4f8a1a1",
+        "raiders" => 12,
+        "raiders_home" => 1,
+        "signal_volume" => 15590264,
+        "start_index" => 0,
+        "survivors" => [8],
+        "ticks" => 456,
+        "track_fields" => ["x", "y", "z"],
+        "winner" => "attacker",
+        "withdrawn" => []
+      }
+    ]
+  },
+  raid: "f1170a814a537ee2a3f6e31ad4f8a1a1"
+}
+%{
+  parts: %{
+    committed: [
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam02",
+        "island_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "opponent_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "raid_id" => "2bc8ed6fc63bc429815fd1e371d74efc",
+        "role" => "attacker"
+      }
+    ],
+    raid: [
+      %{
+        "arena" => [1000, 1000, 300],
+        "attacker_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "bout" => 0,
+        "defenders" => 12,
+        "defenders_home" => 1,
+        "entrants" => ["60ac48650c12ea0b9b25ebc6255d2481",
+         "8ddd1f43ca9fc41a363d12c3c140a16d"],
+        "fact_version" => 3,
+        "frame_count" => 547,
+        "frame_fields" => ["drone", "x", "y", "z", "yaw", "health", "state"],
+        "ground" => [500, 500, 0, 500, 750, 0, 250, 500, 0, 500, 250, 0, 750,
+         500, 0],
+        "ground_fields" => ["x", "y", "z"],
+        "ground_range" => 350,
+        "island" => "beam00",
+        "island_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "kind" => "raid",
+        "munition_fields" => ["drone", "x", "y", "z", "guided"],
+        "raid_id" => "2bc8ed6fc63bc429815fd1e371d74efc",
+        "raiders" => 12,
+        "raiders_home" => 0,
+        "signal_volume" => 26733964,
+        "start_index" => 0,
+        "survivors" => [9],
+        "ticks" => 1093,
+        "track_fields" => ["x", "y", "z"],
+        "winner" => "defender",
+        "withdrawn" => []
+      }
+    ]
+  },
+  raid: "2bc8ed6fc63bc429815fd1e371d74efc"
+}
+%{
+  parts: %{
+    committed: [
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam00",
+        "island_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "opponent_id" => "a6b1605a0f8f82d8dde1bfa260e41168",
+        "raid_id" => "d293ba6a2e494fad8d7a01af028f8a58",
+        "role" => "attacker"
+      },
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam01",
+        "island_id" => "a6b1605a0f8f82d8dde1bfa260e41168",
+        "opponent_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "raid_id" => "d293ba6a2e494fad8d7a01af028f8a58",
+        "role" => "defender"
+      }
+    ],
+    raid: [
+      %{
+        "arena" => [1000, 1000, 300],
+        "attacker_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "bout" => 0,
+        "defenders" => 12,
+        "defenders_home" => 0,
+        "entrants" => ["8ddd1f43ca9fc41a363d12c3c140a16d",
+         "a6b1605a0f8f82d8dde1bfa260e41168"],
+        "fact_version" => 3,
+        "frame_count" => 393,
+        "frame_fields" => ["drone", "x", "y", "z", "yaw", "health", "state"],
+        "ground" => [500, 500, 0, 500, 750, 0, 250, 500, 0, 500, 250, 0, 750,
+         500, 0],
+        "ground_fields" => ["x", "y", "z"],
+        "ground_range" => 350,
+        "island" => "beam01",
+        "island_id" => "a6b1605a0f8f82d8dde1bfa260e41168",
+        "kind" => "raid",
+        "munition_fields" => ["drone", "x", "y", "z", "guided"],
+        "raid_id" => "d293ba6a2e494fad8d7a01af028f8a58",
+        "raiders" => 12,
+        "raiders_home" => 1,
+        "signal_volume" => 19213905,
+        "start_index" => 0,
+        "survivors" => [16],
+        "ticks" => 786,
+        "track_fields" => ["x", "y", "z"],
+        "winner" => "attacker",
+        "withdrawn" => []
+      }
+    ]
+  },
+  raid: "d293ba6a2e494fad8d7a01af028f8a58"
+}
+%{
+  parts: %{
+    committed: [
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam03",
+        "island_id" => "e649229946edce4883dec30091566da5",
+        "opponent_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "raid_id" => "3f5b6efcefb2aa17e69dff8b648b2d78",
+        "role" => "attacker"
+      }
+    ],
+    raid: [
+      %{
+        "arena" => [1000, 1000, 300],
+        "attacker_id" => "e649229946edce4883dec30091566da5",
+        "bout" => 0,
+        "defenders" => 12,
+        "defenders_home" => 0,
+        "entrants" => ["e649229946edce4883dec30091566da5",
+         "8ddd1f43ca9fc41a363d12c3c140a16d"],
+        "fact_version" => 3,
+        "frame_count" => 289,
+        "frame_fields" => ["drone", "x", "y", "z", "yaw", "health", "state"],
+        "ground" => [500, 500, 0, 500, 750, 0, 250, 500, 0, 500, 250, 0, 750,
+         500, 0],
+        "ground_fields" => ["x", "y", "z"],
+        "ground_range" => 350,
+        "island" => "beam00",
+        "island_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "kind" => "raid",
+        "munition_fields" => ["drone", "x", "y", "z", "guided"],
+        "raid_id" => "3f5b6efcefb2aa17e69dff8b648b2d78",
+        "raiders" => 12,
+        "raiders_home" => 2,
+        "signal_volume" => 19295912,
+        "start_index" => 0,
+        "survivors" => [8, 10],
+        "ticks" => 578,
+        "track_fields" => ["x", "y", "z"],
+        "winner" => "attacker",
+        "withdrawn" => []
+      }
+    ]
+  },
+  raid: "3f5b6efcefb2aa17e69dff8b648b2d78"
+}
+%{
+  parts: %{
+    committed: [
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam01",
+        "island_id" => "a6b1605a0f8f82d8dde1bfa260e41168",
+        "opponent_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "raid_id" => "57abdcd345312b80d9f883de9c6ffb8a",
+        "role" => "attacker"
+      },
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam02",
+        "island_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "opponent_id" => "a6b1605a0f8f82d8dde1bfa260e41168",
+        "raid_id" => "57abdcd345312b80d9f883de9c6ffb8a",
+        "role" => "defender"
+      }
+    ],
+    raid: [
+      %{
+        "arena" => [1000, 1000, 300],
+        "attacker_id" => "a6b1605a0f8f82d8dde1bfa260e41168",
+        "bout" => 0,
+        "defenders" => 12,
+        "defenders_home" => 1,
+        "entrants" => ["a6b1605a0f8f82d8dde1bfa260e41168",
+         "60ac48650c12ea0b9b25ebc6255d2481"],
+        "fact_version" => 3,
+        "frame_count" => 436,
+        "frame_fields" => ["drone", "x", "y", "z", "yaw", "health", "state"],
+        "ground" => [500, 500, 0, 500, 750, 0, 250, 500, 0, 500, 250, 0, 750,
+         500, 0],
+        "ground_fields" => ["x", "y", "z"],
+        "ground_range" => 350,
+        "island" => "beam02",
+        "island_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "kind" => "raid",
+        "munition_fields" => ["drone", "x", "y", "z", "guided"],
+        "raid_id" => "57abdcd345312b80d9f883de9c6ffb8a",
+        "raiders" => 12,
+        "raiders_home" => 0,
+        "signal_volume" => 21534812,
+        "start_index" => 0,
+        "survivors" => [13],
+        "ticks" => 871,
+        "track_fields" => ["x", "y", "z"],
+        "winner" => "defender",
+        "withdrawn" => []
+      }
+    ]
+  },
+  raid: "57abdcd345312b80d9f883de9c6ffb8a"
+}
+%{
+  parts: %{
+    committed: [
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam02",
+        "island_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "opponent_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "raid_id" => "f97534e0443a3d3d61e60a2c94c01b7b",
+        "role" => "attacker"
+      },
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam00",
+        "island_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "opponent_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "raid_id" => "f97534e0443a3d3d61e60a2c94c01b7b",
+        "role" => "defender"
+      }
+    ],
+    raid: [
+      %{
+        "arena" => [1000, 1000, 300],
+        "attacker_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "bout" => 0,
+        "defenders" => 12,
+        "defenders_home" => 0,
+        "entrants" => ["60ac48650c12ea0b9b25ebc6255d2481",
+         "8ddd1f43ca9fc41a363d12c3c140a16d"],
+        "fact_version" => 3,
+        "frame_count" => 151,
+        "frame_fields" => ["drone", "x", "y", "z", "yaw", "health", "state"],
+        "ground" => [500, 500, 0, 500, 750, 0, 250, 500, 0, 500, 250, 0, 750,
+         500, 0],
+        "ground_fields" => ["x", "y", "z"],
+        "ground_range" => 350,
+        "island" => "beam00",
+        "island_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "kind" => "raid",
+        "munition_fields" => ["drone", "x", "y", "z", "guided"],
+        "raid_id" => "f97534e0443a3d3d61e60a2c94c01b7b",
+        "raiders" => 12,
+        "raiders_home" => 1,
+        "signal_volume" => 15031866,
+        "start_index" => 0,
+        "survivors" => [4],
+        "ticks" => 302,
+        "track_fields" => ["x", "y", "z"],
+        "winner" => "attacker",
+        "withdrawn" => []
+      }
+    ]
+  },
+  raid: "f97534e0443a3d3d61e60a2c94c01b7b"
+}
+%{
+  parts: %{
+    committed: [
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam00",
+        "island_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "opponent_id" => "a6b1605a0f8f82d8dde1bfa260e41168",
+        "raid_id" => "f743d30e7d197555d7930b4ef0c12a9a",
+        "role" => "attacker"
+      }
+    ],
+    raid: [
+      %{
+        "arena" => [1000, 1000, 300],
+        "attacker_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "bout" => 0,
+        "defenders" => 12,
+        "defenders_home" => 5,
+        "entrants" => ["8ddd1f43ca9fc41a363d12c3c140a16d",
+         "a6b1605a0f8f82d8dde1bfa260e41168"],
+        "fact_version" => 3,
+        "frame_count" => 150,
+        "frame_fields" => ["drone", "x", "y", "z", "yaw", "health", "state"],
+        "ground" => [500, 500, 0, 500, 750, 0, 250, 500, 0, 500, 250, 0, 750,
+         500, 0],
+        "ground_fields" => ["x", "y", "z"],
+        "ground_range" => 350,
+        "island" => "beam01",
+        "island_id" => "a6b1605a0f8f82d8dde1bfa260e41168",
+        "kind" => "raid",
+        "munition_fields" => ["drone", "x", "y", "z", "guided"],
+        "raid_id" => "f743d30e7d197555d7930b4ef0c12a9a",
+        "raiders" => 12,
+        "raiders_home" => 0,
+        "signal_volume" => 14762758,
+        "start_index" => 0,
+        "survivors" => [7, 9, 13, 17, 23],
+        "ticks" => 299,
+        "track_fields" => ["x", "y", "z"],
+        "winner" => "defender",
+        "withdrawn" => []
+      }
+    ]
+  },
+  raid: "f743d30e7d197555d7930b4ef0c12a9a"
+}
+%{
+  parts: %{
+    committed: [
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam03",
+        "island_id" => "e649229946edce4883dec30091566da5",
+        "opponent_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "raid_id" => "d5c181dfcbb3bd6f2d6fd0fdb527c6ed",
+        "role" => "attacker"
+      }
+    ],
+    raid: [
+      %{
+        "arena" => [1000, 1000, 300],
+        "attacker_id" => "e649229946edce4883dec30091566da5",
+        "bout" => 0,
+        "defenders" => 12,
+        "defenders_home" => 0,
+        "entrants" => ["e649229946edce4883dec30091566da5",
+         "8ddd1f43ca9fc41a363d12c3c140a16d"],
+        "fact_version" => 3,
+        "frame_count" => 281,
+        "frame_fields" => ["drone", "x", "y", "z", "yaw", "health", "state"],
+        "ground" => [500, 500, 0, 500, 750, 0, 250, 500, 0, 500, 250, 0, 750,
+         500, 0],
+        "ground_fields" => ["x", "y", "z"],
+        "ground_range" => 350,
+        "island" => "beam00",
+        "island_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "kind" => "raid",
+        "munition_fields" => ["drone", "x", "y", "z", "guided"],
+        "raid_id" => "d5c181dfcbb3bd6f2d6fd0fdb527c6ed",
+        "raiders" => 12,
+        "raiders_home" => 2,
+        "signal_volume" => 19380658,
+        "start_index" => 0,
+        "survivors" => [4, 12],
+        "ticks" => 561,
+        "track_fields" => ["x", "y", "z"],
+        "winner" => "attacker",
+        "withdrawn" => []
+      }
+    ]
+  },
+  raid: "d5c181dfcbb3bd6f2d6fd0fdb527c6ed"
+}
+%{
+  parts: %{
+    committed: [
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam01",
+        "island_id" => "a6b1605a0f8f82d8dde1bfa260e41168",
+        "opponent_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "raid_id" => "138a834b264a42c330bc31c03f695a49",
+        "role" => "attacker"
+      }
+    ],
+    raid: [
+      %{
+        "arena" => [1000, 1000, 300],
+        "attacker_id" => "a6b1605a0f8f82d8dde1bfa260e41168",
+        "bout" => 0,
+        "defenders" => 12,
+        "defenders_home" => 0,
+        "entrants" => ["a6b1605a0f8f82d8dde1bfa260e41168",
+         "60ac48650c12ea0b9b25ebc6255d2481"],
+        "fact_version" => 3,
+        "frame_count" => 121,
+        "frame_fields" => ["drone", "x", "y", "z", "yaw", "health", "state"],
+        "ground" => [500, 500, 0, 500, 750, 0, 250, 500, 0, 500, 250, 0, 750,
+         500, 0],
+        "ground_fields" => ["x", "y", "z"],
+        "ground_range" => 350,
+        "island" => "beam02",
+        "island_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "kind" => "raid",
+        "munition_fields" => ["drone", "x", "y", "z", "guided"],
+        "raid_id" => "138a834b264a42c330bc31c03f695a49",
+        "raiders" => 12,
+        "raiders_home" => 4,
+        "signal_volume" => 14870492,
+        "start_index" => 0,
+        "survivors" => [2, 6, 10, 16],
+        "ticks" => 241,
+        "track_fields" => ["x", "y", "z"],
+        "winner" => "attacker",
+        "withdrawn" => []
+      }
+    ]
+  },
+  raid: "138a834b264a42c330bc31c03f695a49"
+}
+%{
+  parts: %{
+    committed: [
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam00",
+        "island_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "opponent_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "raid_id" => "4327371668605c6796003e965fb8fc0a",
+        "role" => "defender"
+      },
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam02",
+        "island_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "opponent_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "raid_id" => "4327371668605c6796003e965fb8fc0a",
+        "role" => "attacker"
+      }
+    ],
+    raid: [
+      %{
+        "arena" => [1000, 1000, 300],
+        "attacker_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "bout" => 0,
+        "defenders" => 12,
+        "defenders_home" => 0,
+        "entrants" => ["60ac48650c12ea0b9b25ebc6255d2481",
+         "8ddd1f43ca9fc41a363d12c3c140a16d"],
+        "fact_version" => 3,
+        "frame_count" => 167,
+        "frame_fields" => ["drone", "x", "y", "z", "yaw", "health", "state"],
+        "ground" => [500, 500, 0, 500, 750, 0, 250, 500, 0, 500, 250, 0, 750,
+         500, 0],
+        "ground_fields" => ["x", "y", "z"],
+        "ground_range" => 350,
+        "island" => "beam00",
+        "island_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "kind" => "raid",
+        "munition_fields" => ["drone", "x", "y", "z", "guided"],
+        "raid_id" => "4327371668605c6796003e965fb8fc0a",
+        "raiders" => 12,
+        "raiders_home" => 2,
+        "signal_volume" => 14923867,
+        "start_index" => 0,
+        "survivors" => [10, 14],
+        "ticks" => 334,
+        "track_fields" => ["x", "y", "z"],
+        "winner" => "attacker",
+        "withdrawn" => []
+      }
+    ]
+  },
+  raid: "4327371668605c6796003e965fb8fc0a"
+}
+%{
+  parts: %{
+    committed: [
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam03",
+        "island_id" => "e649229946edce4883dec30091566da5",
+        "opponent_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "raid_id" => "9aa5880e5dda0e20c6e585f09a868499",
+        "role" => "attacker"
+      }
+    ],
+    raid: [
+      %{
+        "arena" => [1000, 1000, 300],
+        "attacker_id" => "e649229946edce4883dec30091566da5",
+        "bout" => 0,
+        "defenders" => 12,
+        "defenders_home" => 0,
+        "entrants" => ["e649229946edce4883dec30091566da5",
+         "60ac48650c12ea0b9b25ebc6255d2481"],
+        "fact_version" => 3,
+        "frame_count" => 238,
+        "frame_fields" => ["drone", "x", "y", "z", "yaw", "health", "state"],
+        "ground" => [500, 500, 0, 500, 750, 0, 250, 500, 0, 500, 250, 0, 750,
+         500, 0],
+        "ground_fields" => ["x", "y", "z"],
+        "ground_range" => 350,
+        "island" => "beam02",
+        "island_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "kind" => "raid",
+        "munition_fields" => ["drone", "x", "y", "z", "guided"],
+        "raid_id" => "9aa5880e5dda0e20c6e585f09a868499",
+        "raiders" => 12,
+        "raiders_home" => 2,
+        "signal_volume" => 16710145,
+        "start_index" => 0,
+        "survivors" => [4, 14],
+        "ticks" => 476,
+        "track_fields" => ["x", "y", "z"],
+        "winner" => "attacker",
+        "withdrawn" => []
+      }
+    ]
+  },
+  raid: "9aa5880e5dda0e20c6e585f09a868499"
+}
+%{
+  parts: %{
+    committed: [
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam01",
+        "island_id" => "a6b1605a0f8f82d8dde1bfa260e41168",
+        "opponent_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "raid_id" => "e97a85991f633d8946d578a2fb9d6e19",
+        "role" => "attacker"
+      }
+    ],
+    raid: [
+      %{
+        "arena" => [1000, 1000, 300],
+        "attacker_id" => "a6b1605a0f8f82d8dde1bfa260e41168",
+        "bout" => 0,
+        "defenders" => 12,
+        "defenders_home" => 0,
+        "entrants" => ["a6b1605a0f8f82d8dde1bfa260e41168",
+         "60ac48650c12ea0b9b25ebc6255d2481"],
+        "fact_version" => 3,
+        "frame_count" => 226,
+        "frame_fields" => ["drone", "x", "y", "z", "yaw", "health", "state"],
+        "ground" => [500, 500, 0, 500, 750, 0, 250, 500, 0, 500, 250, 0, 750,
+         500, 0],
+        "ground_fields" => ["x", "y", "z"],
+        "ground_range" => 350,
+        "island" => "beam02",
+        "island_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "kind" => "raid",
+        "munition_fields" => ["drone", "x", "y", "z", "guided"],
+        "raid_id" => "e97a85991f633d8946d578a2fb9d6e19",
+        "raiders" => 12,
+        "raiders_home" => 3,
+        "signal_volume" => 17431168,
+        "start_index" => 0,
+        "survivors" => [4, 10, 22],
+        "ticks" => 451,
+        "track_fields" => ["x", "y", "z"],
+        "winner" => "attacker",
+        "withdrawn" => []
+      }
+    ]
+  },
+  raid: "e97a85991f633d8946d578a2fb9d6e19"
+}
+%{
+  parts: %{
+    committed: [
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam02",
+        "island_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "opponent_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "raid_id" => "44174ee144a11f49b235354bb13b2e8f",
+        "role" => "attacker"
+      },
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam00",
+        "island_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "opponent_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "raid_id" => "44174ee144a11f49b235354bb13b2e8f",
+        "role" => "defender"
+      }
+    ],
+    raid: [
+      %{
+        "arena" => [1000, 1000, 300],
+        "attacker_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "bout" => 0,
+        "defenders" => 12,
+        "defenders_home" => 1,
+        "entrants" => ["60ac48650c12ea0b9b25ebc6255d2481",
+         "8ddd1f43ca9fc41a363d12c3c140a16d"],
+        "fact_version" => 3,
+        "frame_count" => 302,
+        "frame_fields" => ["drone", "x", "y", "z", "yaw", "health", "state"],
+        "ground" => [500, 500, 0, 500, 750, 0, 250, 500, 0, 500, 250, 0, 750,
+         500, 0],
+        "ground_fields" => ["x", "y", "z"],
+        "ground_range" => 350,
+        "island" => "beam00",
+        "island_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "kind" => "raid",
+        "munition_fields" => ["drone", "x", "y", "z", "guided"],
+        "raid_id" => "44174ee144a11f49b235354bb13b2e8f",
+        "raiders" => 12,
+        "raiders_home" => 0,
+        "signal_volume" => 19063780,
+        "start_index" => 0,
+        "survivors" => [7],
+        "ticks" => 603,
+        "track_fields" => ["x", "y", "z"],
+        "winner" => "defender",
+        "withdrawn" => []
+      }
+    ]
+  },
+  raid: "44174ee144a11f49b235354bb13b2e8f"
+}
+%{
+  parts: %{
+    committed: [
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam02",
+        "island_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "opponent_id" => "e649229946edce4883dec30091566da5",
+        "raid_id" => "29371b6882ccf769573666cdeefecf94",
+        "role" => "defender"
+      },
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam03",
+        "island_id" => "e649229946edce4883dec30091566da5",
+        "opponent_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "raid_id" => "29371b6882ccf769573666cdeefecf94",
+        "role" => "attacker"
+      }
+    ],
+    raid: [
+      %{
+        "arena" => [1000, 1000, 300],
+        "attacker_id" => "e649229946edce4883dec30091566da5",
+        "bout" => 0,
+        "defenders" => 12,
+        "defenders_home" => 2,
+        "entrants" => ["e649229946edce4883dec30091566da5",
+         "60ac48650c12ea0b9b25ebc6255d2481"],
+        "fact_version" => 3,
+        "frame_count" => 181,
+        "frame_fields" => ["drone", "x", "y", "z", "yaw", "health", "state"],
+        "ground" => [500, 500, 0, 500, 750, 0, 250, 500, 0, 500, 250, 0, 750,
+         500, 0],
+        "ground_fields" => ["x", "y", "z"],
+        "ground_range" => 350,
+        "island" => "beam02",
+        "island_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "kind" => "raid",
+        "munition_fields" => ["drone", "x", "y", "z", "guided"],
+        "raid_id" => "29371b6882ccf769573666cdeefecf94",
+        "raiders" => 12,
+        "raiders_home" => 0,
+        "signal_volume" => 16423868,
+        "start_index" => 0,
+        "survivors" => [5, 15],
+        "ticks" => 362,
+        "track_fields" => ["x", "y", "z"],
+        "winner" => "defender",
+        "withdrawn" => []
+      }
+    ]
+  },
+  raid: "29371b6882ccf769573666cdeefecf94"
+}
+%{
+  parts: %{
+    raid: [
+      %{
+        "arena" => [1000, 1000, 300],
+        "attacker_id" => "e649229946edce4883dec30091566da5",
+        "bout" => 0,
+        "defenders" => 12,
+        "defenders_home" => 0,
+        "entrants" => ["e649229946edce4883dec30091566da5",
+         "60ac48650c12ea0b9b25ebc6255d2481"],
+        "fact_version" => 3,
+        "frame_count" => 338,
+        "frame_fields" => ["drone", "x", "y", "z", "yaw", "health", "state"],
+        "ground" => [500, 500, 0, 500, 750, 0, 250, 500, 0, 500, 250, 0, 750,
+         500, 0],
+        "ground_fields" => ["x", "y", "z"],
+        "ground_range" => 350,
+        "island" => "beam02",
+        "island_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "kind" => "raid",
+        "munition_fields" => ["drone", "x", "y", "z", "guided"],
+        "raid_id" => "d241f1e3c9017683c5b955cb9071c789",
+        "raiders" => 12,
+        "raiders_home" => 1,
+        "signal_volume" => 19380233,
+        "start_index" => 0,
+        "survivors" => [16],
+        "ticks" => 675,
+        "track_fields" => ["x", "y", "z"],
+        "winner" => "attacker",
+        "withdrawn" => []
+      }
+    ]
+  },
+  raid: "d241f1e3c9017683c5b955cb9071c789"
+}
+%{
+  parts: %{
+    committed: [
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam01",
+        "island_id" => "a6b1605a0f8f82d8dde1bfa260e41168",
+        "opponent_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "raid_id" => "4f36e6dda2d482c7c3196f13ed4c3b27",
+        "role" => "attacker"
+      }
+    ],
+    raid: [
+      %{
+        "arena" => [1000, 1000, 300],
+        "attacker_id" => "a6b1605a0f8f82d8dde1bfa260e41168",
+        "bout" => 0,
+        "defenders" => 12,
+        "defenders_home" => 2,
+        "entrants" => ["a6b1605a0f8f82d8dde1bfa260e41168",
+         "60ac48650c12ea0b9b25ebc6255d2481"],
+        "fact_version" => 3,
+        "frame_count" => 179,
+        "frame_fields" => ["drone", "x", "y", "z", "yaw", "health", "state"],
+        "ground" => [500, 500, 0, 500, 750, 0, 250, 500, 0, 500, 250, 0, 750,
+         500, 0],
+        "ground_fields" => ["x", "y", "z"],
+        "ground_range" => 350,
+        "island" => "beam02",
+        "island_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "kind" => "raid",
+        "munition_fields" => ["drone", "x", "y", "z", "guided"],
+        "raid_id" => "4f36e6dda2d482c7c3196f13ed4c3b27",
+        "raiders" => 12,
+        "raiders_home" => 0,
+        "signal_volume" => 16531307,
+        "start_index" => 0,
+        "survivors" => [5, 21],
+        "ticks" => 358,
+        "track_fields" => ["x", "y", "z"],
+        "winner" => "defender",
+        "withdrawn" => []
+      }
+    ]
+  },
+  raid: "4f36e6dda2d482c7c3196f13ed4c3b27"
+}
+%{
+  parts: %{
+    committed: [
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam02",
+        "island_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "opponent_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "raid_id" => "55c552938320a1684b76923f866aa178",
+        "role" => "attacker"
+      },
+      %{
+        "airframes" => 12,
+        "fact_version" => 3,
+        "island" => "beam00",
+        "island_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "opponent_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "raid_id" => "55c552938320a1684b76923f866aa178",
+        "role" => "defender"
+      }
+    ],
+    raid: [
+      %{
+        "arena" => [1000, 1000, 300],
+        "attacker_id" => "60ac48650c12ea0b9b25ebc6255d2481",
+        "bout" => 0,
+        "defenders" => 12,
+        "defenders_home" => 3,
+        "entrants" => ["60ac48650c12ea0b9b25ebc6255d2481",
+         "8ddd1f43ca9fc41a363d12c3c140a16d"],
+        "fact_version" => 3,
+        "frame_count" => 166,
+        "frame_fields" => ["drone", "x", "y", "z", "yaw", "health", "state"],
+        "ground" => [500, 500, 0, 500, 750, 0, 250, 500, 0, 500, 250, 0, 750,
+         500, 0],
+        "ground_fields" => ["x", "y", "z"],
+        "ground_range" => 350,
+        "island" => "beam00",
+        "island_id" => "8ddd1f43ca9fc41a363d12c3c140a16d",
+        "kind" => "raid",
+        "munition_fields" => ["drone", "x", "y", "z", "guided"],
+        "raid_id" => "55c552938320a1684b76923f866aa178",
+        "raiders" => 12,
+        "raiders_home" => 0,
+        "signal_volume" => 14321720,
+        "start_index" => 0,
+        "survivors" => [9, 13, 21],
+        "ticks" => 331,
+        "track_fields" => ["x", "y", "z"],
+        "winner" => "defender",
+        "withdrawn" => []
+      }
+    ]
+  },
+  raid: "55c552938320a1684b76923f866aa178"
+}
+
+=== LEADERBOARD ===
+%{
+  id: "8ddd1f43ca9fc41a363d12c3c140a16d",
+  generation: 11,
+  score: 100,
+  island: "beam00",
+  raids: 866,
+  capacity: 240,
+  captures: 5134,
+  defences: 499,
+  roster: 226,
+  rungs: 6
+}
+%{
+  id: "e649229946edce4883dec30091566da5",
+  generation: 53,
+  score: 100,
+  island: "beam03",
+  raids: 365,
+  capacity: 240,
+  captures: 12,
+  defences: 3,
+  roster: 204,
+  rungs: 6
+}
+%{
+  id: "60ac48650c12ea0b9b25ebc6255d2481",
+  generation: 13,
+  score: 98,
+  island: "beam02",
+  raids: 857,
+  capacity: 240,
+  captures: 5682,
+  defences: 491,
+  roster: 227,
+  rungs: 6
+}
+%{
+  id: "a6b1605a0f8f82d8dde1bfa260e41168",
+  generation: 77,
+  score: 86,
+  island: "beam01",
+  raids: 519,
+  capacity: 240,
+  captures: 1918,
+  defences: 163,
+  roster: 132,
+  rungs: 6
+}

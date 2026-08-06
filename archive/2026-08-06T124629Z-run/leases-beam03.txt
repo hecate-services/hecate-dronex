@@ -1,0 +1,1 @@
+[{me, "e649229946"}, {my_fp, "BCC385CB380E"}, {adv, true}, {op, true}, {floor, 60}, {leases, [{"60ac48650c", "BCC385CB380E", true, 224}]}]
