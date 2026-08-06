@@ -42,7 +42,7 @@
 -module(dronex_facts).
 
 -export([topic/1, topics/0, namespace/0, fact_version/0]).
--export([vitals/2, bout/4, raid/3, opened/1, closed/0, settled/3, committed/3]).
+-export([vitals/2, bout/4, raid/3, opened/1, closed/0, settled/3, committed/4]).
 
 -define(DEFAULT_NS, <<"dronex">>).
 
@@ -330,15 +330,23 @@ closed() ->
 %% measurable rate rather than an invisible one, a raid in flight becomes
 %% drawable before it is over, and an island being attacked by several at once
 %% becomes visible instead of merely inferable from a roster shrinking.
--spec committed(binary(), attacker | defender, {binary(), pos_integer()}) -> map().
-committed(RaidId, Role, {Opponent, Airframes}) ->
+-spec committed(binary(), attacker | defender, {binary(), pos_integer()},
+                island:island()) -> map().
+committed(RaidId, Role, {Opponent, Airframes}, Island) ->
     #{fact_version => ?FACT_VERSION,
       island => dronex_identity:island(),
       island_id => dronex_identity:island_id(),
       raid_id => RaidId,
       role => Role,
       opponent_id => Opponent,
-      airframes => Airframes}.
+      airframes => Airframes,
+      %% ⚠ THE ATTACKER'S SIDE OF THE STAMP, AND THE ONLY PLACE IT CAN COME FROM.
+      %% A raid recording is published by the DEFENDER, which knows its own
+      %% roster and nothing about its opponent's. Both sides emit a commitment,
+      %% so stamping it here is what lets a reader order a raid by where the
+      %% RAIDER was in its evolution rather than only the host.
+      generation => island:generation_of(Island),
+      rounds => island:rounds_of(Island)}.
 
 %% @doc What happened to the attacker's genomes, addressed by raid.
 %%
@@ -380,6 +388,21 @@ raid(Result, Fates, Meta) ->
         island_id => dronex_identity:island_id(),
         attacker_id => maps:get(from, Meta),
         raid_id => maps:get(raid, Meta),
+        %% ⚠ WHERE THIS ISLAND WAS IN ITS OWN EVOLUTION WHEN THIS HAPPENED.
+        %% Recordings carried a TICK and nothing about the roster that produced
+        %% them, so nothing longitudinal could ever be asked of them — "did
+        %% spacing improve", "did specialisation emerge" — because there was no
+        %% way to order two recordings by anything but wall clock, and wall clock
+        %% is not what evolves.
+        %%
+        %% ⚠⚠ BOTH NUMBERS, BECAUSE THEY MEASURE DIFFERENT THINGS AND ONE OF THEM
+        %% LIES ABOUT THE OTHER. `generation' is `lists:max' over the roster's
+        %% entries and a raid admits CAPTURED genomes at generation 0, so an
+        %% island that absorbs a swarm has its generation cut without breeding
+        %% less. `rounds' is the breeding clock and only ever climbs. A reader
+        %% given one of them will use it as though it were the other.
+        generation => maps:get(generation, Meta, 0),
+        rounds => maps:get(rounds, Meta, 0),
         %% How many of the attacker's genomes came home. The defender's own
         %% losses are its business and are visible in its roster depth; what a
         %% spectator needs is the price the RAID paid, which is what makes an

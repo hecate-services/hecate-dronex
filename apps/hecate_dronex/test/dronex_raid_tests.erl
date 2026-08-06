@@ -174,10 +174,18 @@ with_data_dir(F) ->
 %% defender that went dark after accepting left the attacker six airframes poorer
 %% with nothing anywhere recording that the raid had happened.
 both_sides_witness_the_same_raid_from_their_own_side_test() ->
+    %% ⚠ A COMMITMENT NOW STAMPS THE COMMITTER'S OWN ROSTER STATE. The raid
+    %% recording is published by the DEFENDER, which knows nothing about its
+    %% opponent's evolution, so the attacker's half of that stamp can only come
+    %% from here.
+    I = island:new(#{seed => 7}),
     Att = with_data_dir(fun () ->
-        dronex_facts:committed(<<"r1">>, attacker, {<<"them">>, 6}) end),
+        dronex_facts:committed(<<"r1">>, attacker, {<<"them">>, 6}, I) end),
     Def = with_data_dir(fun () ->
-        dronex_facts:committed(<<"r1">>, defender, {<<"us">>, 6}) end),
+        dronex_facts:committed(<<"r1">>, defender, {<<"us">>, 6}, I) end),
+
+    ?assert(maps:is_key(generation, Att)),
+    ?assert(maps:is_key(rounds, Att)),
 
     %% Same raid, different claims, neither authoritative over the other.
     ?assertEqual(<<"r1">>, maps:get(raid_id, Att)),
@@ -187,9 +195,38 @@ both_sides_witness_the_same_raid_from_their_own_side_test() ->
     ?assertEqual(<<"them">>, maps:get(opponent_id, Att)),
     ?assertEqual(6, maps:get(airframes, Att)),
 
-    ?assertEqual(lists:sort([airframes, fact_version, island, island_id,
-                             opponent_id, raid_id, role]),
+    ?assertEqual(lists:sort([airframes, fact_version, generation, island,
+                             island_id, opponent_id, raid_id, role, rounds]),
                  lists:sort(maps:keys(Att))).
+
+%% ⚠ A RECORDING WITHOUT A ROSTER STAMP CAN NEVER BE ASKED A LONGITUDINAL
+%% QUESTION. Until this existed a recording carried a TICK and nothing about the
+%% population that produced it, so two recordings could be ordered by wall clock
+%% and by nothing that evolves — "did spacing improve", "did specialisation
+%% emerge" were unanswerable from stored data no matter how much of it there was.
+%%
+%% BOTH numbers, because one lies about the other: `generation' is lists:max over
+%% the roster and a raid admits CAPTURED genomes at generation 0, so absorbing a
+%% swarm cuts an island's generation without it breeding any less. `rounds' only
+%% climbs.
+a_recording_says_where_the_island_was_in_its_own_evolution_test() ->
+    with_data_dir(fun () ->
+        Fact = dronex_facts:raid(#{}, [],
+                                 #{from => <<"them">>, raid => <<"r1">>, tick => 9,
+                                   generation => 41, rounds => 9611,
+                                   defenders => 12, defenders_home => 3}),
+        ?assertEqual(41, maps:get(generation, Fact)),
+        ?assertEqual(9611, maps:get(rounds, Fact))
+    end).
+
+%% An older island publishes neither, and a reader must get a number rather than
+%% a crash: a fleet mid-roll has both versions on the wire at once.
+a_recording_from_an_older_island_still_decodes_test() ->
+    with_data_dir(fun () ->
+        Fact = dronex_facts:raid(#{}, [], #{from => <<"them">>, raid => <<"r1">>}),
+        ?assertEqual(0, maps:get(generation, Fact)),
+        ?assertEqual(0, maps:get(rounds, Fact))
+    end).
 
 %% It is public, unlike the settlement: the settlement is addressed and must stay
 %% small, while a commitment exists to be a record and to be drawn.

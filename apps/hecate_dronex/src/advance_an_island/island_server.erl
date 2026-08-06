@@ -257,7 +257,14 @@ mustered_defence({I2, Party}, #{island := I} = S) ->
     %% The start geometry is derived from the tick rather than drawn, so a raid
     %% is reproducible from the facts it publishes.
     Index = island:tick_of(I) rem drone_starts:count(),
-    {reply, {ok, Party, Index}, S#{island := I2}}.
+    %% ⚠ THE ROSTER STAMP RIDES BACK ON A CALL THAT WAS ALREADY HAPPENING. The
+    %% raid recording needs to say where this island was in its own evolution,
+    %% and the recording is built OFF this process on purpose — it is ~1.6 MB of
+    %% frames, and casting it here to read two integers would put the whole
+    %% engagement through the island's mailbox and stop its clock to announce
+    %% something it already knows. Three integers on a reply, no new message.
+    Stamp = #{generation => island:generation_of(I2), rounds => island:rounds_of(I2)},
+    {reply, {ok, Party, Index, Stamp}, S#{island := I2}}.
 
 %% The writer's own exercise counts, pushed after every drain. Held rather than
 %% fetched: see `roster_log_writer:told/1'.
@@ -269,6 +276,14 @@ handle_cast({roster_written, Stats}, S) -> {noreply, S#{writer := Stats}};
 %% A fact published from somebody else's process still belongs in this island's
 %% counters, or `sent' and `failed' quietly stop describing everything it sends.
 handle_cast({published, Outcome}, S) -> {noreply, counted(Outcome, S)};
+%% ⚠ THE COMMITMENT IS BUILT HERE AND PUBLISHED FROM HERE, because it now carries
+%% the committing island's own roster state and only this process holds the
+%% island. Both sides announce: the attacker from `away/4' off-process, the
+%% defender from macula's process while hosting, and neither of them has the
+%% island in hand. Building the fact where the state is costs one cast and is the
+%% only place the numbers are true.
+handle_cast({commit_as, Role, RaidId, Opponent, Airframes}, #{island := I} = S) ->
+    {noreply, counted(commit(RaidId, Role, {Opponent, Airframes}, I), S)};
 %% A raid this island hosted has finished, off-process. Two things settle at
 %% once: the defenders that survived come back, and the attacker's genomes are
 %% kept whatever the outcome was.
@@ -628,7 +643,7 @@ away(Target, RaidId, Party, Back) ->
 %% Only when the raid was actually taken. A refused party never left the ground,
 %% so announcing a commitment for it would be announcing a cost nobody paid.
 announce_commitment(accepted, RaidId, Target, Airframes, Back) ->
-    gen_server:cast(Back, {published, commit(RaidId, attacker, {Target, Airframes})});
+    gen_server:cast(Back, {commit_as, attacker, RaidId, Target, Airframes});
 announce_commitment(refused, _RaidId, _Target, _Airframes, _Back) ->
     ok.
 
@@ -695,20 +710,20 @@ checked(ok, Req, Island) -> defended(gen_server:call(Island, {defend, Req},
 %% is never waiting on somebody else's engagement and the defender is never
 %% holding a call open while it works.
 defended({error, Why}, _Req, _Island) -> {error, Why};
-defended({ok, Defenders, Index}, Req, Island) ->
+defended({ok, Defenders, Index, Stamp}, Req, Island) ->
     Raiders = [{Id, G} || #{id := Id, genome := P} <- maps:get(sortie, Req),
                           {ok, G} <- [drone_genome:unpack(P)]],
-    gen_server:cast(Island, {published, commit(maps:get(raid_id, Req), defender,
-                                               {maps:get(attacker, Req), length(Defenders)})}),
+    gen_server:cast(Island, {commit_as, defender, maps:get(raid_id, Req),
+                             maps:get(attacker, Req), length(Defenders)}),
     _ = spawn(fun () -> hosted(defence:compose(Defenders, Raiders, Index),
-                               Defenders, Raiders, Req, Island) end),
+                               Defenders, Raiders, Req#{stamp => Stamp}, Island) end),
     dronex_raid:accepted(maps:get(raid_id, Req)).
 
 %% Published from whichever process is not the island's, so neither side's clock
 %% stops to announce that it has paid.
-commit(RaidId, Role, Against) ->
+commit(RaidId, Role, Against, Island) ->
     dronex_mesh:publish(dronex_facts:topic(committed),
-                        dronex_facts:committed(RaidId, Role, Against)).
+                        dronex_facts:committed(RaidId, Role, Against, Island)).
 
 %% ⚠ NOBODY IS WAITING ON THIS, so its only job is to be honest afterwards. The
 %% settlement goes to the attacker as a small fact between islands; the recording
@@ -726,9 +741,11 @@ hosted({ok, Arena, Controllers, Pairs}, Defenders, Raiders, Req, Island) ->
     Result = (defence:host(Controllers))(Arena),
     Fates = defence:fates(maps:get(attackers, Pairs), Result),
     Survivors = defence:survivors(maps:get(defenders, Pairs), Result),
-    Meta = #{from => maps:get(attacker, Req), raid => maps:get(raid_id, Req),
-             tick => maps:get(tick, Req, 0),
-             defenders => length(Defenders), defenders_home => length(Survivors)},
+    Meta = maps:merge(
+             maps:get(stamp, Req, #{}),
+             #{from => maps:get(attacker, Req), raid => maps:get(raid_id, Req),
+               tick => maps:get(tick, Req, 0),
+               defenders => length(Defenders), defenders_home => length(Survivors)}),
     gen_server:cast(Island, {defended, Survivors, Defenders, Raiders, Meta}),
     %% ⚠ COUNTED, NOT DISCARDED, AND IT WAS DISCARDED FIRST. This runs off the
     %% island's process, so its publish counters cannot see it unless it is sent
