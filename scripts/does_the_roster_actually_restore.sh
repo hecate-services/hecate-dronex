@@ -31,7 +31,7 @@ for box in $BOXES; do
       %% The SHAPE, never the contents: a tag and a size can be printed safely.
       Shape = case reckon_gater_api:stream_forward(S, Stream, 0, 1) of
                 {ok, L} when is_list(L) -> {ok_list, length(L)};
-                T when is_tuple(T) -> {tuple, tuple_size(T), element(1, T)};
+                Tup when is_tuple(Tup) -> {tuple, tuple_size(Tup), element(1, Tup)};
                 Other -> {not_a_tuple, is_list(Other)}
               end,
 
@@ -47,13 +47,21 @@ for box in $BOXES; do
 
       %% The restore itself. A roster is huge, so only its size is reported, and
       %% an error is reported by REASON with the payload dropped.
+      %% restore/2 answers {ok, Roster, Tally} since the 2026-08-07 fix. The
+      %% two-tuple clause is kept so this probe still says something useful when
+      %% pointed at an island running the older image.
+      %% NO APOSTROPHES IN THIS EVAL: it travels inside a single-quoted bash
+      %% string, and one closing quote ends the ssh argument early.
       Restored = case roster_log:restore(S, roster:new(probe)) of
-                   {ok, R} -> {ok, roster:depth(R)};
+                   {ok, R, Tal} -> {ok, roster:depth(R), maps:get(rounds, Tal, no_tally)};
+                   {ok, R} -> {ok_old_image, roster:depth(R)};
                    {error, Why} -> {error, element(1, Why)}
                  end,
 
       #{shape => Shape, stream_depth => Depth, restore => Restored,
-        live_roster => roster:depth(island_server:roster())}
+        live_roster => roster:depth(island_server:roster()),
+        live_rounds => island:rounds_of(island_server:island()),
+        live_tick => island:tick_of(island_server:island())}
       catch Class:Reason -> {probe_failed, Class, Reason}
       end,
       lists:flatten(io_lib:format(\"~P\", [Answer, 12]))." 2>&1 | tail -3

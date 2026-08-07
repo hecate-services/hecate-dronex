@@ -33,6 +33,10 @@ on:
       - 'design/**'
       - 'plans/**'
       - 'LICENSE'
+      # Operator tools. The Containerfile copies `rebar.config', `config' and
+      # `apps' and nothing else, so a probe or a deploy script cannot change the
+      # image and has no business restarting five islands to prove it.
+      - 'scripts/**'
   workflow_dispatch:
 
 jobs:
