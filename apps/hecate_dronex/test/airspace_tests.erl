@@ -70,12 +70,20 @@ hover_endurance_is_about_nine_minutes_test() ->
 %% cap, so energy is a thing to spend tactically. If this ever stopped being
 %% true, the battery would be decoration and nothing else in the suite would
 %% notice.
-full_thrust_endurance_is_shorter_than_an_engagement_test() ->
-    #{max_accel := T, start_battery := B, draw_div := Div} = airspace:limits(),
-    Draw = T * fixed:isqrt(T) div Div,
-    Ticks = B div Draw,
-    ?assert(Ticks < airspace:max_ticks()),
-    ?assert(Ticks > airspace:max_ticks() div 2).
+%% ⚠ AGAINST THE PHYSICS, NOT AGAINST A CAP. This used to assert that full-thrust
+%% endurance was between half and all of `max_ticks', which made the harness the
+%% yardstick for a property of the battery. The cap is gone; the number it was
+%% measured against never justified itself anyway. What matters is that flying
+%% hard is expensive against hovering, which is the whole point of the pack.
+full_thrust_endurance_is_far_shorter_than_hovering_test() ->
+    #{max_accel := T, gravity := G, start_battery := B, draw_div := Div} = airspace:limits(),
+    Draw = fun (Thrust) -> Thrust * fixed:isqrt(Thrust) div Div end,
+    Hard = B div Draw(T),
+    Hover = B div Draw(G),
+    %% About 46 seconds at 20 Hz against about nine minutes.
+    ?assert(Hard > 800),
+    ?assert(Hard < 1100),
+    ?assert(Hover > 10 * Hard).
 
 %% Superlinear: doubling thrust costs more than twice as much. Momentum theory,
 %% and the reason a linear draw was rejected.
@@ -328,14 +336,17 @@ a_fresh_engagement_is_undecided_test() ->
     ?assertNot(airspace:finished(pair())),
     ?assertEqual(undecided, airspace:winner(pair())).
 
-%% Reaching the cap is a DRAW and a real outcome. Two swarms that decline to
-%% engage produce exactly this, and calling it a fault would hide the behaviour.
-the_cap_is_a_draw_test() ->
+%% ⚠ THERE IS NO CLOCK, SINCE 2026-08-07. Two swarms that decline to engage used
+%% to be handed a draw at 1200 ticks by a bare `?MAX_TICKS' with no comment
+%% justifying the number, which also censored every duration measured at it. An
+%% engagement now ends when a side stops holding the airspace and not before.
+there_is_no_cap_test() ->
     #{gravity := G} = airspace:limits(),
     Hover = #{a => #intent{thrust_vert = G}, b => #intent{thrust_vert = G}},
-    After = run(pair(), Hover, airspace:max_ticks()),
-    ?assert(airspace:finished(After)),
-    ?assertEqual(draw, airspace:winner(After)).
+    After = run(pair(), Hover, 1400),
+
+    ?assertNot(airspace:finished(After)),
+    ?assertEqual(undecided, airspace:winner(After)).
 
 a_side_with_nobody_left_has_lost_test() ->
     A0 = pair(),
@@ -427,12 +438,30 @@ an_interrupted_hold_starts_again_test() ->
     Broken = run(Nearly, Dash, 3),
     ?assertEqual(0, (airspace:drone(Broken, a))#drone.withdraw_hold).
 
-%% The ground is a surface, not a door. Landing gently in somebody else's
-%% airspace is not withdrawing from it.
-the_ground_is_not_a_way_out_test() ->
+%% ⚠ LANDING IS LEAVING, AND THIS REVERSES WHAT THIS TEST USED TO ASSERT. While
+%% the engagement had a clock, a drone that put down and sat there was harmless
+%% because the clock ended the fight. With no clock it is not: zero thrust draws
+%% zero power, so a landed drone burns nothing and its battery never runs down,
+%% and two swarms that both landed would contest an airspace neither was in for
+%% ever. Evolution finds that the moment a draw beats a loss.
+landing_is_leaving_test() ->
     After = run(one(#{z => 1 * ?M}), idle(), 40),
-    ?assertNot((d(After))#drone.withdrawn),
+
+    ?assert((d(After))#drone.withdrawn),
     ?assertEqual(0, (d(After))#drone.z).
+
+%% ⚠⚠ BUT ARRIVING FAST IS STILL CRASHING. Terminal speed under full thrust is
+%% about 35 m/s and the ground kills at 40, so a dive is not fatal on first
+%% contact and never was: it died by being driven into the ground over several
+%% ticks. Calling that a landing would take a drone out at a tenth of its health
+%% and send home a genome that should not have come back.
+a_crash_is_not_a_landing_test() ->
+    #{max_accel := T} = airspace:limits(),
+    Down = #{a => #intent{thrust_vert = -T}},
+    After = run(one(#{z => 300 * ?M}), Down, 200),
+
+    ?assertNot((d(After))#drone.withdrawn),
+    ?assert((d(After))#drone.dead).
 
 %% A withdrawn drone is out of the engagement, so a side that has all withdrawn
 %% has conceded the airspace even though every one of its genomes came home.

@@ -124,7 +124,13 @@ a_bout_fits_the_transport_with_room_test() ->
 a_full_length_bout_would_still_fit_test() ->
     {_Res, F} = recorded(),
     Per = byte_size(term_to_binary(F)) div max(1, length(maps:get(frames, F))),
-    Full = Per * (airspace:max_ticks() div dronex_bout:every()),
+    %% ⚠ THE BOUND IS THE BATTERY NOW, NOT A CAP. With no clock, the longest an
+    %% engagement can run is the longest anything can stay airborne, which is a
+    %% hover on a full pack. Derived from the published limits rather than from a
+    %% constant, so the day the pack changes this follows it.
+    #{gravity := G, start_battery := B, draw_div := Div} = airspace:limits(),
+    Longest = B div (G * fixed:isqrt(G) div Div),
+    Full = Per * (Longest div dronex_bout:every()),
     ?assert(Full < 1048576).
 
 %%==============================================================================

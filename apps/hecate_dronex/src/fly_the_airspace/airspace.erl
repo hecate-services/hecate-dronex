@@ -22,7 +22,7 @@
 %%   battery          79.2 kJ, about 22 Wh, a 4S pack
 %%   hover draw       about 150 W, so roughly 9 minutes of hovering
 %%   full-thrust draw about 1.7 kW, so roughly 46 seconds
-%%   engagement cap   60 seconds
+%%   engagement cap   NONE since 2026-08-07; the battery is the only clock
 %%
 %% ⚠ THE LAST THREE ARE THE POINT OF THE BATTERY. Hovering is nearly free
 %% against a 60 second engagement and flying hard is not, so energy is a thing to
@@ -42,7 +42,7 @@
 -export([new/1, new/2, step/2, finished/1, winner/1]).
 -export([drones/1, munitions/1, tick_of/1, seed_of/1, drone/2, alive/1, alive/2]).
 -export([present/2, survivors/1, lock/2]).
--export([limits/0, max_ticks/0]).
+-export([limits/0]).
 
 %%==============================================================================
 %% The world
@@ -65,7 +65,6 @@
 -define(ARENA_Z, 6144000).
 -endif.
 
--define(MAX_TICKS, 1200).
 
 %%==============================================================================
 %% Flight
@@ -359,6 +358,38 @@ draw(Mag) -> Mag * fixed:isqrt(Mag) div ?DRAW_DIV.
 bounded(#drone{} = D) when D#drone.dead; D#drone.withdrawn -> D;
 bounded(#drone{} = D) -> edged(clamped(D)).
 
+%% ⚠ TOUCHING THE GROUND IS LEAVING, AND THIS REVERSES THE LINE BELOW IT ON
+%% PURPOSE. While the engagement had a 60 second cap, a drone that landed and sat
+%% there was harmless: the clock ended the fight. With the cap gone it is not, and
+%% it is not a hypothetical. Zero thrust draws zero power, so a landed drone burns
+%% NOTHING and its battery never runs down. Two swarms that both put down would
+%% contest an airspace neither was in, for ever, and evolution finds that the
+%% moment a draw beats a loss.
+%%
+%% So landing is withdrawing downward, and it uses the withdrawal that already
+%% exists rather than a fourth drone state: `out/1' already excludes it,
+%% `survivors/1' already brings it home, and the frame encoder already has a
+%% number for it, so nothing on the wire or on the exhibit changes shape.
+%%
+%% ⚠⚠ SLOWLY. A drone that ARRIVES FAST is still crashing and crashing is
+%% unchanged: terminal speed under full thrust is about 35 m/s and the ground
+%% kills at 40, so a dive is not fatal on the first contact and never was. It
+%% died by being driven into the ground over several ticks. Marking that drone
+%% landed would take it out of the fight at 12% health and send a genome home
+%% that should not have come back.
+%%
+%% The threshold is `?WITHDRAW_SPEED', which already means "a controlled egress
+%% rather than an impact" on the four lateral walls. This is the same idea on the
+%% vertical axis rather than a sixth number to justify.
+%%
+%% ⚠⚠⚠ ON HEALTH, NOT ON `dead'. `settle/1' is what sets `dead' and it runs AFTER
+%% this in the tick, so a drone that has just augered in still reads
+%% `dead = false' here.
+landed(#drone{health = H, dead = false, withdrawn = false} = D, 0, Speed)
+  when H > 0, Speed =< ?WITHDRAW_SPEED ->
+    D#drone{withdrawn = true, vx = 0, vy = 0, vz = 0};
+landed(#drone{} = D, _Nz, _Speed) -> D.
+
 %% ⚠ THE CLAMP HAPPENS FIRST AND THE EXIT IS CHECKED AFTER, so hitting a wall is
 %% never a way through one. A drone leaves by loitering slowly in the margin for
 %% two seconds, which is a controlled egress rather than an impact, and which is
@@ -386,8 +417,13 @@ clamped(#drone{x = X, y = Y, z = Z, vx = Vx, vy = Vy, vz = Vz} = D) ->
     {Ny, Sy} = stopped(Y + Vy, Vy, ?ARENA_Y),
     {Nz, Sz} = stopped(Z + Vz, Vz, ?ARENA_Z),
     Hurt = hurt(D, impact_damage(fixed:mag3(Sx, Sy, Sz))),
-    Hurt#drone{x = Nx, y = Ny, z = Nz,
-               vx = kept(Vx, Sx), vy = kept(Vy, Sy), vz = kept(Vz, Sz)}.
+    Put = Hurt#drone{x = Nx, y = Ny, z = Nz,
+                     vx = kept(Vx, Sx), vy = kept(Vy, Sy), vz = kept(Vz, Sz)},
+    %% ⚠ THE CONTACT SPEED IS ONLY KNOWN HERE, because `kept/2' has just thrown
+    %% it away: a drone resting on the ground and one that arrived at 30 m/s both
+    %% read `vz = 0' one line later. A drone already at rest has `Sz' of nought,
+    %% which is under the threshold, so sitting there counts as landed too.
+    landed(Put, Nz, abs(Vz)).
 
 %% Returns the clamped coordinate and the speed that was absorbed by the surface.
 stopped(P, V, _Max) when P < 0 -> {0, abs(V)};
@@ -655,11 +691,26 @@ settle(#drone{} = D) -> D.
 
 %% @doc Whether this engagement is over.
 %%
-%% A side with nobody left has lost. Reaching the cap is a draw, and it is a real
-%% outcome rather than a failure: two swarms that decline to engage produce
-%% exactly that, and calling it a fault would hide the behaviour.
+%% A side with nobody left has lost. There is NO CLOCK: an engagement ends when
+%% one side stops holding the airspace, and not before.
+%%
+%% ⚠ THE 60 SECOND CAP IS GONE, 2026-08-07, AND IT NEVER HAD A REASON WRITTEN
+%% DOWN. `?MAX_TICKS 1200' was a bare define with no comment justifying the
+%% number, and it decided every fight that reached it. Worse, it CENSORED the one
+%% measurement that is a property of the engagement rather than of either side:
+%% a raid that hit the cap did not take 1200 ticks, it took at least 1200, and no
+%% average over that is honest. The bias grows exactly as two sides become evenly
+%% matched, which is what coevolution does, so the measure decayed precisely as
+%% the thing it measured got interesting.
+%%
+%% ⚠⚠ WHAT BOUNDS IT NOW IS THE BATTERY, WHICH IS A PROPERTY OF THE WORLD. A
+%% drone that stays airborne is spending: about 150 W to hover on a 79.2 kJ pack
+%% is roughly nine minutes, and anything more energetic is shorter. A drone that
+%% stops spending has landed, and landing is now leaving (see `grounded/1'), so
+%% there is no way to hold the airspace without paying for it. Worst case is
+%% therefore about nine minutes of mutual hovering rather than a number somebody
+%% picked, and the common case is unchanged because most fights end long before.
 -spec finished(#arena{}) -> boolean().
-finished(#arena{tick = T}) when T >= ?MAX_TICKS -> true;
 finished(#arena{} = A) -> present(A, attacker) =:= 0 orelse present(A, defender) =:= 0.
 
 %% @doc Who won, or `draw'.
@@ -719,9 +770,6 @@ present(#arena{drones = Ds}, Side) ->
 -spec survivors(#arena{}) -> [#drone{}].
 survivors(#arena{drones = Ds}) -> [D || #drone{dead = false} = D <- Ds].
 
--spec max_ticks() -> pos_integer().
-max_ticks() -> ?MAX_TICKS.
-
 %% @doc Every constant, so a test and a published fact can read them from the one
 %% place they are defined rather than restating them.
 %%
@@ -754,5 +802,4 @@ limits() ->
       sensor_ghosts => ?SENSOR_GHOSTS, confirm_evidence => ?CONFIRM_EVIDENCE,
       track_gate => ?TRACK_GATE, track_drop_ticks => ?TRACK_DROP_TICKS,
       withdraw_speed => ?WITHDRAW_SPEED, withdraw_margin => ?WITHDRAW_MARGIN,
-      withdraw_ticks => ?WITHDRAW_TICKS,
-      max_ticks => ?MAX_TICKS}.
+      withdraw_ticks => ?WITHDRAW_TICKS}.
