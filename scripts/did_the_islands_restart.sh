@@ -18,6 +18,8 @@ for box in $BOXES; do
     # reads exactly like "the island is down" and is not.
     export XDG_RUNTIME_DIR="/run/user/$(id -u)"
     export DBUS_SESSION_BUS_ADDRESS="unix:path=${XDG_RUNTIME_DIR}/bus"
+    ct=$(command -v podman 2>/dev/null || command -v docker 2>/dev/null)
+    [ -z "$ct" ] && { echo "  no container runtime"; exit 1; }
 
     printf "  box up      : %s\n" "$(uptime -p 2>/dev/null || echo unknown)"
     printf "  booted      : %s\n" "$(uptime -s 2>/dev/null || echo unknown)"

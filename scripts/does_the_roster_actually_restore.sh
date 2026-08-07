@@ -23,7 +23,14 @@ SSH_USER="${SSH_USER:-rl}"
 for box in $BOXES; do
   echo "── ${box}"
   ssh -n -o ConnectTimeout=10 "${SSH_USER}@${box}" '
-    docker exec hecate-dronex /app/bin/hecate_dronex eval "
+    # ⚠ THE FLEET IS NOT ONE RUNTIME. The lab boxes run docker; msi00 runs podman
+    # under Quadlet. A probe naming one of them answers "nothing here" on the
+    # other, which is how msi00 first read as a box with no island on it.
+    export XDG_RUNTIME_DIR="/run/user/$(id -u)"
+    ct=$(command -v podman 2>/dev/null || command -v docker 2>/dev/null)
+    [ -z "$ct" ] && { echo "  no container runtime"; exit 1; }
+
+    "$ct" exec hecate-dronex /app/bin/hecate_dronex eval "
       Answer = try
       S = hecate_dronex_service:store_id(),
       Stream = roster_log:stream(),
