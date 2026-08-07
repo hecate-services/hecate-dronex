@@ -160,6 +160,59 @@ survey.**
 the top drawer. There were three hammers in the drawer underneath. The rule is
 to open every drawer before saying what is not in the toolbox.
 
+## I.21: it was never a lineage, and the module written to make it one had never once worked
+
+Every island in this archipelago has been starting its population again from
+seed on every deploy, since `roster_log` was written. Measured on `beam01` on
+2026-08-07: a durable stream **1,111 events deep**, a roster of **229** in memory,
+and `roster_log:restore/2` returning
+
+```erlang
+{error, {restore_failed, error, {badmap, {event, <<"019fd26a-...">>, <<"roster_snapshotted">>, ...}}}}
+```
+
+The snapshots were all there. Nothing had ever read one.
+
+**Three faults, and each one hid the next.**
+
+1. **`reckon_gater_api:stream_forward/4` returns `#event{}` records, not maps.**
+   The reader called `maps:find/2` and raised `badmap` on the first event of every
+   restore. It did this under a comment explaining, with care, why it accepted
+   *two* key shapes: "events come back from the gater as maps whose keys may be
+   atoms or binaries". Both guesses were wrong, and the considered tone of the
+   comment is what made it read as settled. `I.19`, third instance.
+2. **The caller swallowed the error.** `kept(Island, {error, _Why}) -> Island` is
+   the right behaviour (an island that cannot read its log must still start)
+   attached to no reporting at all. There was no log line, no counter, no field.
+3. **The only published evidence agrees with both outcomes.** Roster depth. A
+   restored lineage and a fresh island filling up from seed both show a number
+   that climbs. There is no depth at which one looks wrong.
+
+A fourth was waiting underneath: restore read `stream_forward(_, _, 0, 5000)`,
+forward from the beginning and capped, not the backward scan to the newest
+snapshot that the module's own header describes. At 1,111 events the cap had not
+bitten. At 5,000 it would have started silently restoring ancient state.
+
+**What it cost.** The tick, every counter on the island, and the population
+itself, on every container recreate. The generation stamp added the day before
+this was found measures breeding *since the last deploy*, so a node that gets
+deployed more often looks younger. `D.15` asks why the frozen exam swings a
+hundred points in a day on a champion `benchmark_sitter` says was bred locally.
+One candidate is now that the champion had been bred from scratch that morning.
+
+**Why nothing caught it.** The module had a test for its stream NAME and none for
+its fold. No test ever fed it an event, so no test ever encountered the shape.
+The fix ships `roster_log:rebuild/2`, a pure seam from events to state, and
+eleven tests that build real `#event{}` records from the library's own header.
+Reverting the reader turns ten of them red with the production `badmap`.
+
+**ELI5.** Someone wrote a diary every night so they would remember their life,
+and every morning they tried to read it and the book fell open at a page they
+could not understand, so they shrugged and started the day as a stranger. They
+never mentioned it to anybody, because starting fresh feels exactly like waking
+up. The diary was full the whole time. Nobody had ever checked that the reading
+worked, only that the writing did.
+
 ## I.20: the shape of the archipelago was a function of random identity bits
 
 Five islands, every admission filter passing for every pair — all four held all

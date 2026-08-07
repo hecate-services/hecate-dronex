@@ -49,8 +49,9 @@ a_fresh_writer_has_written_nothing_and_says_so() ->
 %% counts a failure rather than dying, and nothing blocks.
 the_call_returns_before_the_write() ->
     R = roster:new(probe),
-    ?assertEqual(ok, roster_log_writer:snapshot(no_such_store, R)),
-    ?assertEqual(ok, roster_log_writer:snapshot(no_such_store, R)),
+    T = island:tally_of(island:new(#{seed => 1})),
+    ?assertEqual(ok, roster_log_writer:snapshot(no_such_store, R, T)),
+    ?assertEqual(ok, roster_log_writer:snapshot(no_such_store, R, T)),
     %% stats/0 is a call, so it lands behind both casts and their writes: by the
     %% time it answers, the writer has finished with them.
     #{written := W, failed := F, dropped := D} = roster_log_writer:stats(),

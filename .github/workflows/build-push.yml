@@ -16,10 +16,23 @@
 
 name: build-and-push
 
+# ⚠ PATHS-IGNORE, AND IT IS NOT HOUSEKEEPING. Without it every push to main
+# builds a new `:latest', watchtower rolls all four islands within three minutes,
+# and each island loses whatever it has not written down. On 2026-08-07 a commit
+# that touched two markdown files and no code reset the whole archipelago seven
+# minutes later. Writing down what an experiment found is not supposed to end it.
+#
+# Docs cannot change the image, so they do not build one. Anything else does.
 on:
   push:
     branches: [main]
     tags:     ['v*']
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'design/**'
+      - 'plans/**'
+      - 'LICENSE'
   workflow_dispatch:
 
 jobs:

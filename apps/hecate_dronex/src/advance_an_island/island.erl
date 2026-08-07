@@ -25,6 +25,7 @@
 -module(island).
 
 -export([new/1, run/2, train/1, seed_if_empty/1, benchmarked/3, with_roster/2]).
+-export([tally_of/1, with_tally/2]).
 -export([tick_of/1, roster_depth/1, capacity/1, seed_of/1, roster_of/1]).
 -export([generation_of/1, benchmark_of/1, rounds_of/1, admissions_of/1]).
 -export([sitter_of/1]).
@@ -149,6 +150,55 @@ sitter_of(#island{sitter = O}) -> O.
 %% @doc Replace the roster, for the log to restore into.
 -spec with_roster(island(), roster:roster()) -> island().
 with_roster(#island{} = I, R) -> I#island{roster = R}.
+
+%%==============================================================================
+%% The tally: what a lineage has done, as opposed to what a process has done
+%%==============================================================================
+
+%% ⚠ THE COUNTERS SAT ON THE ISLAND SO THEY WOULD SURVIVE A DEPLOY, AND UNTIL
+%% 2026-08-07 THE COMMENT SAYING SO WAS THE ONLY PLACE IT WAS TRUE. The record
+%% still carries the original note: counters beside the gen_server state "would
+%% reset every deploy and an island's raiding history would be since the last
+%% container recreate". They were moved here on that reasoning and then nothing
+%% ever wrote them down, because the only thing `roster_log' stored was the
+%% roster and the only thing `with_roster/2' replaced was the roster. So every
+%% one of them did reset on every deploy, exactly as the comment warned, and the
+%% comment's presence is why nobody looked. Register `I.19', third instance.
+%%
+%% ⚠⚠ THE EXAM IS NOT IN HERE AND THAT IS DELIBERATE. `benchmark' and `sitter'
+%% are the last exam sat, they are re-sat on a timer within minutes of boot, and
+%% restoring them would put a score computed by an image that no longer exists in
+%% front of a reader as though this image had produced it. A lineage's history is
+%% worth carrying across a restart; a stale measurement is not.
+-spec tally_of(island()) -> map().
+tally_of(#island{tick = T, rounds = N, admissions = A, ablations = Ab,
+                 raids = R, raids_home = H, raids_lost = L,
+                 defences = D, captures = C}) ->
+    #{tick => T, rounds => N, admissions => A, ablations => Ab,
+      raids => R, raids_home => H, raids_lost => L, defences => D, captures => C}.
+
+%% @doc Put a restored tally back, for the log to restore into.
+-spec with_tally(island(), map()) -> island().
+with_tally(#island{} = I, M) when is_map(M) ->
+    I#island{tick        = forward(tick, M, I#island.tick),
+             rounds      = forward(rounds, M, I#island.rounds),
+             admissions  = forward(admissions, M, I#island.admissions),
+             ablations   = forward(ablations, M, I#island.ablations),
+             raids       = forward(raids, M, I#island.raids),
+             raids_home  = forward(raids_home, M, I#island.raids_home),
+             raids_lost  = forward(raids_lost, M, I#island.raids_lost),
+             defences    = forward(defences, M, I#island.defences),
+             captures    = forward(captures, M, I#island.captures)}.
+
+%% ⚠ A COUNTER NEVER GOES BACKWARDS, WHATEVER THE STORE SAYS. Restore runs at
+%% boot, so the live value is normally nought and the stored one wins; but a
+%% snapshot older than what is already in hand, or a field a rollback wrote as
+%% something other than a count, must not be able to wind a lineage's history
+%% back. The larger of the two is always the honest one.
+forward(Key, M, Now) -> erlang:max(Now, counted(maps:get(Key, M, 0))).
+
+counted(N) when is_integer(N), N >= 0 -> N;
+counted(_Other) -> 0.
 
 %%==============================================================================
 %% Reading one

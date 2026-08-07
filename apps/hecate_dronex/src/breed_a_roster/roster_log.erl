@@ -27,9 +27,38 @@
 %% and restore reads BACKWARD to the most recent one and then forward from there.
 %% The admissions before it are still in the stream and still readable; they are
 %% simply not on the boot path.
+%%
+%% ==========================================================================
+%% ⚠⚠⚠ THE THREE SENTENCES ABOVE WERE FALSE FROM THE DAY THEY WERE WRITTEN,
+%% AND EVERY ISLAND STARTED ITS LIFE AGAIN ON EVERY DEPLOY
+%% ==========================================================================
+%%
+%% Measured on beam01 on 2026-08-07: a stream 1,111 events deep, a roster of 229
+%% in memory, and `restore/2' returning `{error, {restore_failed, error,
+%% {badmap, {event, ...}}}}'. It had never once succeeded.
+%%
+%% Three separate faults, and each one hid the next:
+%%
+%%   1. `reckon_gater_api:stream_forward/4' returns `#event{}' RECORDS. This
+%%      module called `maps:find/2' on them, under a comment asserting that
+%%      events "come back from the gater as maps whose keys may be atoms or
+%%      binaries". They are neither shape. The first event of the first restore
+%%      raised `badmap' and no restore ever got past it.
+%%   2. `island_server:kept/2' matched `{error, _Why}' and returned the island
+%%      unchanged, SILENTLY. A fresh roster filling up from seed looks exactly
+%%      like a restored one, so the only published evidence agreed with both.
+%%   3. Restore read `stream_forward(_, _, 0, 5000)': forward from the beginning,
+%%      capped. Not the backward scan described here. The cap had not bitten yet
+%%      at 1,111 events and would have, silently, at 5,000.
+%%
+%% What it cost: every counter on the island, the tick, and the lineage itself,
+%% on every container recreate since this module was written. `D.15' in
+%% `REGISTER.md' asks why the frozen exam swings a hundred points in a day on a
+%% bred champion. One candidate is now that the champion was bred from scratch.
 -module(roster_log).
 
--export([stream/0, snapshot/2, admitted/2, evicted/2, restore/1, restore/2]).
+-export([stream/0, snapshot/3, admitted/2, evicted/2, restore/1, restore/2]).
+-export([rebuild/2]).
 
 %% ⚠ A SYSTEM STREAM, AND THE FORMAT IS A CONTRACT RATHER THAN A PREFERENCE.
 %% This was `roster', which reckon-db rejects: `reckon_gater_stream_id' accepts
@@ -53,6 +82,18 @@
 %% alternative is silently losing a lineage.
 -define(SCAN_LIMIT, 5000).
 
+%% Events per read. The backward scan walks pages until it finds a snapshot; the
+%% forward replay walks pages until the stream ends. Neither is capped at a total
+%% any more, so a stream that outgrows one page cannot quietly restore an old
+%% state — which is what the previous `stream_forward(_, _, 0, 5000)' would have
+%% done the moment the stream passed five thousand.
+-define(PAGE, 500).
+
+%% ⚠ THE EVENT IS A RECORD AND THE HEADER IS THE ONLY PLACE THAT KNOWS ITS SHAPE.
+%% This module previously guessed, guessed maps, and was wrong for its whole life.
+%% `element(3, Ev)' would work today and would be the same guess again.
+-include_lib("reckon_gater/include/reckon_gater_types.hrl").
+
 -spec stream() -> binary().
 stream() -> ?STREAM.
 
@@ -60,12 +101,22 @@ stream() -> ?STREAM.
 %% Writing
 %%==============================================================================
 
-%% @doc Write the whole roster as one event.
--spec snapshot(atom(), roster:roster()) -> ok | {error, term()}.
-snapshot(StoreId, R) ->
+%% @doc Write the whole roster, and the tally of what the lineage has done.
+%%
+%% ⚠ THE TALLY RIDES WITH THE ROSTER RATHER THAN IN ITS OWN EVENT, because the
+%% two are one fact: this population, having done these things. Two events would
+%% be two writes that can succeed separately, and a restored roster paired with
+%% somebody else's counters is worse than either alone.
+%%
+%% It is opaque here. `island' owns what the keys mean; this module stores what
+%% it is handed and gives it back, so a counter can be added there without a
+%% change to the durable format.
+-spec snapshot(atom(), roster:roster(), map()) -> ok | {error, term()}.
+snapshot(StoreId, R, Tally) when is_map(Tally) ->
     append(StoreId, <<"roster_snapshotted">>,
            #{entries => [packed(E) || E <- roster:entries(R)],
-             capacity => roster:capacity(R)}).
+             capacity => roster:capacity(R),
+             tally => Tally}).
 
 %% @doc Record one admission, with everything needed to rebuild it.
 -spec admitted(atom(), roster:entry()) -> ok | {error, term()}.
@@ -108,34 +159,110 @@ packed(E) ->
 %% Reading
 %%==============================================================================
 
-%% @doc Rebuild the roster from the store, or an empty one if there is nothing.
--spec restore(atom()) -> {ok, roster:roster()} | {error, term()}.
+%% @doc Rebuild the roster and the tally from the store.
+%%
+%% The tally is `#{}' when the newest snapshot predates it, which is every
+%% snapshot written before 2026-08-07. An absent tally is not a tally of zero:
+%% `island:with_tally/2' takes the larger of stored and live, so an old snapshot
+%% leaves the counters where they are rather than winding them back.
+-spec restore(atom()) -> {ok, roster:roster(), map()} | {error, term()}.
 restore(StoreId) -> restore(StoreId, roster:new(restored)).
 
--spec restore(atom(), roster:roster()) -> {ok, roster:roster()} | {error, term()}.
+-spec restore(atom(), roster:roster()) -> {ok, roster:roster(), map()} | {error, term()}.
 restore(StoreId, Empty) ->
-    try folded(read_all(StoreId), Empty)
+    try folded(read_from(StoreId, newest_snapshot(StoreId)), Empty)
     catch Class:Reason -> {error, {restore_failed, Class, Reason}}
     end.
 
-read_all(StoreId) -> reckon_gater_api:stream_forward(StoreId, ?STREAM, 0, ?SCAN_LIMIT).
+%%------------------------------------------------------------------------------
+%% Finding where to start: backward to the newest snapshot
+%%------------------------------------------------------------------------------
 
+%% The version of the most recent `roster_snapshotted', or 0 to replay the whole
+%% stream when there is none within ?SCAN_LIMIT. Replaying everything is correct
+%% and merely slow; starting after a snapshot that was never found would be fast
+%% and wrong.
+newest_snapshot(StoreId) -> from_version(reckon_gater_api:get_version(StoreId, ?STREAM), StoreId).
+
+from_version({ok, V}, StoreId) when is_integer(V), V >= 0 -> scan_back(StoreId, V, 0);
+from_version(_Unknown, _StoreId) -> 0.
+
+scan_back(_StoreId, From, Scanned) when From < 0; Scanned >= ?SCAN_LIMIT -> 0;
+scan_back(StoreId, From, Scanned) ->
+    stepped(reckon_gater_api:stream_backward(StoreId, ?STREAM, From, ?PAGE),
+            StoreId, From, Scanned).
+
+stepped({ok, []}, _StoreId, _From, _Scanned) -> 0;
+stepped({ok, Evs}, StoreId, From, Scanned) -> newest_of(snapshots(Evs), StoreId, From, Scanned, Evs);
+stepped(_Other, _StoreId, _From, _Scanned) -> 0.
+
+%% ⚠ `lists:max', NOT the head. Whether a backward read returns its page newest
+%% first or oldest first is not promised anywhere, and taking the head would
+%% restore a snapshot one page stale on half the possible implementations.
+newest_of([], StoreId, From, Scanned, Evs) ->
+    scan_back(StoreId, From - length(Evs), Scanned + length(Evs));
+newest_of(Versions, _StoreId, _From, _Scanned, _Evs) -> lists:max(Versions).
+
+snapshots(Evs) -> [version_of(E) || E <- Evs, type_of(E) =:= <<"roster_snapshotted">>].
+
+%%------------------------------------------------------------------------------
+%% Replaying forward from there, to the end
+%%------------------------------------------------------------------------------
+
+read_from(StoreId, Version) -> pages(StoreId, Version, []).
+
+pages(StoreId, From, Acc) ->
+    paged(reckon_gater_api:stream_forward(StoreId, ?STREAM, From, ?PAGE), StoreId, From, Acc).
+
+%% A full page means there may be more; a short one is the end of the stream.
+%% That is the termination condition, and it is the reason nothing here counts
+%% up to a limit it could silently hit.
+paged({ok, Evs}, StoreId, From, Acc) when length(Evs) =:= ?PAGE ->
+    pages(StoreId, From + ?PAGE, lists:reverse(Evs, Acc));
+paged({ok, Evs}, _StoreId, _From, Acc) -> {ok, lists:reverse(lists:reverse(Evs, Acc))};
+paged({error, _} = E, _StoreId, _From, _Acc) -> E;
+paged(Other, _StoreId, _From, _Acc) -> {error, {unexpected, Other}}.
+
+%% Every shape the reader can hand back is already normalised by `paged/4', so
+%% there is no third clause here and dialyzer is the one who says so.
 folded({error, _} = E, _Empty) -> E;
-folded({ok, Events}, Empty) -> {ok, lists:foldl(fun apply_event/2, Empty, Events)};
-folded(Other, _Empty) -> {error, {unexpected, Other}}.
+folded({ok, Events}, Empty) -> restored_pair(rebuild(Events, Empty)).
+
+restored_pair({R, Tally}) -> {ok, R, Tally}.
+
+%% @doc Interpret a list of stored events into a roster and a tally.
+%%
+%% ⚠ PUBLIC BECAUSE THE READING IS THE PART THAT WAS WRONG, and a seam that takes
+%% events and returns state can be tested without a store, a node or a network.
+%% There was no such seam, so there was no such test, so `restore/2' shipped
+%% raising `badmap' on its first event and stayed that way for weeks.
+-spec rebuild([#event{}], roster:roster()) -> {roster:roster(), map()}.
+rebuild(Events, Empty) -> lists:foldl(fun apply_event/2, {Empty, #{}}, Events).
 
 %% ⚠ AN EVENT THAT CANNOT BE UNDERSTOOD IS SKIPPED, NOT FATAL. A store written by
 %% a later version of this island will hold event types this one has never heard
 %% of, and refusing to boot on one of them turns a rollback into an outage. The
 %% cost is that a rolled-back island holds less than it could, which is visible
 %% in its published roster depth.
-apply_event(Ev, R) -> replay(type_of(Ev), data_of(Ev), R).
+apply_event(Ev, Acc) -> replay(type_of(Ev), data_of(Ev), Acc).
 
-replay(<<"roster_snapshotted">>, #{entries := Es}, _R) ->
-    roster:restore([unpacked(P) || P <- Es, unpacked(P) =/= undefined]);
-replay(<<"genome_admitted">>, Packed, R) -> readmit(unpacked(Packed), R);
-replay(<<"genome_evicted">>, #{id := Id}, R) -> roster:evict(R, Id);
-replay(_Unknown, _Data, R) -> R.
+%% A snapshot REPLACES. It is full state, so whatever was folded before it is
+%% superseded, tally included.
+replay(<<"roster_snapshotted">>, #{entries := Es} = D, _Acc) ->
+    {roster:restore(rebuilt_all(Es)), tally_in(D)};
+replay(<<"genome_admitted">>, Packed, {R, T}) -> {readmit(unpacked(Packed), R), T};
+replay(<<"genome_evicted">>, #{id := Id}, {R, T}) -> {roster:evict(R, Id), T};
+replay(_Unknown, _Data, Acc) -> Acc.
+
+%% Unpacked ONCE per entry. The previous version called `unpacked/1' twice for
+%% every genome in the snapshot, once in the filter and once in the body, which
+%% doubled the CPU of the boot path for nothing.
+rebuilt_all(Es) -> [E || E <- [unpacked(P) || P <- Es], E =/= undefined].
+
+tally_in(D) -> counted(maps:get(tally, D, #{})).
+
+counted(M) when is_map(M) -> M;
+counted(_Other) -> #{}.
 
 readmit(undefined, R) -> R;
 readmit(E, R) -> kept(roster:admit(R, E), R).
@@ -156,15 +283,28 @@ rebuilt({ok, Genome}, P) ->
                    fitness => maps:get(fitness, P, 0),
                    origin => maps:get(origin, P, unknown)}).
 
-%% Events come back from the gater as maps whose keys may be atoms or binaries,
-%% depending on how they were written and read. Both are accepted here rather
-%% than assumed, because a shape mismatch would present as an empty roster and an
-%% empty roster is indistinguishable from a fresh island.
-type_of(Ev) -> pick(Ev, [event_type, <<"event_type">>], <<>>).
-data_of(Ev) -> pick(Ev, [data, <<"data">>], #{}).
+%% ⚠ THE RECORD, FROM THE HEADER THE LIBRARY PUBLISHES. What stood here was a
+%% map reader under a comment explaining why it accepted two key shapes, and the
+%% events are records: `#event{event_id, event_type, stream_id, version, data,
+%% metadata, ...}'. Both key shapes were wrong, the comment made the wrongness
+%% look considered, and `maps:find/2' on a tuple raised `badmap' on the first
+%% event of every restore this island ever attempted.
+type_of(#event{event_type = T}) -> T.
 
-pick(Map, [K | Rest], Default) -> found(maps:find(K, Map), Map, Rest, Default);
-pick(_Map, [], Default) -> Default.
+version_of(#event{version = V}) -> V.
 
-found({ok, V}, _Map, _Rest, _Default) -> V;
-found(error, Map, Rest, Default) -> pick(Map, Rest, Default).
+%% ⚠ A PAYLOAD THAT IS NOT A MAP FAILS THE RESTORE, IT IS NOT SKIPPED.
+%% `#event.data' is typed `map() | binary()' and a binary would arrive from a
+%% store written with a JSON content type. Returning `#{}' for one would make the
+%% snapshot clause not match, fall through to the catch-all, and lose the whole
+%% roster in silence — which is the exact failure mode this module has just spent
+%% its entire life in. Loud is the only acceptable behaviour here.
+%% ⚠⚠ AND THE REASON NAMES THE PAYLOAD RATHER THAN CARRYING IT. Register `I.18':
+%% one refused raid wrote 18 MB into the log because a failure reason held twelve
+%% packed genomes. A snapshot payload is larger than that.
+%% `#event.data' is typed `map() | binary()', so those are the only two clauses
+%% written. Anything else raises `function_clause', which is equally loud and does
+%% not pretend to handle a shape the library says cannot occur.
+data_of(#event{data = D}) when is_map(D) -> D;
+data_of(#event{event_type = T, data = D}) when is_binary(D) ->
+    error({payload_not_a_map, T, {binary, byte_size(D)}}).

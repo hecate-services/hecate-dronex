@@ -286,12 +286,21 @@ pre-registration, and the four measurement rules from 053 to 056 apply.
   coverage figure below. Whether the sweep can run is now a question to ask
   rather than a settled no.
 
+- ⚠ **`REGISTER I.21` MOVES EVERY MEASUREMENT TAKEN BEFORE 2026-08-07 ONTO
+  UNCERTAIN GROUND.** `roster_log:restore/2` had never succeeded, so every island
+  began from seed on every deploy. Anything read off this fleet that assumed a
+  lineage older than the last container recreate was reading a younger population
+  than it thought. Fixed the same day; nothing measured before it should be
+  quoted without saying which side of it the measurement falls on.
+
 - **Why the frozen exam swings by a hundred points in a day.** `REGISTER D.15`.
   `beam03` went 288/288 → 1/288 → 27% → 86% while the fleet sat between 87% and
   99%, and `benchmark_sitter` says its champion was **bred** every time, which
   kills the obvious explanation. Until this is understood, no reading of the exam
   as a measure of progress is safe, and the leaderboard's headline column is a
-  number nobody can interpret.
+  number nobody can interpret. ⚠ `I.21` supplies a candidate the entry could not
+  have had: the champion may have been bred from scratch that morning, because
+  the roster had not survived the night's deploy.
 
 - **A ram cannot be told from the arena edge, and that is a WIRE limit.** The
   damage accounting separates weapon damage exactly, because `HIT_DAMAGE` and

@@ -225,8 +225,19 @@ restored(Island) ->
     kept(Island, roster_log:restore(hecate_dronex_service:store_id(),
                                     island:roster_of(Island))).
 
-kept(Island, {ok, R}) -> island:with_roster(Island, R);
-kept(Island, {error, _Why}) -> Island.
+%% The roster AND the tally, because a lineage is what it bred and what it did.
+kept(Island, {ok, R, Tally}) -> island:with_tally(island:with_roster(Island, R), Tally);
+%% ⚠⚠ LOUD, AND IT WAS SILENT FOR THE WHOLE LIFE OF THE MODULE. This clause used
+%% to be `kept(Island, {error, _Why}) -> Island', which is the correct BEHAVIOUR
+%% (an island that cannot read its log must still start) attached to the wrong
+%% REPORTING (nobody was told). `roster_log:restore/2' raised `badmap' on the
+%% first event of every restore it ever attempted, every island began again from
+%% seed on every deploy, and the only published evidence, roster depth, reads the
+%% same for a restored lineage and for a fresh one filling up. Discovered
+%% 2026-08-07 by measuring, not by reading a log, because there was none.
+kept(Island, {error, Why}) ->
+    logger:error("ROSTER NOT RESTORED, THIS ISLAND IS STARTING FROM SEED: ~0p", [Why]),
+    Island.
 
 handle_call(snapshot, _From, #{island := I} = S) ->
     {reply, dronex_facts:vitals(I, runtime(S)), S};
@@ -363,7 +374,8 @@ handle_info({ablated, Report}, #{island := I} = S) ->
 %% cost staleness rather than the island. See `roster_log_writer'.
 handle_info(snapshot, #{island := I} = S) ->
     schedule(snapshot, ?DEFAULT_SNAPSHOT_MS),
-    roster_log_writer:snapshot(hecate_dronex_service:store_id(), island:roster_of(I)),
+    roster_log_writer:snapshot(hecate_dronex_service:store_id(),
+                               island:roster_of(I), island:tally_of(I)),
     {noreply, S};
 
 %% ⚠ FIVE ELEMENTS. A four-element clause here would match nothing, every fact

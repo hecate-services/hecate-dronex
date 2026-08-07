@@ -43,7 +43,7 @@
 
 -behaviour(gen_server).
 
--export([start_link/0, snapshot/2, stats/0, silent/0]).
+-export([start_link/0, snapshot/3, stats/0, silent/0]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2]).
 
 -spec start_link() -> {ok, pid()} | {error, term()}.
@@ -54,8 +54,11 @@ start_link() -> gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 %% ⚠ A CAST, AND THE ASYMMETRY IS THE WHOLE POINT. The caller is the island and
 %% it must never wait on a disk. What it gets back instead is `stats/0', which
 %% says whether the writing is actually happening.
--spec snapshot(atom(), roster:roster()) -> ok.
-snapshot(StoreId, Roster) -> gen_server:cast(?MODULE, {snapshot, StoreId, Roster}).
+%% The tally travels with the roster because they are written as one event: this
+%% population, having done these things. See `roster_log:snapshot/3'.
+-spec snapshot(atom(), roster:roster(), map()) -> ok.
+snapshot(StoreId, Roster, Tally) ->
+    gen_server:cast(?MODULE, {snapshot, StoreId, Roster, Tally}).
 
 %% @doc Exercise counts. `dropped' is snapshots superseded before they were
 %% written, which is normal and healthy; `failed' is writes the store refused.
@@ -75,8 +78,8 @@ init([]) -> {ok, silent()}.
 handle_call(stats, _From, S) -> {reply, maps:with([written, failed, dropped], S), S};
 handle_call(_Other, _From, S) -> {reply, {error, unknown_call}, S}.
 
-handle_cast({snapshot, StoreId, Roster}, S) ->
-    {Latest, Skipped} = newest({StoreId, Roster}, 0),
+handle_cast({snapshot, StoreId, Roster, Tally}, S) ->
+    {Latest, Skipped} = newest({StoreId, Roster, Tally}, 0),
     {noreply, told(written(write(Latest), S#{dropped := maps:get(dropped, S) + Skipped}))};
 handle_cast(_Msg, S) -> {noreply, S}.
 
@@ -98,11 +101,12 @@ handle_info(_Msg, S) -> {noreply, S}.
 %% a zero timeout, so this is a mailbox scan and not a wait.
 newest(Current, Skipped) ->
     receive
-        {'$gen_cast', {snapshot, StoreId, Roster}} -> newest({StoreId, Roster}, Skipped + 1)
+        {'$gen_cast', {snapshot, StoreId, Roster, Tally}} ->
+            newest({StoreId, Roster, Tally}, Skipped + 1)
     after 0 -> {Current, Skipped}
     end.
 
-write({StoreId, Roster}) -> roster_log:snapshot(StoreId, Roster).
+write({StoreId, Roster, Tally}) -> roster_log:snapshot(StoreId, Roster, Tally).
 
 written(ok, #{written := N} = S) -> S#{written := N + 1};
 written({error, _Why}, #{failed := N} = S) -> S#{failed := N + 1}.
