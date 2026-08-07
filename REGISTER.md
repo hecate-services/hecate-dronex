@@ -160,6 +160,132 @@ survey.**
 the top drawer. There were three hammers in the drawer underneath. The rule is
 to open every drawer before saying what is not in the toolbox.
 
+## I.20: the shape of the archipelago was a function of random identity bits
+
+Five islands, every admission filter passing for every pair — all four held all
+three neighbours' leases, every engine fingerprint identical, every roster above
+the floor — and the graph that actually ran was four near-fixed edges. `beam03`
+was raided **three** times where the two most-attacked islands were raided about
+four hundred and eighty. It held a full roster because it never paid for a
+defence, and topped the exhibit's leaderboard at 100% while being, in effect, not
+in the archipelago at all.
+
+The selector was two lines:
+
+```erlang
+target(Heard, Self) -> chosen([H || H <- Heard, H =/= Self]).
+chosen(Others)      -> {ok, hd(Others)}.
+```
+
+`Heard` is built from `maps:to_list(open_islands)`. **A map of 32 keys or fewer
+is a flatmap, and a flatmap yields its keys in sorted term order.** So `hd/1` did
+not mean "any of them". It meant "whichever island minted the lowest id", for
+ever. `beam03`'s `e649…` sorted last for all three of its neighbours, so it was
+everybody's third choice and was reached only in the rare window where two
+higher-sorted leases were simultaneously stale.
+
+Three things made it survive:
+
+- **Every filter was working.** `targets/1` checks lease freshness, engine
+  fingerprint and roster floor, and all three passed. The failure was one
+  function later, in the part nobody thought was a decision.
+- **The symptom read as a different bug.** An island that raids happily and is
+  never raided back is the exact signature of `I.11`, an advertisement that never
+  landed. The first hour went into the advert.
+- **It looked like a result.** An island with a perfect exam score and a full
+  roster reads as the best island on the board, not as one that is being left
+  alone.
+
+Fixed by drawing from the admitted candidates, threading the island's own
+generator per `D.5` — whom an island chose to attack is part of the run, and a
+run must stay a pure function of its seed.
+
+**ELI5.** A group of neighbours each had a list of who was free to play, and each
+one always picked the first name on their list. Nobody noticed the lists were
+alphabetical, so the child whose name came last never got picked, by anyone, ever.
+Everyone's rule was fair. The order they were reading was not, and nobody had
+chosen that order — it came from how the paper happened to be sorted.
+
+## I.19: two comments described two designs, and the stale one owned the number
+
+The raid handshake used a 120-second timeout. `dronex_mesh` explained it: *"a
+long timeout, because the callee is fighting — the defender validates every
+genome, then runs a whole engagement of up to 1200 ticks before it can answer."*
+
+That was true once. It had stopped being true months earlier, when the protocol
+was split so the defender answers **before a single tick is simulated** and
+spawns the fight. `island_server` says exactly that, in a comment written at the
+time. And `dronex_raid` even recorded the consequence: *"the timeout can go back
+to being a real one."*
+
+Nobody moved the number. So the repository contained two comments describing two
+different designs, and the stale one was attached to the constant that actually
+ran. A target whose route was dead cost the attacker two minutes of a blocked
+process per attempt, every two minutes, all day.
+
+The general shape: a comment justifying a value lives next to the value, and a
+comment recording a design change lives next to the change. When those are in
+different files, the change can land completely and correctly while the value it
+invalidated sits untouched behind a justification that no longer describes
+anything.
+
+**ELI5.** A sign on a machine said "wait twenty minutes, the oven is still
+heating". Someone later replaced the oven with one that is instant, wrote that
+down on the new oven, and left the old sign up. Everyone kept waiting twenty
+minutes. Both notes were honest when written. Only one of them was next to the
+knob.
+
+## I.18: one refused raid wrote 18 MB into the log
+
+Every raid failure was logged with `~p` on the reason. The reason from a lost
+call carries the arguments, and the argument is a raid request: twelve packed
+genomes. One refusal was about **34,000 lines and 18 MB**. Twelve hours produced
+a 5.9-million-line log whose only human-readable content was 175 warnings that no
+`grep` could reach in reasonable time.
+
+The cost was not disk. It was that diagnosing `I.20` above meant working around
+this log first, and the failure it was hiding was in the same subsystem that
+produced it.
+
+Bounded with `~P` at a depth, which bounds **any** shape — the interesting
+failures are the ones whose shape nobody predicted. And the message now names the
+target, which it did not: the who-fails-to-call-whom matrix had to be
+reconstructed from procedure names inside a binary dump.
+
+**ELI5.** Every time a delivery failed, the driver wrote down the reason and also
+photocopied the entire contents of the van. After a day the filing cabinet held
+nothing but van inventories, and the one useful sentence was somewhere inside
+them.
+
+## D.15: the frozen exam swings by a hundred points in a day, on a bred champion
+
+`beam03` scored 288/288 one morning, 1/288 nine hours later, 27% by the evening
+and 86% the next. The other islands sat in a band between 87% and 99% over the
+same period.
+
+The obvious explanation is dead. `roster:best/1` sits the exam, and `raid:absorb/3`
+admits **captured** genomes into the same roster the champion is drawn from, so
+the score could belong to a controller bred on another machine. The islands now
+publish `benchmark_sitter`, and every island reporting these swings says
+**`bred`**. Whatever is moving, it is the island's own lineage.
+
+What that leaves, unresolved and written down so it is not rediscovered:
+
+- The exam is sat by ONE genome. A roster whose best entry changes hands between
+  two similar candidates would swing the published score without the population
+  changing much at all.
+- Captures enter with `fitness => 0` and become opponents in `trainer:opponents/1`,
+  so absorbing a swarm changes the curriculum the champion is selected against.
+  Grind and curriculum-shift are one treatment here, by design.
+- The instrument itself may be at fault: 6 rungs × 48 starts is 288 deterministic
+  outcomes of a single genome, with no variance estimate at all.
+
+**ELI5.** A pupil sat the same exam every few hours and scored full marks, then
+almost nothing, then most of the marks. The first guess was that a different
+pupil had been sitting it. That has been checked, and it was the same pupil each
+time. So either the exam is measuring something that genuinely changes that fast,
+or the exam is not as steady an instrument as everyone assumed.
+
 ## I.17: the data was on the wire, the code was deployed, and nothing said tower
 
 Asked to visualise the defending island's sensor stations, the work shipped and

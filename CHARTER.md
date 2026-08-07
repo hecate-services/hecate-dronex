@@ -278,6 +278,59 @@ pre-registration, and the four measurement rules from 053 to 056 apply.
   still looks busy. Network strength is set on that measurement, whole sweep
   published.
 
+  ⚠ **ITS STATED BLOCKER HAS PLAUSIBLY LIFTED, 2026-08-07.** The sweep was
+  written as unrunnable because "a sweep against untrained rosters measures
+  random controllers", and it needed the first generation that could have learnt
+  to use a cue that until then was four zeroes. The fleet has now been breeding
+  under the towers for days and the ground bank is live and measured — see the
+  coverage figure below. Whether the sweep can run is now a question to ask
+  rather than a settled no.
+
+- **Why the frozen exam swings by a hundred points in a day.** `REGISTER D.15`.
+  `beam03` went 288/288 → 1/288 → 27% → 86% while the fleet sat between 87% and
+  99%, and `benchmark_sitter` says its champion was **bred** every time, which
+  kills the obvious explanation. Until this is understood, no reading of the exam
+  as a measure of progress is safe, and the leaderboard's headline column is a
+  number nobody can interpret.
+
+- **A ram cannot be told from the arena edge, and that is a WIRE limit.** The
+  damage accounting separates weapon damage exactly, because `HIT_DAMAGE` and
+  `INTERCEPTOR_DAMAGE` are exact multiples of 100 of a 10000 start and the
+  quantum survives fractional health. It cannot split the remainder, because
+  confirming a collision means finding another drone within `2 × DRONE_RADIUS` —
+  one metre — and frames publish **whole metres**. At that resolution "touching"
+  and "two metres apart" read the same. Two ways out, and the second is cheaper
+  and exact: publish sub-metre positions, or give `hurt/2` a damage SOURCE
+  instead of one accumulator.
+
+  Measured meanwhile, over every raid the exhibit has seen: **about 80% of all
+  damage is weapon-quantised.** These are fights. Self-inflicted attrition is a
+  real minority rather than the story.
+
+- **What the towers hold, now measured for the first time.** `REGISTER D.12`
+  claimed height buys silence and nothing had ever checked it. Over 1,136
+  raider-frames: 23% of time held at 0–50 m, falling monotonically to 0% above
+  250 m. ⚠ It is a **ceiling** — tracks carry no id by construction, so this
+  counts a track existing within 25 m of a raider, and two raiders flying
+  together are both covered by one track.
+
+- **Whether the radio does anything, still unanswered.** The ablation is the only
+  causal instrument this repository owns: same genome, same opponents, one
+  channel silenced. Its deltas are currently inconsistent in sign across islands
+  AND across arms, at a resolution where one engagement changing hands moves the
+  number 25 points. One exercise cannot settle it and neither can two. What
+  settles it is the same number drifting off zero across many, which needs the
+  measurement accumulated rather than republished.
+
+- ⚠ **The recordings the exhibit reasons over are a ROLLING WINDOW.** They are
+  whatever arrived and survived a row cap, not a sample anybody chose. Fine for
+  an exhibit; if any figure here ever hardens into a claim, the retention is a
+  selection effect and the claim gate starts there.
+
+- **`REGISTER.md` has passed the size at which its own rule says to split it.**
+  The file states "one file until it passes about 800 lines, then one file per
+  series under `register/`". It is past 1,400.
+
 ## What carries across from the siblings
 
 **Carried in code**, copied rather than extracted, because two consumers is a
