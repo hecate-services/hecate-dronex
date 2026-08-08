@@ -543,12 +543,20 @@ sit_off_process(I) -> asked(roster:best(island:roster_of(I)), self()).
 asked(undefined, _Back) -> false;
 asked(Entry, Back) ->
     Genome = roster:entry_genome(Entry),
-    %% ⚠ THE ORIGIN TRAVELS WITH THE SCORE. Read here rather than later, because
-    %% by the time the profile comes back the roster has bred on and `best' may
-    %% be a different entry — the answer would be about whoever is champion NOW
-    %% and not about whoever actually sat it.
-    Origin = roster:entry_origin(Entry),
-    _ = spawn(fun () -> Back ! {benchmarked, sat(benchmark:sit(Genome)), Origin} end),
+    %% ⚠ THE WHOLE SITTER TRAVELS WITH THE SCORE. Read here rather than later,
+    %% because by the time the profile comes back the roster has bred on and
+    %% `best' may be a different entry — the answer would be about whoever is
+    %% champion NOW and not about whoever actually sat it.
+    %%
+    %% ⚠⚠ AND IT IS THE IDENTITY, NOT ONLY THE PROVENANCE FLAG. A genome id is
+    %% the sha256 of its packed form, so the SAME id appearing as champion on two
+    %% islands is a controller that crossed the mesh — which is the archipelago's
+    %% entire claim and was, until now, publishable only as a count going up.
+    Sitter = #{id => roster:entry_id(Entry),
+               generation => roster:entry_generation(Entry),
+               sorties => roster:entry_sorties(Entry),
+               origin => roster:entry_origin(Entry)},
+    _ = spawn(fun () -> Back ! {benchmarked, sat(benchmark:sit(Genome)), Sitter} end),
     true.
 
 sat({ok, Profile}) -> Profile;

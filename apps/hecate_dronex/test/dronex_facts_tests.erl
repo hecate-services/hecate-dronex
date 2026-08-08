@@ -231,3 +231,61 @@ an_island_at_its_floor_cannot_defend_test() ->
     ?assert(island:can_defend(I, raid:party())),
     ?assertNot(island:can_defend(I, raid:party() + 1)),
     ?assertNot(island:can_defend(island:new(#{}), raid:party())).
+
+%%==============================================================================
+%% The champion's identity, so a genome can be followed across islands
+%%==============================================================================
+
+sitter(Id, Origin) ->
+    #{id => Id, generation => 12, sorties => 7, origin => Origin}.
+
+vitals_with(Sitter) ->
+    I = island:benchmarked(island:new(#{seed => 1}), benchmark:empty(), Sitter),
+    dronex_facts:vitals(I, #{writer => roster_log_writer:silent()}).
+
+%% ⚠ THE SAME ID ON TWO ISLANDS IS A CONTROLLER THAT CROSSED THE MESH, which is
+%% the archipelago's entire claim and was publishable only as a count going up.
+the_champion_is_named_test() ->
+    V = vitals_with(sitter(<<"abc123">>, {bred, beam00})),
+
+    ?assertEqual(<<"abc123">>, maps:get(champion_id, V)),
+    ?assertEqual(12, maps:get(champion_generation, V)),
+    ?assertEqual(7, maps:get(champion_sorties, V)).
+
+%% ⚠⚠ THE CROSSING HAS TWO ENDS. Publishing only "captured" says a genome came
+%% from somewhere; the island it came from is what makes it a path.
+a_captured_champion_names_where_it_came_from_test() ->
+    V = vitals_with(sitter(<<"abc">>, {captured, <<"e649">>, <<"raid-1">>})),
+
+    ?assertEqual(<<"e649">>, maps:get(champion_from, V)),
+    ?assertEqual(<<"captured">>, maps:get(benchmark_sitter, V)).
+
+%% Bred here is not the same fact as unknown, and neither is a raid id.
+a_bred_champion_came_from_nowhere_test() ->
+    V = vitals_with(sitter(<<"abc">>, {bred, beam00})),
+
+    ?assertEqual(undefined, maps:get(champion_from, V)),
+    ?assertEqual(<<"bred">>, maps:get(benchmark_sitter, V)).
+
+%% ⚠⚠⚠ THE RAID ID STAYS PRIVATE. It is a fleet-realm identifier and the reason
+%% the original code withheld provenance at all; only the genome and the island
+%% are public.
+the_raid_id_is_never_published_test() ->
+    V = vitals_with(sitter(<<"abc">>, {captured, <<"e649">>, <<"raid-secret">>})),
+
+    ?assertNot(lists:member(<<"raid-secret">>, maps:values(V))).
+
+%% An island that has not sat the exam has no champion, which is different from
+%% a champion with no id.
+an_island_that_has_not_sat_names_nobody_test() ->
+    V = dronex_facts:vitals(island:new(#{seed => 1}), #{writer => roster_log_writer:silent()}),
+
+    ?assertNot(maps:is_key(champion_id, V)),
+    ?assertEqual(<<"unknown">>, maps:get(benchmark_sitter, V)).
+
+%% The old tuple shape still reads, because an island mid-rollout publishes it.
+an_older_sitter_still_says_its_provenance_test() ->
+    V = vitals_with({bred, beam00}),
+
+    ?assertEqual(<<"bred">>, maps:get(benchmark_sitter, V)),
+    ?assertNot(maps:is_key(champion_id, V)).

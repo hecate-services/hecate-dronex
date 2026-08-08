@@ -58,7 +58,11 @@
 %% because they arrived together in the code: an island that breeds without
 %% publishing what it sat is an island whose numbers cannot be read.
 %% 1 was the first fact this track ever published.
--define(FACT_VERSION, 3).
+%% ⚠ 4 CARRIES THE CHAMPION'S IDENTITY. Every field added is OPTIONAL for a
+%% reader: islands roll one at a time, so during any deploy some publish 3 and
+%% some publish 4, and a consumer that required the new fields would drop every
+%% fact from a node not yet upgraded.
+-define(FACT_VERSION, 4).
 
 -spec fact_version() -> pos_integer().
 fact_version() -> ?FACT_VERSION.
@@ -145,6 +149,8 @@ ns(Str) -> list_to_binary(string:trim(Str)).
 vitals(Island, Runtime) ->
     Writer = maps:get(writer, Runtime),
     maps:merge(
+      champion(island:sitter_of(Island)),
+      maps:merge(
       #{fact_version => ?FACT_VERSION,
         island => dronex_identity:island(),
         island_id => dronex_identity:island_id(),
@@ -181,7 +187,7 @@ vitals(Island, Runtime) ->
                  maps:merge(persistence(Writer),
                             maps:merge(frozen(island:benchmark_of(Island)),
                                        ablation(island:ablation_of(Island),
-                                                island:ablations_of(Island)))))).
+                                                island:ablations_of(Island))))))).
 
 %% ⚠ WHETHER THE LINEAGE IS ACTUALLY BEING SAVED, AND IT GOES OUT BECAUSE IT
 %% ONCE WAS NOT. The first deployed island wrote nothing for four minutes and
@@ -291,9 +297,41 @@ described({error, _Why}) ->
 %% Bred here, captured from a neighbour, or an island that has not sat one yet.
 %% Deliberately NOT the raid id or the opponent: this is a provenance flag for a
 %% public page, and the fleet's raid ids are not its business.
+sitter(#{origin := Origin}) -> sitter(Origin);
 sitter({bred, _Whose}) -> <<"bred">>;
 sitter({captured, _From, _Raid}) -> <<"captured">>;
 sitter(_unknown) -> <<"unknown">>.
+
+%% @doc WHICH controller sat the exam, so a genome can be followed across islands.
+%%
+%% ⚠ THIS REVERSES A LINE ABOVE IT, AND THE REASONING BEHIND THAT LINE STILL
+%% HOLDS FOR WHAT IT ACTUALLY GUARDED. `sitter/1' says "deliberately NOT the raid
+%% id or the opponent", and the raid id stays private: it is a fleet-realm
+%% identifier and no business of a public page.
+%%
+%% A GENOME ID IS A DIFFERENT THING. It is the sha256 of the packed controller,
+%% it reveals nothing the genome itself would not, and the island it was captured
+%% FROM is already public: every island publishes its own id and every raid names
+%% both sides. Withholding it bought no privacy and cost the exhibit its central
+%% claim, that a raid is how opponent diversity crosses the mesh. Captures were
+%% publishable only as a number going up; nobody could watch one controller
+%% travel.
+%%
+%% Absent for an island that has not sat the exam, which is not the same as an
+%% island whose champion has no id.
+-spec champion(term()) -> map().
+champion(#{id := Id} = Sitter) when is_binary(Id) ->
+    #{champion_id => Id,
+      champion_generation => maps:get(generation, Sitter, 0),
+      champion_sorties => maps:get(sorties, Sitter, 0),
+      champion_from => taken_from(maps:get(origin, Sitter, unknown))};
+champion(_older) ->
+    #{}.
+
+%% The island a captured champion came from, so the crossing has two ends.
+%% `undefined' for one this island bred, which is a different fact from unknown.
+taken_from({captured, From, _Raid}) when is_binary(From) -> From;
+taken_from(_bred_or_unknown) -> undefined.
 
 -spec opened(island:island()) -> map().
 opened(Island) ->
