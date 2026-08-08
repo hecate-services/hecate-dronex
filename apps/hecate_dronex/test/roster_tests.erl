@@ -264,3 +264,103 @@ an_island_has_not_sat_the_exam_until_it_has_test() ->
     %% without a provenance cannot distinguish an evolutionary collapse from a
     %% change of champion.
     ?assertMatch({captured, _From, _Raid}, island:sitter_of(Sat)).
+
+%%==============================================================================
+%% What a raid does to the entries that fly it
+%%==============================================================================
+
+%% ⚠ THE SORTIE COUNTER WAS A SILENT NO-OP FOR THE WHOLE LIFE OF THE TRACK.
+%% `raid:sortie/3' evicts the party with `roster:take/2' and the old code then
+%% called `roster:count_sortie(RosterWithoutThem, Id)', which looked the id up in
+%% a map it had just been removed from, got `undefined', and returned the roster
+%% unchanged. Measured on beam03 on 2026-08-09 after 2,524 raids: max sorties
+%% across all 71 entries was 0, and every champion ever published carried
+%% `champion_sorties => 0'.
+%%
+%% ⚠⚠ AND THE OBVIOUS REPAIR WOULD HAVE BEEN WORSE THAN THE BUG. Counting on the
+%% roster BEFORE the take, or writing the entry back after it, re-inserts a
+%% controller that is supposed to be airborne — so the island would field the
+%% same genome at home and away at once, and the roster's finiteness, which is
+%% the entire price of a raid, would be decorative.
+a_party_carries_its_sortie_count_home_test() ->
+    R = populated(70),
+    {Party, Left, _S} = raid:sortie(R, rand:seed_s(exsss, {7, 7, 7}), 3),
+    ?assertEqual(3, length(Party)),
+
+    %% Stamped on the way out, on the records that travel.
+    [?assertEqual(1, roster:entry_sorties(E)) || E <- Party],
+
+    %% And NOT on the roster that stayed behind, which no longer holds them.
+    [?assertEqual(undefined, held(Left, roster:entry_id(E))) || E <- Party],
+
+    %% They come home carrying it, because `settle/3' re-admits the very record
+    %% it was handed.
+    {Back, _Home, _Lost} =
+        raid:settle(Left, Party, [{roster:entry_id(E), survived} || E <- Party]),
+    [?assertEqual(1, roster:entry_sorties(held(Back, roster:entry_id(E)))) || E <- Party],
+
+    %% A second raid by the same controllers counts again rather than resetting.
+    {Party2, Left2, _S2} = raid:sortie(Back, rand:seed_s(exsss, {7, 7, 7}), 3),
+    {Back2, _H2, _L2} =
+        raid:settle(Left2, Party2, [{roster:entry_id(E), survived} || E <- Party2]),
+    Flown = [roster:entry_sorties(E) || E <- roster:entries(Back2)],
+    ?assert(lists:max(Flown) >= 2).
+
+held(R, Id) ->
+    case [E || E <- roster:entries(R), roster:entry_id(E) =:= Id] of
+        [E] -> E;
+        [] -> undefined
+    end.
+
+%%==============================================================================
+%% How a captured genome earns a local number
+%%==============================================================================
+
+%% ⚠⚠⚠ A CAPTURED GENOME COULD NEVER BECOME CHAMPION, SO THE ARCHIPELAGO'S
+%% CENTRAL CLAIM WAS UNOBSERVABLE BY CONSTRUCTION. `raid:absorb/3' admits a
+%% foreign genome at fitness 0 deliberately, and says it "earns a local number
+%% only if the local trainer ever sits it". The trainer sits it every time it is
+%% the worst entry — and then discarded the number. So it stayed at 0, stayed the
+%% worst, and `roster:best/1' orders on stored fitness, so it could never be the
+%% sitter of the exam and never be published as the champion.
+%%
+%% Measured on beam03 on 2026-08-09: 52 bred entries at fitness 10 to 30, and all
+%% 19 captured entries at exactly 0. The exhibit reported "0 of 10 crossed the
+%% mesh" and that number was never evidence about the world. `REGISTER I.25'.
+a_captured_genome_earns_a_local_fitness_by_being_sat_test() ->
+    R0 = populated(6),
+    {ok, Foreign} = with_seed(99),
+    Captured = raid:absorb(R0, [{drone_genome:id(Foreign), Foreign}],
+                           #{from => <<"beam01">>, raid => <<"r1">>, tick => 0}),
+
+    Entry = held(Captured, drone_genome:id(Foreign)),
+    ?assertNotEqual(undefined, Entry),
+    ?assertEqual(0, roster:entry_fitness(Entry)),
+    %% Fitness 0 makes it the worst, which is exactly who the trainer sits.
+    ?assertEqual(drone_genome:id(Foreign), roster:entry_id(roster:worst(Captured))),
+
+    {After, Report, _S} =
+        trainer:round(Captured, #{rand => rand:seed_s(exsss, {3, 3, 3}), tick => 1}),
+
+    %% ⚠ THE PRECONDITION IS ASSERTED, NOT ASSUMED. The incumbent's measured
+    %% score is what should be written back, and if this seed ever produces a
+    %% zero the equality below would hold for the BROKEN code too — a test that
+    %% passes for the wrong reason. It fails here instead, loudly.
+    Measured = maps:get(incumbent, Report),
+    ?assert(Measured > 0),
+
+    %% The captured genome now carries the number it just earned, in place of the
+    %% zero it was admitted with. Unless the challenger displaced it, which is
+    %% the one outcome where there is no entry left to carry anything.
+    case held(After, drone_genome:id(Foreign)) of
+        undefined -> ?assert(maps:get(outcome, Report) =:= admitted);
+        Still -> ?assertEqual(Measured, roster:entry_fitness(Still))
+    end.
+
+populated(N) ->
+    lists:foldl(fun (I, R) -> put_in(R, entry(I, I)) end,
+                roster:new(island, N + 8), lists:seq(1, N)).
+
+with_seed(Seed) ->
+    {G, _S} = breed:random(rand:seed_s(exsss, {Seed, Seed, Seed})),
+    {ok, G}.

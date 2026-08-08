@@ -86,12 +86,7 @@ grounded(false, R, S, _N) -> {[], R, S};
 grounded(true, R, S, N) ->
     {Party, S1} = roster:sample(R, N, S),
     {Taken, R1} = roster:take(R, [roster:entry_id(E) || E <- Party]),
-    {Taken, counted(R1, Taken), S1}.
-
-%% A sortie is counted on the roster that stays behind, so an island's record of
-%% how often it has attacked survives the party not coming back.
-counted(R, Taken) ->
-    lists:foldl(fun (E, Acc) -> roster:count_sortie(Acc, roster:entry_id(E)) end, R, Taken).
+    {[roster:flew(E) || E <- Taken], R1, S1}.
 
 %% @doc Whom to attack: an island heard from recently, never oneself.
 %%

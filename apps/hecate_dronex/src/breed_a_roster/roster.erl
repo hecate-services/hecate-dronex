@@ -26,7 +26,7 @@
 
 -export([new/1, new/2, admit/2, evict/2, entries/1, depth/1, capacity/1]).
 -export([best/1, worst/1, sample/3, generation_of/1, take/2, restore/1]).
--export([entry/2, has/2, ids/1, tag_veteran/3, count_sortie/2]).
+-export([entry/2, has/2, ids/1, tag_veteran/3, flew/1, scored/3]).
 %% Reading one entry. Exported because `entry()' is opaque and reaching in with
 %% `element/2' from another module is a record layout copied by hand, which stops
 %% compiling in silence the day a field is inserted.
@@ -182,12 +182,46 @@ tagged(R, undefined, _Where) -> R;
 tagged(#{entries := Es} = R, #entry{veteran_of = V, returns = N} = E, Where) ->
     R#{entries := Es#{E#entry.id => E#entry{veteran_of = [Where | V], returns = N + 1}}}.
 
--spec count_sortie(roster(), binary()) -> roster().
-count_sortie(#{entries := Es} = R, Id) -> flown(R, maps:get(Id, Es, undefined)).
+%% @doc Stamp one sortie on an entry that is LEAVING the roster.
+%%
+%% ⚠⚠ IT TAKES AN ENTRY AND NOT A ROSTER, AND THE VERSION THAT TOOK A ROSTER
+%% COULD NEVER HAVE WORKED. `count_sortie(Roster, Id)' looked right and was two
+%% separate impossibilities at once. `raid:sortie/3' calls `roster:take/2' first,
+%% so by the time the count ran the id had been evicted and `maps:get/3' returned
+%% `undefined': every increment was a silent no-op. And had it found the entry it
+%% would have written it BACK into the map, un-evicting a party that is supposed
+%% to be airborne — which is the one thing the take exists to prevent.
+%%
+%% Measured on beam03 on 2026-08-09, after 2,524 raids: max sorties across all 71
+%% entries was 0, and every champion this archipelago has ever published carried
+%% `champion_sorties => 0`.
+%%
+%% The count travels with the party instead. `raid:settle/3' re-admits the very
+%% record it was handed, so a stamp applied on the way out is what comes home.
+-spec flew(entry()) -> entry().
+flew(#entry{sorties = N} = E) -> E#entry{sorties = N + 1}.
 
-flown(R, undefined) -> R;
-flown(#{entries := Es} = R, #entry{sorties = N} = E) ->
-    R#{entries := Es#{E#entry.id => E#entry{sorties = N + 1}}}.
+%% @doc Record a fitness against an entry already held.
+%%
+%% ⚠ THIS EXISTS BECAUSE A CAPTURED GENOME COULD NEVER EARN ONE. `raid:absorb/3'
+%% admits a foreign genome at fitness 0 on purpose — its old number was measured
+%% against somebody else's opponents and means nothing here — and says it "earns
+%% a local number only if the local trainer ever sits it". The trainer sits it
+%% every time it is the worst entry, and then threw the number away, so nothing
+%% ever assigned one. Measured on beam03 on 2026-08-09: 52 bred entries at
+%% fitness 10 to 30, and all 19 captured entries at exactly 0.
+%%
+%% ⚠⚠ AND THE CONSEQUENCE WAS NOT A COSMETIC ONE. `best/1' orders on stored
+%% fitness, so a captured genome could never be champion, so "a controller that
+%% crossed the mesh" — the archipelago's central claim — was structurally
+%% unobservable rather than merely rare. The exhibit reported it as 0 of 10 for
+%% weeks and that number was never evidence about the world.
+-spec scored(roster(), binary(), integer()) -> roster().
+scored(#{entries := Es} = R, Id, Fitness) -> rated(R, maps:get(Id, Es, undefined), Fitness).
+
+rated(R, undefined, _Fitness) -> R;
+rated(#{entries := Es} = R, #entry{} = E, Fitness) ->
+    R#{entries := Es#{E#entry.id => E#entry{fitness = Fitness}}}.
 
 %% @doc Rebuild a roster from entries, for the log to replay into.
 -spec restore([entry()]) -> roster().

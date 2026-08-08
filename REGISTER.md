@@ -186,6 +186,7 @@ In [`register/FINDINGS_ABOUT_THE_WORK.md`](register/FINDINGS_ABOUT_THE_WORK.md),
 
 | | |
 |---|---|
+| [`I.25`](register/FINDINGS_ABOUT_THE_WORK.md#i25-two-counters-that-could-never-count-and-one-of-them-made-the-central-claim-unobservable) | two counters that could never count, and one of them made the central claim unobservable |
 | [`I.24`](register/FINDINGS_ABOUT_THE_WORK.md#i24-the-island-advertised-once-at-the-wrong-moment-and-could-never-be-raided) | the island advertised once, at the wrong moment, and could never be raided |
 | [`I.23`](register/FINDINGS_ABOUT_THE_WORK.md#i23-a-rung-that-measured-nothing-and-only-known-controllers-could-say-so) | a rung that measured nothing, and only known controllers could say so |
 | [`I.22`](register/FINDINGS_ABOUT_THE_WORK.md#i22-the-exam-was-one-of-the-things-the-islands-were-breeding-against) | the exam was one of the things the islands were breeding against |

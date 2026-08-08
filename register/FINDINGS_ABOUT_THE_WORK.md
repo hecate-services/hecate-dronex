@@ -7,6 +7,71 @@ The index, and the rule itself, are in [`../REGISTER.md`](../REGISTER.md).
 
 ---
 
+## I.25: two counters that could never count, and one of them made the central claim unobservable
+
+Raf looked at the exhibit and asked whether it made sense. It did not, in two
+places, and neither had ever been measured.
+
+**`sorties` was always zero.** `raid:sortie/3` musters a party with
+`roster:take/2`, which evicts it, and then called
+`roster:count_sortie(RosterWithoutThem, Id)`. The lookup missed, the clause
+returned the roster unchanged, and every increment since the raid protocol was
+written was a silent no-op. Measured on beam03 on 2026-08-09, after **2,524
+raids**: max sorties across all 71 entries was 0, and every champion this
+archipelago has ever published carried `champion_sorties => 0`.
+
+⚠ **The obvious repair was worse than the bug.** Counting before the take, or
+writing the entry back after it, re-inserts a controller that is supposed to be
+airborne — so an island would field the same genome at home and away at once and
+the roster's finiteness, which is the entire price of a raid, would be
+decorative. The count has to travel WITH the party, because `raid:settle/3`
+re-admits the very record it was handed.
+
+**A captured genome could never become champion.** `raid:absorb/3` admits a
+foreign genome at `fitness => 0` deliberately — its old number was measured
+against somebody else's opponents — and its comment says it "earns a local number
+only if the local trainer ever sits it". The trainer sits it every time it is the
+worst entry, computes a real score against the same opponents and starts as the
+challenger, and **threw that number away**. So it stayed at 0 for ever.
+
+`roster:best/1` orders on stored fitness. A permanent zero is permanently last,
+so a captured genome could never sit the exam, never be published as the
+champion, and never appear as a controller that crossed the mesh.
+
+| beam03, 2026-08-09 | entries | fitness |
+|---|---|---|
+| bred | 52 | 10 to 30 |
+| captured | 19 | **0 to 0** |
+
+⚠⚠ **SO "0 OF 10 CROSSED THE MESH" WAS NEVER EVIDENCE ABOUT THE WORLD.** The
+archipelago's one idea is that a raid moves opponent diversity across the mesh,
+and the panel built to show it was reporting a number that could not have been
+anything else. It had been read, in this session, as "no genome has crossed
+yet" — a statement about the fleet — when it was a statement about the code.
+
+**The fix is one line and costs nothing:** store the incumbent's score, which was
+already being computed. It does not change the comparison, which is still on the
+two numbers just measured; it changes who is the worst NEXT round, and a measured
+number is strictly better than a stale zero for that.
+
+**Both tests were written, then verified by putting the bugs back.** The first
+version of the captured-fitness test passed with the bug still in, because its
+assertions were `fitness >= 0` and "some entry has fitness above zero" — both
+vacuously true. It now compares against the score the round actually reported,
+and asserts that score is non-zero first, so a seed that happened to measure zero
+fails loudly instead of passing for the wrong reason.
+
+**ELI5.** A club kept two records about its players: how many away matches each
+had played, and how good the players it signed from other clubs were. Nobody had
+checked either. The away counter was written into the locker of a player who had
+already left for the coach, so it always read zero. And a signed player was
+entered on the books as "worth nothing" until somebody assessed them, which the
+club's own rules said would happen at the next trial — except the trial results
+were thrown out every time. So a signed player was worth nothing for ever, could
+never be picked for the first team, and the club's noticeboard proudly reported
+that not one of its signings had ever made the team. That was not a fact about
+the signings.
+
 ## I.24: the island advertised once, at the wrong moment, and could never be raided
 
 > ⚠ **RENUMBERED FROM `I.11` ON 2026-08-08.** Two different findings carried that number: this one and the island that stopped while reporting healthy. Three citations across the repository pointed at an ambiguous target. The older entry keeps `I.11`, because renumbering it would have invalidated citations that were correct when they were written.

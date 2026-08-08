@@ -108,7 +108,22 @@ contested(R, Opts, {A, B}, Child, S) ->
     Incumbent = roster:worst(R),
     Theirs = evaluate(genome(Incumbent), Opps, Starts, R),
     Mine = evaluate(Child, Opps, Starts, R),
-    judged(R, Opts, {A, B}, Child, Mine, Theirs, S2).
+    %% ⚠ THE INCUMBENT'S SCORE IS KEPT, AND THROWING IT AWAY HAD A COST NOBODY
+    %% HAD LOOKED FOR. It is a real local measurement, on the same opponents and
+    %% the same starts as the challenger, and it was computed and discarded every
+    %% round. `raid:absorb/3' admits a captured genome at fitness 0 and says it
+    %% "earns a local number only if the local trainer ever sits it" — this line
+    %% is the only place that sentence can come true. Without it a foreign genome
+    %% stayed at 0 for ever, was therefore always the worst, could never be
+    %% `best', and so could never be champion: the archipelago's central claim
+    %% was unobservable by construction. `REGISTER I.25'.
+    %%
+    %% ⚠⚠ IT DOES NOT CHANGE THE COMPARISON, which is what makes it safe. The
+    %% judgement below is on the two numbers just measured, exactly as before;
+    %% the stored value only decides who is the worst NEXT round, and a number
+    %% measured here is strictly better than a stale zero for that.
+    judged(roster:scored(R, roster:entry_id(Incumbent), Theirs),
+           Opts, {A, B}, Child, Mine, Theirs, S2).
 
 judged(R, _Opts, _Pair, _Child, Mine, Theirs, S) when Mine =< Theirs ->
     {R, #{outcome => rejected, challenger => Mine, incumbent => Theirs}, S};
