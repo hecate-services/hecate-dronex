@@ -562,11 +562,18 @@ asked(Entry, Back) ->
     %% and `roster:best/1' changes every few seconds. Two spawns would have
     %% produced two readings of two different champions labelled as one.
     %%
-    %% ⚠⚠ AND IT DOUBLES THE WORK OF A SITTING, WHICH IS AFFORDABLE HERE AND IS
-    %% SAID OUT LOUD BECAUSE IT IS THE KIND OF THING THAT STOPS BEING TRUE. Six
-    %% rungs over 48 starts is 288 engagements; two ladders is 576, once every
-    %% five minutes, off-process, behind the `sitting' guard that stops a slow
-    %% sitting from overlapping the next one.
+    %% ⚠⚠ AND IT DOUBLES THE WORK OF A SITTING, WHICH IS MEASURED RATHER THAN
+    %% ASSUMED AFFORDABLE. Six rungs over 48 starts is 288 engagements; two
+    %% ladders is 576, once every five minutes, off-process, behind the `sitting'
+    %% guard that stops a slow sitting from overlapping the next one.
+    %%
+    %% Timed on the fleet's WEAKEST champion, which is the expensive case because
+    %% a controller that cannot finish a fight runs it to the battery: 4.6 s for
+    %% the curriculum and 8.5 s for the held-out ladder on a development machine.
+    %% A Celeron J4105 is several times slower, so a bad sitting is minutes rather
+    %% than seconds and may occasionally skip its next slot. That is what the
+    %% guard is for, and a skipped sitting is a gap in a five-minute series rather
+    %% than a starved trainer, because this runs in its own process.
     _ = spawn(fun () ->
                       Back ! {benchmarked,
                               sat(benchmark:sit(Genome),
