@@ -218,6 +218,46 @@ the_benchmark_is_an_away_game_test() ->
     ?assert(binary:match(Bin, <<"ground_network:none()">>) =/= nomatch),
     ?assertEqual(nomatch, binary:match(Bin, <<"ground_network:home">>)).
 
+%% ⚠⚠ A SECOND GUARD FOR A DIFFERENT HOLE, AND THE MEASUREMENT SAID WHICH.
+%% Written 2026-08-08 for the audit `REGISTER I.22' asks for: every property the
+%% charter promises in prose, asked whether anything in the code would notice if
+%% it stopped being true.
+%%
+%% The intent was to replace the grep above with something behavioural, because
+%% fifty lines below this file already carries the note "CALLED, NOT GREPPED.
+%% This assertion used to read `island_server.erl' for the string
+%% `ground_network:home()' and passed while the raid path was perturbed."
+%%
+%% ⚠⚠⚠ THEN THE REGRESSION WAS ACTUALLY INJECTED, AND THE GREP CAUGHT IT WHILE
+%% THIS DID NOT. Switching `one/4' to `ground_network:home()' moves BOTH sides of
+%% the comparison below, so they stay equal and this stays green. The grep fails
+%% instantly, because the string it forbids has appeared.
+%%
+%% So the grep is not the weak one here, and the two cover different holes:
+%%
+%%   the grep   the exam itself switching to a home network
+%%   this one   a `network' option threaded in from OUTSIDE, which the grep
+%%              cannot see at all because the string never appears in this module
+%%
+%% Both are kept. The claim that a behavioural test is automatically stronger
+%% than a textual one is what the injection refuted.
+the_benchmark_refuses_a_network_it_is_handed_test() ->
+    Genome = null_genome(),
+    {ok, Away} = benchmark:sit(Genome, #{starts => 2}),
+    {ok, Offered} = benchmark:sit(Genome, #{starts => 2, network => ground_network:home()}),
+    ?assertEqual(Away, Offered),
+    %% And the held-out ladder is an away game on exactly the same terms.
+    {ok, TrialsAway} = benchmark:sit(Genome, #{starts => 2, ladder => drone_trials}),
+    {ok, TrialsOffered} =
+        benchmark:sit(Genome, #{starts => 2, ladder => drone_trials,
+                                network => ground_network:home()}),
+    ?assertEqual(TrialsAway, TrialsOffered).
+
+null_genome() ->
+    {In, H, Out} = drone_genome:topology(),
+    Topology = [In] ++ H ++ [Out],
+    {Topology, lists:duplicate(drone_genome:gene_count(Topology), 0)}.
+
 training_happens_under_the_islands_own_network_test() ->
     %% Selection cannot favour using a cue that is never present. Without this
     %% the ground bank would be four zeroes for every generation that ever ran,

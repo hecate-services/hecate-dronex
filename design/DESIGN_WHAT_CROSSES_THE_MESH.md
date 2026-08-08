@@ -123,7 +123,7 @@ is most at risk of. Death still clears the entry, which is what a lease is for.
 derived from whether the raid procedure is really registered and whether a
 defence can be mustered above the floor — never asserted beside them. Without
 that an island can announce itself open, be believed, and answer nothing, which
-is REGISTER I.11 exactly.
+is REGISTER I.24 exactly.
 
 Two fields ride along, and each turns a wasted raid into a filter: the **engine
 fingerprint**, because a mismatch would refuse on arrival, and the **roster

@@ -433,7 +433,7 @@ runtime(S) -> (maps:with([writer, advertising, open], S))#{listening => listenin
 %% ⚠ AN ISLAND ANNOUNCES OPEN ONLY WHEN IT ACTUALLY IS, AND THAT IS THE POINT.
 %% `advertising' is whether the raid procedure is really registered; without that
 %% check an island could announce itself open, be believed, and answer nothing —
-%% which is precisely I.11, where it was busy, healthy, and unreachable for
+%% which is precisely I.24, where it was busy, healthy, and unreachable for
 %% hours. The published state is DERIVED from the capability rather than asserted
 %% beside it, so it cannot lie.
 %%
