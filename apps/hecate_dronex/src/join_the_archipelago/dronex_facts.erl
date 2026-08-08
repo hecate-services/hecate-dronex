@@ -62,7 +62,11 @@
 %% reader: islands roll one at a time, so during any deploy some publish 3 and
 %% some publish 4, and a consumer that required the new fields would drop every
 %% fact from a node not yet upgraded.
--define(FACT_VERSION, 4).
+%% ⚠ 5 CARRIES THE HELD-OUT EXAM: `trials_rungs' and its three vectors and its
+%% start count, beside the `benchmark_*' fields rather than replacing them. See
+%% `REGISTER I.22' for why both are published and only one of them may be called
+%% improvement.
+-define(FACT_VERSION, 5).
 
 -spec fact_version() -> pos_integer().
 fact_version() -> ?FACT_VERSION.
@@ -185,7 +189,8 @@ vitals(Island, Runtime) ->
         captures => island:captures_of(Island)},
       maps:merge(maps:merge(station(), reachability(Runtime)),
                  maps:merge(persistence(Writer),
-                            maps:merge(frozen(island:benchmark_of(Island)),
+                            maps:merge(maps:merge(frozen(island:benchmark_of(Island)),
+                                                  held_out(island:trials_of(Island))),
                                        ablation(island:ablation_of(Island),
                                                 island:ablations_of(Island))))))).
 
@@ -264,6 +269,19 @@ frozen(Profile) ->
       %% Zero means the exam has not been sat, which a reader must be able to
       %% tell from having sat it and lost everything.
       benchmark_starts => maps:get(starts, Profile, 0)}.
+
+%% ⚠ THE HELD-OUT EXAM, UNDER ITS OWN KEYS, BESIDE THE CURRICULUM AND NEVER
+%% INSTEAD OF IT. `REGISTER I.22': the `benchmark_*' fields are performance
+%% against opponents the trainer breeds on, and these are the ones that may be
+%% called improvement. Replacing the old keys would have silently changed what
+%% every historical reading meant, which is worse than publishing a number that
+%% is wrong, because nothing would mark the discontinuity.
+held_out(Profile) ->
+    #{trials_rungs => maps:get(rungs, Profile, []),
+      trials_wins => maps:get(wins, Profile, []),
+      trials_draws => maps:get(draws, Profile, []),
+      trials_losses => maps:get(losses, Profile, []),
+      trials_starts => maps:get(starts, Profile, 0)}.
 
 %% A door that cannot be read is reported as unknown rather than omitted. A key
 %% that appears only sometimes is a field a chart silently drops.

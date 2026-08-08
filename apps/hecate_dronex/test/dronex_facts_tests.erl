@@ -33,7 +33,9 @@ only_what_exists_is_published_test() ->
                   raids, raids_home, raids_lost, roster,
                   roster_write_failures, roster_writes, roster_writes_dropped,
                   rounds, signal_entropy, signal_volume,
-                  station_connected, station_host, station_id, tick], Keys).
+                  station_connected, station_host, station_id, tick,
+                  trials_draws, trials_losses, trials_rungs, trials_starts,
+                  trials_wins], Keys).
 
 %% ⚠ MANY RAIDS AND ZERO CAPTURES IS A DIFFERENT WORLD FROM NO RAIDS AT ALL, and
 %% from the outside they look the same if only one number goes out. An island
@@ -240,7 +242,8 @@ sitter(Id, Origin) ->
     #{id => Id, generation => 12, sorties => 7, origin => Origin}.
 
 vitals_with(Sitter) ->
-    I = island:benchmarked(island:new(#{seed => 1}), benchmark:empty(), Sitter),
+    I = island:benchmarked(island:new(#{seed => 1}), benchmark:empty(),
+                           benchmark:empty(benchmark:held_out_ladder()), Sitter),
     dronex_facts:vitals(I, #{writer => roster_log_writer:silent()}).
 
 %% ⚠ THE SAME ID ON TWO ISLANDS IS A CONTROLLER THAT CROSSED THE MESH, which is

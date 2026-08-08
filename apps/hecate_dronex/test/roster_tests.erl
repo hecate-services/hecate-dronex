@@ -246,11 +246,20 @@ training_advances_the_counts_test() ->
 an_island_has_not_sat_the_exam_until_it_has_test() ->
     I = island:new(#{seed => 35}),
     ?assertEqual(0, maps:get(starts, island:benchmark_of(I))),
+    %% ⚠ BOTH EXAMS START UNSAT, and the held-out one starts carrying the HELD-OUT
+    %% rung names. An empty profile that named the curriculum's rungs would put
+    %% the wrong six words beside the right zeros, and a reader has nothing else
+    %% to tell the two vectors apart by.
+    ?assertEqual(0, maps:get(starts, island:trials_of(I))),
+    ?assertEqual(drone_trials:kinds(), maps:get(rungs, island:trials_of(I))),
     ?assertEqual(unknown, island:sitter_of(I)),
     Sat = island:benchmarked(I, #{rungs => [], wins => [], draws => [],
                                   losses => [], starts => 4},
+                             #{rungs => [], wins => [], draws => [],
+                               losses => [], starts => 7},
                              {captured, <<"beam01">>, <<"r1">>}),
     ?assertEqual(4, maps:get(starts, island:benchmark_of(Sat))),
+    ?assertEqual(7, maps:get(starts, island:trials_of(Sat))),
     %% ⚠ AND WHO SAT IT. `roster:best/1' can be a captured genome, so a score
     %% without a provenance cannot distinguish an evolutionary collapse from a
     %% change of champion.

@@ -220,6 +220,52 @@ a_profile_names_the_ladder_that_produced_it_test() ->
     {ok, HeldOut} = benchmark:sit(null_genome(), #{starts => 1, ladder => drone_trials}),
     ?assertNotEqual(maps:get(rungs, Curriculum), maps:get(rungs, HeldOut)).
 
+%%==============================================================================
+%% On the wire
+%%==============================================================================
+
+%% ⚠ BESIDE THE CURRICULUM AND NEVER INSTEAD OF IT. Replacing the `benchmark_*'
+%% keys would have silently changed what every historical reading meant, with
+%% nothing marking the discontinuity, which is worse than publishing a number
+%% that is wrong.
+both_exams_ride_the_fact_under_their_own_keys_test() ->
+    Fact = with_data_dir(fun () -> dronex_facts:vitals(island:new(#{}), runtime()) end),
+    ?assertEqual(drone_drills:kinds(), maps:get(benchmark_rungs, Fact)),
+    ?assertEqual(drone_trials:kinds(), maps:get(trials_rungs, Fact)),
+    ?assertNotEqual(maps:get(benchmark_rungs, Fact), maps:get(trials_rungs, Fact)),
+    [?assert(maps:is_key(K, Fact))
+     || K <- [trials_wins, trials_draws, trials_losses, trials_starts]].
+
+%% CHARTER.md rule 4 for the new vector too: an island that has not sat the
+%% held-out exam and one that sat it and lost everything must not look the same.
+an_unsat_held_out_exam_publishes_zeros_and_says_zero_starts_test() ->
+    Fact = with_data_dir(fun () -> dronex_facts:vitals(island:new(#{}), runtime()) end),
+    ?assertEqual(0, maps:get(trials_starts, Fact)),
+    ?assertEqual(lists:duplicate(6, 0), maps:get(trials_wins, Fact)).
+
+%% ⚠ THE FACT VERSION MOVED, because a reader keying on it must be able to tell
+%% an island that publishes the held-out exam from one that does not. Islands
+%% roll one at a time, so during any deploy both are on the wire at once.
+the_fact_version_says_the_held_out_exam_is_there_test() ->
+    Fact = with_data_dir(fun () -> dronex_facts:vitals(island:new(#{}), runtime()) end),
+    ?assert(maps:get(fact_version, Fact) >= 5).
+
+runtime() ->
+    #{writer => #{written => 0, failed => 0, dropped => 0},
+      reachable => #{open => false, listening => false, advertising => false}}.
+
+%% ⚠ THE IDENTITY IS READ FROM A DATA DIR, so a test must give it one or it
+%% writes into whatever the working directory happens to be.
+with_data_dir(F) ->
+    Dir = "/tmp/dronex_trials_tests",
+    ok = filelib:ensure_path(Dir),
+    Was = application:get_env(hecate_dronex, data_dir),
+    application:set_env(hecate_dronex, data_dir, Dir),
+    try F() after restored(Was) end.
+
+restored(undefined) -> application:unset_env(hecate_dronex, data_dir);
+restored({ok, V}) -> application:set_env(hecate_dronex, data_dir, V).
+
 an_unsat_held_out_exam_is_zeros_with_zero_starts_test() ->
     P = benchmark:empty(drone_trials),
     ?assertEqual(0, maps:get(starts, P)),

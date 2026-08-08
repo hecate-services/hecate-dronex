@@ -338,8 +338,9 @@ handle_info(benchmark, #{island := I, sitting := false} = S) ->
 handle_info(benchmark, S) ->
     schedule(benchmark, ?DEFAULT_BENCH_MS),
     {noreply, S};
-handle_info({benchmarked, Profile, Origin}, #{island := I} = S) ->
-    {noreply, S#{island := island:benchmarked(I, Profile, Origin), sitting := false}};
+handle_info({benchmarked, Profile, Trials, Origin}, #{island := I} = S) ->
+    {noreply, S#{island := island:benchmarked(I, Profile, Trials, Origin),
+                 sitting := false}};
 
 %% ⚠ RUN INLINE AND WITH FRAMES ON, WHICH IS THE ONE PLACE THAT IS TRUE. An
 %% engagement with the frame accumulator running allocates an arena per tick, so
@@ -556,11 +557,33 @@ asked(Entry, Back) ->
                generation => roster:entry_generation(Entry),
                sorties => roster:entry_sorties(Entry),
                origin => roster:entry_origin(Entry)},
-    _ = spawn(fun () -> Back ! {benchmarked, sat(benchmark:sit(Genome)), Sitter} end),
+    %% ⚠ BOTH LADDERS IN ONE SPAWN, BY THE SAME GENOME. The curriculum profile
+    %% and the held-out profile are only comparable if one controller sat both,
+    %% and `roster:best/1' changes every few seconds. Two spawns would have
+    %% produced two readings of two different champions labelled as one.
+    %%
+    %% ⚠⚠ AND IT DOUBLES THE WORK OF A SITTING, WHICH IS AFFORDABLE HERE AND IS
+    %% SAID OUT LOUD BECAUSE IT IS THE KIND OF THING THAT STOPS BEING TRUE. Six
+    %% rungs over 48 starts is 288 engagements; two ladders is 576, once every
+    %% five minutes, off-process, behind the `sitting' guard that stops a slow
+    %% sitting from overlapping the next one.
+    _ = spawn(fun () ->
+                      Back ! {benchmarked,
+                              sat(benchmark:sit(Genome),
+                                  benchmark:curriculum_ladder()),
+                              sat(benchmark:sit(Genome,
+                                                #{ladder => benchmark:held_out_ladder()}),
+                                  benchmark:held_out_ladder()),
+                              Sitter}
+              end),
     true.
 
-sat({ok, Profile}) -> Profile;
-sat({error, _Why}) -> benchmark:empty().
+%% ⚠ AN EMPTY PROFILE OF THE RIGHT LADDER, so a genome the exam refused still
+%% publishes the rung NAMES a reader needs to tell the two exams apart. Falling
+%% back to `benchmark:empty/0' here would have published the curriculum's rung
+%% names beside the held-out exam's zeros.
+sat({ok, Profile}, _Ladder) -> Profile;
+sat({error, _Why}, Ladder) -> benchmark:empty(Ladder).
 
 %% @doc Ask whether this island's own controllers are using the channel.
 %%

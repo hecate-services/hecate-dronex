@@ -24,10 +24,10 @@
 %% result about the release it was measured on, and the Containerfile says which.
 -module(island).
 
--export([new/1, run/2, train/1, seed_if_empty/1, benchmarked/3, with_roster/2]).
+-export([new/1, run/2, train/1, seed_if_empty/1, benchmarked/4, with_roster/2]).
 -export([tally_of/1, with_tally/2]).
 -export([tick_of/1, roster_depth/1, capacity/1, seed_of/1, roster_of/1]).
--export([generation_of/1, benchmark_of/1, rounds_of/1, admissions_of/1]).
+-export([generation_of/1, benchmark_of/1, trials_of/1, rounds_of/1, admissions_of/1]).
 -export([sitter_of/1]).
 -export([ablated/2, ablation_of/1, ablations_of/1]).
 -export([muster/2, aim/3, returned/3, defended/5, can_defend/2]).
@@ -48,10 +48,19 @@
     roster :: roster:roster(),
     rand :: rand:state(),
     seed :: integer(),
-    %% The last frozen-benchmark profile, and `benchmark:empty()' until one has
-    %% been sat. CHARTER.md rule 4: a reader must be able to tell "sat it and lost
+    %% The last CURRICULUM profile, and `benchmark:empty()' until one has been
+    %% sat. CHARTER.md rule 4: a reader must be able to tell "sat it and lost
     %% everything" from "has not sat it", which is what a `starts' of zero says.
+    %%
+    %% ⚠ THIS ONE IS NOT HELD OUT. Its six rungs are also six of the opponents
+    %% `trainer:opponents/1' breeds against, so what it reports is performance
+    %% against the curriculum and never improvement. `REGISTER I.22'.
     benchmark :: map(),
+    %% ⚠⚠ THE HELD-OUT PROFILE, WHICH IS THE ONE THAT MAY BE CALLED IMPROVEMENT.
+    %% Sat by the SAME genome in the SAME spawn as the one above, because two
+    %% readings taken from two different champions cannot be compared and the
+    %% roster breeds on between them.
+    trials :: map(),
     %% ⚠ WHO SAT IT. `roster:best/1' is the sitter, and `raid:absorb/3' admits
     %% CAPTURED genomes into the same roster — so the island's exam score can be
     %% the score of a controller bred on somebody else's machine, and nothing
@@ -102,7 +111,8 @@ new(Opts) when is_map(Opts) ->
             roster = maps:get(roster, Opts,
                               roster:new(island, maps:get(capacity, Opts,
                                                           ?DEFAULT_CAPACITY))),
-            benchmark = benchmark:empty()}.
+            benchmark = benchmark:empty(),
+            trials = benchmark:empty(benchmark:held_out_ladder())}.
 
 %% @doc Advance the island's clock by N ticks.
 %%
@@ -135,10 +145,16 @@ train(#island{roster = R, rand = S, tick = T, rounds = N} = I) ->
 counted(#{outcome := admitted}, N) -> N + 1;
 counted(_Report, N) -> N.
 
-%% @doc Record a frozen-benchmark profile.
--spec benchmarked(island(), map(), term()) -> island().
-benchmarked(#island{} = I, Profile, Origin) ->
-    I#island{benchmark = Profile, sitter = Origin}.
+%% @doc Record both profiles from one sitting.
+%%
+%% ⚠ BOTH AT ONCE, DELIBERATELY, AND A SEPARATE SETTER WOULD HAVE BEEN WRONG.
+%% The two exams are only comparable if the same genome sat them, and the roster
+%% breeds a new best every few seconds. Taking them together makes "this champion
+%% scores 48 on the curriculum and 26 held out" a sentence about one controller
+%% rather than about two.
+-spec benchmarked(island(), map(), map(), term()) -> island().
+benchmarked(#island{} = I, Profile, Trials, Origin) ->
+    I#island{benchmark = Profile, trials = Trials, sitter = Origin}.
 
 %% @doc The provenance of the controller that sat the last exam.
 %%
@@ -221,6 +237,9 @@ generation_of(#island{roster = R}) -> roster:generation_of(R).
 
 -spec benchmark_of(island()) -> map().
 benchmark_of(#island{benchmark = B}) -> B.
+
+-spec trials_of(island()) -> map().
+trials_of(#island{trials = T}) -> T.
 
 %% @doc Whether this island could field a defence of `N' right now.
 %%
