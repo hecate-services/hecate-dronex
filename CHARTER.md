@@ -336,6 +336,22 @@ pre-registration, and the four measurement rules from 053 to 056 apply.
   an exhibit; if any figure here ever hardens into a claim, the retention is a
   selection effect and the claim gate starts there.
 
+- ⚠ **THE FROZEN LADDER NEEDS HARDER RUNGS, OR IT IS DECORATION.** `REGISTER
+  D.16`: once lineages survived a restart, the fleet cleared every drill at 99%
+  within about a day. Four of five islands sit at 47 or 48 of 48 on all six, so
+  the one absolute measure this project has now discriminates a single island and
+  nothing else, and the leaderboard's headline column has a fleet-wide spread of
+  two points. The drills are named and ordered, so the shape of the extension is
+  obvious: the deficit that survives is against opponents that shoot AND close.
+
+- **Whether msi00's two anomalies are one anomaly.** It has bred 50% more than
+  any beam node, is alone in failing `chaser` and `duellist`, and is the only
+  island whose radio ablation has never gone positive. It is also the only
+  machine that is not a beam node and the only one running podman. Three thin
+  threads: more breeding with worse closing performance, a channel that never
+  costs anything to silence, and a different host. Any two of them being the same
+  story would be worth knowing.
+
 - **`REGISTER.md` has passed the size at which its own rule says to split it.**
   The file states "one file until it passes about 800 lines, then one file per
   series under `register/`". It is past 1,400.

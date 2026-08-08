@@ -160,6 +160,49 @@ survey.**
 the top drawer. There were three hammers in the drawer underneath. The rule is
 to open every drawer before saying what is not in the toolbox.
 
+## D.16: the fleet solved the frozen exam in about a day, once it could keep a lineage
+
+On the morning of 2026-08-07 the islands were restored to keeping their
+populations across a restart, for the first time since `roster_log` was written
+(`I.21`). Within roughly a day of continuous breeding, four of five islands were
+scoring 47 or 48 out of 48 on **every rung** of the frozen ladder.
+
+| island | rounds | generation | wins per drill, of 48 |
+|---|---|---|---|
+| beam00 | 71,284 | 83 | 48 48 48 48 48 48 |
+| beam01 | 69,538 | 21 | 48 48 48 47 48 48 |
+| beam02 | 70,455 | 67 | 48 48 48 48 48 48 |
+| beam03 | 71,709 | 97 | 48 48 48 42 48 48 |
+| msi00 | 103,967 | 192 | 48 48 48 30 30 45 |
+
+The day before, on the same ladder, beam01 had run 24, 23, 27, 3, 10, 24 and
+beam00 46, 47, 47, 21, 24, 41.
+
+**The exam is now exhausted as a measure.** A ladder every island clears at 99%
+discriminates nothing, and the leaderboard's headline column has a fleet-wide
+spread of two points. It needs harder rungs or it is decoration.
+
+⚠ **AND `D.15` READS DIFFERENTLY IN THIS LIGHT.** The hundred-point swings were
+recorded while lineages were being reseeded on every deploy, so the exam was
+repeatedly measuring young, freshly seeded populations. That is a candidate
+explanation and not a conclusion: the per-rung history now survives restarts and
+can settle it.
+
+⚠⚠ **THE ONE ISLAND THAT DID NOT SATURATE IS THE ONE THAT BRED MOST.** msi00 has
+run 50% more rounds than anyone and is alone in failing `chaser` and `duellist`,
+the two drills whose opponents shoot **and** close, while recovering against the
+stationary `sniper`. More breeding, worse against a closing enemy. It is also
+the only island whose radio ablation has never gone positive, across three
+readings. Two thin signals pointing the same way, on the one machine that is not
+a beam node and the only one running podman.
+
+**ELI5.** A class was given the same six-question exam every week and nobody could
+remember last week, so every week they sat it fresh and the marks jumped about.
+Once they were allowed to remember, they got full marks on everything within a
+day, and the exam stopped telling the teacher anything. One pupil, who had
+studied the hardest of all, still cannot answer the two questions about someone
+walking towards them.
+
 ## I.21: it was never a lineage, and the module written to make it one had never once worked
 
 Every island in this archipelago has been starting its population again from
