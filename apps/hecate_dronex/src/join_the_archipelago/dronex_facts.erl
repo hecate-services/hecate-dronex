@@ -321,17 +321,27 @@ sitter(_unknown) -> <<"unknown">>.
 %% island whose champion has no id.
 -spec champion(term()) -> map().
 champion(#{id := Id} = Sitter) when is_binary(Id) ->
-    #{champion_id => Id,
-      champion_generation => maps:get(generation, Sitter, 0),
-      champion_sorties => maps:get(sorties, Sitter, 0),
-      champion_from => taken_from(maps:get(origin, Sitter, unknown))};
+    maps:merge(#{champion_id => Id,
+                 champion_generation => maps:get(generation, Sitter, 0),
+                 champion_sorties => maps:get(sorties, Sitter, 0)},
+               taken_from(maps:get(origin, Sitter, unknown)));
 champion(_older) ->
     #{}.
 
-%% The island a captured champion came from, so the crossing has two ends.
-%% `undefined' for one this island bred, which is a different fact from unknown.
-taken_from({captured, From, _Raid}) when is_binary(From) -> From;
-taken_from(_bred_or_unknown) -> undefined.
+%% @doc The island a captured champion came from, so the crossing has two ends.
+%%
+%% ⚠ ABSENT FOR A CONTROLLER THIS ISLAND BRED, NEVER `undefined'. The first
+%% version published the atom, and an atom is a VALUE rather than an absence: it
+%% crossed the wire as something non-nil, the reader tested `taken_from != nil',
+%% and every locally bred champion was recorded as having crossed the mesh. Five
+%% reigns, all `sitter=bred', all flagged as crossings on the one panel whose
+%% entire purpose is to say which controllers travelled.
+%%
+%% A key that is not there is the only unambiguous way to say "no". Every island
+%% on fact version 4 publishes `champion_id`, so a missing `champion_from` beside
+%% a present `champion_id` can only mean bred here.
+taken_from({captured, From, _Raid}) when is_binary(From) -> #{champion_from => From};
+taken_from(_bred_or_unknown) -> #{}.
 
 -spec opened(island:island()) -> map().
 opened(Island) ->

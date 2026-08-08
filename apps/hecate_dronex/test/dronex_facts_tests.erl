@@ -261,10 +261,14 @@ a_captured_champion_names_where_it_came_from_test() ->
     ?assertEqual(<<"captured">>, maps:get(benchmark_sitter, V)).
 
 %% Bred here is not the same fact as unknown, and neither is a raid id.
+%% ⚠ ABSENT, NEVER `undefined'. An atom is a VALUE and crossed the wire as
+%% something non-nil, so the reader's `taken_from != nil' marked every locally
+%% bred champion as having crossed the mesh — on the one panel whose whole
+%% purpose is to say which controllers travelled.
 a_bred_champion_came_from_nowhere_test() ->
     V = vitals_with(sitter(<<"abc">>, {bred, beam00})),
 
-    ?assertEqual(undefined, maps:get(champion_from, V)),
+    ?assertNot(maps:is_key(champion_from, V)),
     ?assertEqual(<<"bred">>, maps:get(benchmark_sitter, V)).
 
 %% ⚠⚠⚠ THE RAID ID STAYS PRIVATE. It is a fleet-realm identifier and the reason
