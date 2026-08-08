@@ -160,6 +160,127 @@ survey.**
 the top drawer. There were three hammers in the drawer underneath. The rule is
 to open every drawer before saying what is not in the toolbox.
 
+## I.22: the exam was one of the things the islands were breeding against
+
+`trainer:opponents/1` returns `drone_drills:kinds() ++ roster`. `benchmark:rungs/0`
+returned that same `drone_drills:kinds()`. The frozen exam was six of the
+opponents the trainer selects against, over the same 48 start geometries, and had
+been since the trainer was written.
+
+Four opponents are drawn per round without replacement. From the roster depths
+the fleet published on 2026-08-08:
+
+| island | roster | drill share of pool | rounds drawing at least one exam rung |
+|---|---|---|---|
+| beam00 | 85 | 6.6% | ~24% |
+| beam01 | 73 | 7.6% | ~28% |
+| beam02 | 75 | 7.4% | ~27% |
+| beam03 | 201 | 2.9% | ~11% |
+| msi00 | 215 | 2.7% | ~11% |
+
+⚠ **IT WAS PROMISED IN FOUR PLACES AND ENFORCED IN NONE.**
+`drone_drills.erl`'s header said "nothing ever trains against them".
+`benchmark.erl` was built on that sentence. `CHARTER.md` promises "a frozen
+benchmark it never trains against, which is the only number on this island that
+may be called improvement". `DESIGN_THE_ROSTER_AND_THE_RAID.md` repeats it. And
+`D.7` published, as a finding, the sentence **"the population improved against an
+exam it never trains on"**.
+
+⚠⚠ **THE CHARTER WAS NOT WRONG, AND THAT IS THE INTERESTING PART.** It asks for
+two things: an opponent set that *includes scripted drills*, and a benchmark that
+is *never trained against*. Both are right. They are consistent only if the
+scripted drills in the first are not the rungs of the second, and nothing in the
+code said so, so one set of six quietly served both. The defect is not a wrong
+decision. It is a correct decision with no mechanism.
+
+**What was done.** `drone_drills` keeps its real job, the curriculum, and is
+relabelled rather than withdrawn: performance against it is a real quantity and
+is not improvement. `drone_trials` is the held-out exam, and `trials_tests`
+asserts that no rung of it ever appears in `trainer:opponents/1`. That guard was
+verified by putting one there and watching it go red.
+
+⚠⚠⚠ **THIS DOES NOT EXPLAIN `D.16`, AND THE TEMPTING VERSION IS ALREADY DEAD.**
+"The fleet solved the exam because it trains on the exam" would be a tidy story.
+beam03 and msi00 leak at the same rate, about 11%, and sit at opposite ends of
+the exam. Whatever `D.16` is, the leak alone is not it.
+
+**Corrections owed to earlier entries.** `D.7` and `D.16` are both readings
+off a contaminated instrument. None is withdrawn: they measured something real,
+which is performance against the curriculum. What may not be said of any of them
+is "improvement", which was the whole reason the number existed.
+
+**ELI5.** A school promised that its end-of-year exam would use questions nobody
+had seen, so that a good mark meant a pupil had actually learnt. The promise was
+written in four different handbooks, and nobody ever checked the question paper
+against the homework. About a quarter of the homework was the exam questions. The
+fix is not a better promise: it is a second question paper, locked away, and a
+rule that fails loudly if a question ever appears in both.
+
+## I.23: a rung that measured nothing, and only known controllers could say so
+
+The held-out ladder was written with six rungs and shipped with six rungs, and
+they are not the same six.
+
+`hunter` closed and shot exactly as `bruiser` does, and additionally **came
+looking** when its target left the 120 degree cone. Every rung of the curriculum
+ladder holds station with an empty cone, so breaking line of sight defeats all
+six of them and always has. It is the one demand the old ladder cannot make, and
+on paper it was the best rung on the new one.
+
+Over 48 starts against five live champions:
+
+```
+             beam00  beam01  beam02  beam03  msi00
+bruiser          48      35       6      48     48
+hunter           48      35       6      48     48
+```
+
+Champion for champion, down to the single draw on beam01. The added competence
+never fired once, because **a champion bred to fight never breaks contact**, so
+the two rungs are one rung. Two identical columns on a profile are worse than one
+column, because they read as corroboration.
+
+It was replaced by `marksman`, which holds fire until the shot is inside 11
+degrees and 180 m instead of the 26 degrees at any range every other rung on both
+ladders uses. The magazine is four interceptors for a whole engagement and two
+hits kill, so fire discipline is a competence that fires in every engagement
+rather than only in the ones nobody has.
+
+⚠ **AND THE ORDER WAS GUESSED WRONG AGAIN.** Written order was bruiser, harrier,
+circler, swooper, leader, on the reasoning that closing in three dimensions is
+the smallest addition. Measured, out of 240:
+
+```
+circler   227     easiest
+harrier   202
+marksman  192
+bruiser   185
+swooper   139
+leader    130     hardest
+```
+
+`circler` is the bottom rung and was written third. This is `D.4` a second time,
+in the same repository, by the same hand, having read `D.4` that morning.
+
+⚠⚠ **WHERE IT IS BLIND, STATED BEFORE IT IS USED.** Three of eight random
+controllers sweep `circler`, `bruiser`, `marksman` and nearly `harrier`. Those
+four separate a champion from a crash and little else. The resolution is real and
+it lives in `swooper` and `leader`, which separate all five champions from each
+other and from the best random controller. `D.6` raised this against the first
+ladder; the difference is that there the HARDEST rung was maxed by random genomes
+and here the hardest two are not.
+
+The reference champions and the raw sweep are committed, because a measured order
+whose reference set was thrown away is an asserted order with extra steps.
+
+**ELI5.** Someone wrote six new exam questions and was proudest of the sixth. When
+they tried the paper on five real pupils, the sixth question got exactly the same
+marks as the fourth, from every pupil, because it tested something no pupil ever
+does. It was thrown out and replaced. Then the questions turned out to be in the
+wrong order too: the one thought easiest was the hardest. The lesson is not about
+these questions. It is that you cannot tell what a question measures by reading
+it.
+
 ## D.16: the fleet solved the frozen exam in about a day, once it could keep a lineage
 
 On the morning of 2026-08-07 the islands were restored to keeping their
@@ -178,9 +299,22 @@ scoring 47 or 48 out of 48 on **every rung** of the frozen ladder.
 The day before, on the same ladder, beam01 had run 24, 23, 27, 3, 10, 24 and
 beam00 46, 47, 47, 21, 24, 41.
 
+⚠ **CORRECTION, 2026-08-08: THIS IS A READING OFF A CONTAMINATED INSTRUMENT.**
+`I.22`: the six rungs are also six of the opponents the trainer breeds against,
+so "solved the frozen exam" means solved a curriculum it was being selected on.
+The entry is not withdrawn, because what it measured is real; it is performance
+against the curriculum, and it may not be called improvement. The tidy story
+that the leak explains the whole thing is already dead: beam03 and msi00 leak at
+the same rate and sit at opposite ends.
+
 **The exam is now exhausted as a measure.** A ladder every island clears at 99%
 discriminates nothing, and the leaderboard's headline column has a fleet-wide
 spread of two points. It needs harder rungs or it is decoration.
+
+⚠ **DONE, 2026-08-08, AND IT WAS THE SAME FIX AS THE CONTAMINATION.** `drone_trials`
+is a held-out ladder of six opponents that shoot AND close, which is the deficit
+this entry identified. Champion totals on it span 120 to 276 of 288 against this
+ladder's spread of two points. `I.23` has what it measures and where it is blind.
 
 ⚠ **AND `D.15` READS DIFFERENTLY IN THIS LIGHT.** The hundred-point swings were
 recorded while lineages were being reseeded on every deploy, so the exam was

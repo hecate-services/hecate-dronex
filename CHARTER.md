@@ -59,11 +59,18 @@ Everything else follows from it.
 One node runs one island. An island holds:
 
 - a **roster** of persisted drone genomes, finite and contested
-- an **opponent set**: scripted drills, its own past champions, and every
-  foreign genome it has ever been attacked by
+- an **opponent set**: the **curriculum** drills (`drone_drills`), its own past
+  champions, and every foreign genome it has ever been attacked by
 - a **trainer**, always running, breeding against the opponent set
-- a **frozen benchmark** it never trains against, which is the only number on
-  this island that may be called improvement
+- a **held-out benchmark** it never trains against (`drone_trials`), which is the
+  only number on this island that may be called improvement
+
+⚠ **THE TWO SETS OF SCRIPTED OPPONENTS ARE DIFFERENT SETS, AND FOR MONTHS THEY
+WERE ONE.** These two bullets were both right and were served by the same six
+behaviours, so the exam sat inside its own training distribution: `REGISTER
+I.22`. The separation is now enforced by `trials_tests`, which fails if any exam
+rung appears in `trainer:opponents/1`. Nothing about this is guaranteed by the
+two sentences above, which is the whole lesson.
 - an **airspace**, where fights happen
 - a **static defence network**: ground sensors with real coverage and real
   blind spots, which transmit what they detect
@@ -343,6 +350,31 @@ pre-registration, and the four measurement rules from 053 to 056 apply.
   nothing else, and the leaderboard's headline column has a fleet-wide spread of
   two points. The drills are named and ordered, so the shape of the extension is
   obvious: the deficit that survives is against opponents that shoot AND close.
+
+  ⚠ **DONE 2026-08-08, and it turned out to be the same fix as a defect nobody
+  had noticed.** `drone_trials` is a held-out ladder of six opponents that shoot
+  AND close, each the chaser plus exactly one competence. Champion totals span
+  120 to 276 of 288 against this ladder's spread of two points. It is graded
+  against the fleet's own champions, its rung order is measured rather than
+  asserted, and `I.23` states where it is blind: three of eight random
+  controllers still sweep the bottom four rungs, so the resolution lives in
+  `swooper` and `leader`.
+
+  **What is still owed here:** the held-out profile is computed but not yet
+  published, so no island reports it and the exhibit cannot draw it. That is a
+  fact version bump and a read model, not a science question.
+
+- ⚠ **AN INSTRUMENT PROMISED IN FOUR DOCUMENTS AND ENFORCED IN NONE.** `REGISTER
+  I.22`. The exam was six of the opponents the trainer breeds against, between
+  about 11% and 28% of rounds per island, and had been since the trainer was
+  written. Fixed by separating the ladders and by a test that fails if they ever
+  merge again.
+
+  **What is owed is not the fix but the audit it implies:** every other property
+  this charter promises in prose should be asked the same question, which is
+  whether anything in the code would notice if it stopped being true. The two
+  obvious candidates are "it is an away game, always" and "nothing is tuned on
+  what a diagnostic prints".
 
 - **Whether msi00's two anomalies are one anomaly.** It has bred 50% more than
   any beam node, is alone in failing `chaser` and `duellist`, and is the only

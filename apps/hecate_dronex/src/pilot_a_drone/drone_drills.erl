@@ -6,7 +6,7 @@
 %% these six ARE what the islands breed against, between about 11% and 28% of
 %% rounds each. Reusing them as `benchmark:rungs/0' put the exam inside its own
 %% training distribution, over the same 48 start geometries. `REGISTER I.22' has
-%% the arithmetic and the correction to `D.5'.
+%% the arithmetic and the correction to `D.7'.
 %%
 %% The held-out exam is `drone_trials', which nothing trains against and which
 %% `trials_tests' keeps that way by assertion rather than by comment.

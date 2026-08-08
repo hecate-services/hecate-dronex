@@ -19,7 +19,7 @@ null_genome() ->
 %% IN THE CODE, AND IT LEAKED FOR MONTHS. `drone_drills.erl' said "nothing ever
 %% trains against them", `benchmark.erl' was built on it, `CHARTER.md' promised "a
 %% frozen benchmark it never trains against", `DESIGN_THE_ROSTER_AND_THE_RAID.md'
-%% repeated it, and `REGISTER D.5' published the sentence "the population improved
+%% repeated it, and `REGISTER D.7' published the sentence "the population improved
 %% against an exam it never trains on" as a finding. Meanwhile
 %% `trainer:opponents/1' returned `drone_drills:kinds() ++ roster' and
 %% `benchmark:rungs/0' returned that same list.

@@ -65,7 +65,7 @@
 %% are inside the training distribution, over the same 48 start geometries, and
 %% have been since the trainer was written. Between about 11% and 28% of breeding
 %% rounds per island draw at least one of them as an opponent. `REGISTER I.22'
-%% has the arithmetic and the correction to `D.5', whose headline sentence was
+%% has the arithmetic and the correction to `D.7', whose headline sentence was
 %% "the population improved against an exam it never trains on".
 %%
 %% It keeps being published, because a number withdrawn leaves a hole in a
