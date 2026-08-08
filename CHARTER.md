@@ -372,9 +372,36 @@ pre-registration, and the four measurement rules from 053 to 056 apply.
 
   **What is owed is not the fix but the audit it implies:** every other property
   this charter promises in prose should be asked the same question, which is
-  whether anything in the code would notice if it stopped being true. The two
-  obvious candidates are "it is an away game, always" and "nothing is tuned on
-  what a diagnostic prints".
+  whether anything in the code would notice if it stopped being true.
+
+  ⚠ **AUDITED 2026-08-08, TWO CANDIDATES, AND THEY CAME OUT DIFFERENTLY.**
+
+  *"It is an away game, always"* **is enforced**, and by more than it looked.
+  `ground_network_tests` greps `benchmark.erl` for the forbidden call. That felt
+  weak, because this very file records elsewhere that a textual probe "passed
+  while the raid path was perturbed", so a behavioural guard was added beside
+  it — and then the regression was actually injected to see which caught it.
+  **The grep did. The behavioural test did not**, because switching the exam to
+  a home network moves both sides of its comparison and they stay equal. Both
+  are kept and each now states which hole it covers. The general claim that a
+  behavioural test beats a textual one is what the injection refuted.
+
+  *"Nothing is tuned on what a diagnostic prints"* **cannot be mechanised, and
+  saying so is the honest answer rather than a gap.** It is a rule about what a
+  person does between reading a number and choosing a constant, and no test can
+  see that interval. What compensates is already in rule 3 and is checkable by a
+  reader rather than by CI: the whole sweep is published, so a constant chosen
+  because it flattered one reading is visible as the one value that was kept out
+  of a range that was measured. `measurements/held_out_ladder_48_starts.txt` is
+  the current example.
+
+  **Still owed:** the same question of every remaining promise, of which the
+  next two are *"a drill sees exactly what a pilot sees"* and *"the profile is
+  never summed"*. The second is already known to be broken in one direction:
+  the exhibit DOES sum it, with equal weights, because a leaderboard needs one
+  number. That is stated where it happens rather than hidden, and the profile is
+  drawn beside the total, but it is a promise this repository makes and its
+  consumer does not keep.
 
 - **Whether msi00's two anomalies are one anomaly.** It has bred 50% more than
   any beam node, is alone in failing `chaser` and `duellist`, and is the only
