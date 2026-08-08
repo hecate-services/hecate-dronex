@@ -20,10 +20,19 @@
 %% measurement. Selection is the opposite kind of thing: it has to order two
 %% candidates, so it needs one number by definition.
 %%
-%% They are also measured against different opponents. The benchmark is FROZEN and
-%% never trained against; fitness is measured against the opponent set, which
-%% raids will widen. Keeping them apart is what makes "the island got better" a
-%% sentence about the drones rather than about the exam.
+%% They are also measured against different opponents, and for most of this
+%% repository's life that sentence was FALSE and nobody had checked it. It read
+%% "the benchmark is FROZEN and never trained against"; meanwhile `opponents/1'
+%% below returned `drone_drills:kinds() ++ roster' and `benchmark:rungs/0'
+%% returned that same `drone_drills:kinds()'. The exam was inside the training
+%% distribution, over the same 48 start geometries, between about 11% and 28% of
+%% rounds per island. `REGISTER I.22'.
+%%
+%% What is true now: `drone_drills' is the CURRICULUM and belongs here.
+%% `drone_trials' is the HELD-OUT exam and must never appear in `opponents/1',
+%% which `trials_tests' asserts rather than promises. Keeping those apart is what
+%% makes "the island got better" a sentence about the drones rather than about
+%% the exam.
 %%
 %% ==========================================================================
 %% ⚠⚠ THE CHALLENGER AND THE INCUMBENT SIT THE SAME EXAM, NOW

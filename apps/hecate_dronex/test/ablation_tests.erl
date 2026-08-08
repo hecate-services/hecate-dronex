@@ -28,7 +28,7 @@ drill_fights(N) ->
 
 drill_fight(I) ->
     Placed = drone_starts:place(1, 1, I),
-    Cs = maps:from_list([{Id, {drill, drone_drills:init(sniper)}}
+    Cs = maps:from_list([{Id, {drill, drone_drills, drone_drills:init(sniper)}}
                          || {Id, _Side, _, _, _, _} <- Placed]),
     {airspace:new(Placed), Cs}.
 

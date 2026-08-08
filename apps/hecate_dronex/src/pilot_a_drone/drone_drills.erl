@@ -1,10 +1,24 @@
 %% @doc The scripted opponents an island is measured against. PURE.
 %%
-%% THIS EXISTS SO "THIS ISLAND GOT BETTER" IS A SENTENCE THAT CAN BE CHECKED.
+%% ⚠⚠⚠⚠ THIS IS THE CURRICULUM, NOT THE EXAM, AND THE HEADER SAID OTHERWISE FOR
+%% MONTHS. It read "nothing ever trains against them". `trainer:opponents/1' has
+%% returned `drone_drills:kinds() ++ roster' since the trainer was written, so
+%% these six ARE what the islands breed against, between about 11% and 28% of
+%% rounds each. Reusing them as `benchmark:rungs/0' put the exam inside its own
+%% training distribution, over the same 48 start geometries. `REGISTER I.22' has
+%% the arithmetic and the correction to `D.5'.
+%%
+%% The held-out exam is `drone_trials', which nothing trains against and which
+%% `trials_tests' keeps that way by assertion rather than by comment.
+%%
+%% These stay exactly as they are. They are a good curriculum: a ladder from
+%% trivial to hard, graded on the axis `D.4' measured, and they never change.
+%% What may be read off them is performance against the curriculum, which is a
+%% real quantity and is not improvement.
+%%
 %% Insight 054: a benchmark that is not FIXED and GRADED saturates and goes
 %% silently blind, and its specific finding was that a weak reference set missed
-%% roughly 31 of about 35 units of progress. So the drills are a ladder from
-%% trivial to hard, they never change, and nothing ever trains against them.
+%% roughly 31 of about 35 units of progress.
 %%
 %% ==========================================================================
 %% ⚠ A DRILL READS THE SAME SENSOR VECTOR AN EVOLVED CONTROLLER READS

@@ -1,0 +1,163 @@
+
+The drone_trials ladder, over 48 of 48 starts.
+
+A profile is a CURVE and is never summed. Six rungs, each a
+win rate. Won at the bottom and lost at the top is what a
+graded instrument looks like.
+
+  rungs: [circler,harrier,marksman,bruiser,swooper,leader]
+
+  5 champions read from champions
+
+champion beam00   (LIVE, from the fleet)
+  rung          won   drew   lost   
+  circler        48      0      0   ####################
+  harrier        48      0      0   ####################
+  marksman       46      0      2   ###################
+  bruiser        48      0      0   ####################
+  swooper        42      0      6   #################
+  leader         26      0     22   ##########
+  288 engagements in 2438 ms
+
+champion beam01   (LIVE, from the fleet)
+  rung          won   drew   lost   
+  circler        35      0     13   ##############
+  harrier        27      0     21   ###########
+  marksman       36      0     12   ###############
+  bruiser        35      1     12   ##############
+  swooper        23      0     25   #########
+  leader         17      0     31   #######
+  288 engagements in 1746 ms
+
+champion beam02   (LIVE, from the fleet)
+  rung          won   drew   lost   
+  circler        48      0      0   ####################
+  harrier        31      0     17   ############
+  marksman       14      0     34   #####
+  bruiser         6      0     42   ##
+  swooper         1      0     47   
+  leader         20      0     28   ########
+  288 engagements in 8232 ms
+
+champion beam03   (LIVE, from the fleet)
+  rung          won   drew   lost   
+  circler        48      0      0   ####################
+  harrier        48      0      0   ####################
+  marksman       48      0      0   ####################
+  bruiser        48      0      0   ####################
+  swooper        46      0      2   ###################
+  leader         38      0     10   ###############
+  288 engagements in 1767 ms
+
+champion msi00   (LIVE, from the fleet)
+  rung          won   drew   lost   
+  circler        48      0      0   ####################
+  harrier        48      0      0   ####################
+  marksman       48      0      0   ####################
+  bruiser        48      0      0   ####################
+  swooper        27      0     21   ###########
+  leader         29      0     19   ############
+  288 engagements in 2733 ms
+
+null      (all weights zero, commands nothing)
+  rung          won   drew   lost   
+  circler         0      0     48   
+  harrier         0      0     48   
+  marksman        0      0     48   
+  bruiser         0      0     48   
+  swooper         0      0     48   
+  leader          0      0     48   
+  288 engagements in 1546 ms
+
+seed  1   (random weights)
+  rung          won   drew   lost   
+  circler        48      0      0   ####################
+  harrier        46      0      2   ###################
+  marksman       48      0      0   ####################
+  bruiser        48      0      0   ####################
+  swooper        25      0     23   ##########
+  leader         14      0     34   #####
+  288 engagements in 1769 ms
+
+seed  2   (random weights)
+  rung          won   drew   lost   
+  circler         5      0     43   ##
+  harrier         1      0     47   
+  marksman        5      0     43   ##
+  bruiser         4      0     44   #
+  swooper         2      0     46   
+  leader          3      0     45   #
+  288 engagements in 1033 ms
+
+seed  3   (random weights)
+  rung          won   drew   lost   
+  circler        42      0      6   #################
+  harrier        38      0     10   ###############
+  marksman       46      0      2   ###################
+  bruiser        44      0      4   ##################
+  swooper        17      0     31   #######
+  leader          7      0     41   ##
+  288 engagements in 2006 ms
+
+seed  4   (random weights)
+  rung          won   drew   lost   
+  circler        30      3     15   ############
+  harrier        29      6     13   ############
+  marksman       37      0     11   ###############
+  bruiser        33      2     13   #############
+  swooper        11      0     37   ####
+  leader          8      1     39   ###
+  288 engagements in 1682 ms
+
+seed  5   (random weights)
+  rung          won   drew   lost   
+  circler         0      0     48   
+  harrier         0      0     48   
+  marksman        1      0     47   
+  bruiser         0      0     48   
+  swooper         0      0     48   
+  leader          0      0     48   
+  288 engagements in 1194 ms
+
+seed  6   (random weights)
+  rung          won   drew   lost   
+  circler         5      0     43   ##
+  harrier         5      0     43   ##
+  marksman        5      0     43   ##
+  bruiser         5      0     43   ##
+  swooper         3      0     45   #
+  leader          5      0     43   ##
+  288 engagements in 1034 ms
+
+seed  7   (random weights)
+  rung          won   drew   lost   
+  circler        47      0      1   ###################
+  harrier        44      0      4   ##################
+  marksman       47      0      1   ###################
+  bruiser        47      0      1   ###################
+  swooper        32      0     16   #############
+  leader         20      0     28   ########
+  288 engagements in 1511 ms
+
+seed  8   (random weights)
+  rung          won   drew   lost   
+  circler         0      0     48   
+  harrier         0      0     48   
+  marksman        0      0     48   
+  bruiser         0      0     48   
+  swooper         0      0     48   
+  leader          0      0     48   
+  288 engagements in 1070 ms
+
+
+Does any drill kill itself? Each rung against a hoverer, which
+never shoots. A death here is the drill flying into something.
+
+  rung           died withdrew
+  circler           0        0
+  harrier           0        0
+  marksman          0        0
+  bruiser           0        0
+  swooper           0        0
+  leader            0        0
+

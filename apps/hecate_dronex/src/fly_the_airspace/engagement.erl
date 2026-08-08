@@ -19,7 +19,14 @@
 
 %% A controller is either an evolved genome or a scripted drill. Both answer
 %% `act/4' with the same shape, which is what lets one loop drive either.
--type controller() :: {pilot, drone_pilot:pilot()} | {drill, drone_drills:drill()}.
+%% ⚠ A SCRIPTED CONTROLLER NAMES ITS LADDER, AND THAT IS NOT DECORATION. There
+%% are two sets of scripted opponents now and they mean opposite things:
+%% `drone_drills' is the curriculum the trainer breeds against, `drone_trials' is
+%% the held-out exam nothing may train on. A bare kind atom would have made them
+%% one namespace, which is how the first exam ended up inside its own training
+%% distribution. See `REGISTER I.22'.
+-type controller() :: {pilot, drone_pilot:pilot()}
+                    | {drill, module(), drone_drills:drill() | drone_trials:trial()}.
 
 -type result() :: #{winner := attacker | defender | draw,
                     ticks := non_neg_integer(),
@@ -44,10 +51,19 @@
                     %% gap this whole subsystem exists to model.
                     frames := [{#arena{}, [ground_tracks:track()]}] | false}.
 
-%% @doc Build a controller from a genome or a drill kind.
--spec controller(drone_genome:genome() | drone_drills:kind()) ->
+%% @doc Build a controller from a genome, a curriculum drill kind, or an explicit
+%% ladder and kind.
+%%
+%% ⚠ A BARE ATOM STILL MEANS THE CURRICULUM, WHICH IS THE ONE THING IT CAN SAFELY
+%% MEAN. `drone_drills' is frozen and can never gain a kind, so the shorthand can
+%% never become ambiguous; the exam ladder must be named, every time, at every
+%% call site. The asymmetry is deliberate: the set that must not leak is the one
+%% you cannot reach by accident.
+-spec controller(drone_genome:genome() | drone_drills:kind() | {module(), atom()}) ->
     {ok, controller()} | {error, term()}.
-controller(Kind) when is_atom(Kind) -> {ok, {drill, drone_drills:init(Kind)}};
+controller({Ladder, Kind}) when is_atom(Ladder), is_atom(Kind) ->
+    {ok, {drill, Ladder, Ladder:init(Kind)}};
+controller(Kind) when is_atom(Kind) -> {ok, {drill, drone_drills, drone_drills:init(Kind)}};
 controller(Genome) -> from_genome(drone_pilot:init(Genome)).
 
 from_genome({ok, P}) -> {ok, {pilot, P}};
@@ -139,9 +155,9 @@ answered(Id, {pilot, P}, D, Others, Heard, {Intents, Next}) ->
 %% The scripted rungs are deliberately silent, so the HOSTILE bank is zero
 %% throughout the frozen exam. Any reading of what a controller does with hostile
 %% traffic has to come from a raid or from self-play, never from the benchmark.
-answered(Id, {drill, Dr}, D, Others, Heard, {Intents, Next}) ->
-    {I, Dr2} = drone_drills:act(Dr, D, Others, Heard),
-    {Intents#{Id => I}, Next#{Id := {drill, Dr2}}}.
+answered(Id, {drill, Ladder, Dr}, D, Others, Heard, {Intents, Next}) ->
+    {I, Dr2} = Ladder:act(Dr, D, Others, Heard),
+    {Intents#{Id => I}, Next#{Id := {drill, Ladder, Dr2}}}.
 
 report(A, Frames, Vol, Net) ->
     #{winner => settled(airspace:winner(A)),

@@ -126,7 +126,7 @@ hold() -> {fixed_intent, #intent{thrust_vert = gravity()}}.
 %% `break' is a continuous maximum-rate turn, which is what forces a pursuer with
 %% a worse turn radius to overshoot. The direction alternates with the index so
 %% the answer is not about one handedness.
-evade(run, _Index) -> {drill, drone_drills:init(evader)};
+evade(run, _Index) -> {drill, drone_drills, drone_drills:init(evader)};
 evade(break, Index) ->
     #{max_accel := A, max_yaw_rate := R, gravity := G} = airspace:limits(),
     Rate = case Index rem 2 of 0 -> R; _ -> -R end,

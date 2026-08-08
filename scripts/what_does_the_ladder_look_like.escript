@@ -15,20 +15,54 @@
 %% CHARTER.md rule 3: a constant is chosen on viability and the whole sweep is
 %% published, never set to whichever value produced a number somebody liked.
 %%
+%% ⚠⚠⚠ A HARD LADDER CANNOT BE GRADED WITH RANDOM CONTROLLERS, and that is the
+%% one thing this script had to learn to do. Random weights score nothing against
+%% opponents that shoot and close, and six zeroes look exactly like a beautifully
+%% graded instrument whose bottom rung nobody has reached yet. So it also reads
+%% real champions, fetched by `scripts/fetch_the_champions.sh', because only a
+%% controller that learnt something can tell HARD from IMPOSSIBLE.
+%%
 %% Usage:
 %%   ERL_LIBS=_build/default/lib scripts/what_does_the_ladder_look_like.escript
 %%   ERL_LIBS=_build/default/lib scripts/what_does_the_ladder_look_like.escript 12
+%%   ERL_LIBS=_build/default/lib scripts/what_does_the_ladder_look_like.escript 12 drone_trials
+%%   ERL_LIBS=_build/default/lib scripts/what_does_the_ladder_look_like.escript 12 drone_trials champions
 
 main(Args) ->
     Starts = starts(Args),
-    io:format("~nThe frozen ladder, over ~p of ~p starts.~n~n",
-              [Starts, benchmark:starts()]),
+    Ladder = ladder(Args),
+    io:format("~nThe ~p ladder, over ~p of ~p starts.~n~n",
+              [Ladder, Starts, benchmark:starts()]),
     io:format("A profile is a CURVE and is never summed. Six rungs, each a~n"
               "win rate. Won at the bottom and lost at the top is what a~n"
               "graded instrument looks like.~n~n"),
-    [report(Name, G, Starts) || {Name, G} <- controllers()],
-    soundness(Starts),
+    io:format("  rungs: ~p~n~n", [benchmark:rungs(Ladder)]),
+    [report(Name, G, Starts, Ladder) || {Name, G} <- champions(Args) ++ controllers()],
+    soundness(Starts, Ladder),
     ok.
+
+ladder([_Starts, L | _]) -> list_to_atom(L);
+ladder(_Args) -> benchmark:curriculum_ladder().
+
+%% ⚠ A MISSING CHAMPION DIRECTORY IS AN EMPTY LIST AND NOT A CRASH, so the script
+%% still runs offline against random controllers alone. It says how many it read,
+%% because "graded against the fleet" and "graded against nothing" must never
+%% look the same on a page of numbers.
+champions([_Starts, _Ladder, Dir | _]) -> loaded(file:list_dir(Dir), Dir);
+champions(_Args) -> [].
+
+loaded({error, Why}, Dir) ->
+    io:format("  no champions read from ~s (~p)~n~n", [Dir, Why]),
+    [];
+loaded({ok, Files}, Dir) ->
+    Cs = [champion(Dir, F) || F <- lists:sort(Files), lists:suffix(".b64", F)],
+    io:format("  ~p champions read from ~s~n~n", [length(Cs), Dir]),
+    Cs.
+
+champion(Dir, File) ->
+    {ok, B64} = file:read_file(filename:join(Dir, File)),
+    {ok, G} = drone_genome:unpack(base64:decode(string:trim(B64))),
+    {"champion " ++ filename:basename(File, ".b64") ++ "   (LIVE, from the fleet)", G}.
 
 %% ==========================================================================
 %% ⚠ IS THE INSTRUMENT MEASURING THE CONTROLLER, OR THE DRILL?
@@ -41,22 +75,22 @@ main(Args) ->
 %% So: fly every drill against a HOVERER, which never shoots and never moves, and
 %% count how often the drill dies anyway. Anything other than zero means that
 %% rung is partly measuring the drill's own survival.
-soundness(Starts) ->
+soundness(Starts, Ladder) ->
     io:format("~nDoes any drill kill itself? Each rung against a hoverer, which~n"
               "never shoots. A death here is the drill flying into something.~n~n"),
     io:format("  ~-10s ~8s ~8s~n", ["rung", "died", "withdrew"]),
     [io:format("  ~-10s ~8b ~8b~n", [atom_to_list(K), D, W])
-     || {K, D, W} <- [alone(K, Starts) || K <- benchmark:rungs()]],
+     || {K, D, W} <- [alone(Ladder, K, Starts) || K <- benchmark:rungs(Ladder)]],
     io:format("~n").
 
-alone(Kind, Starts) ->
-    Outcomes = [solo(Kind, I) || I <- lists:seq(0, Starts - 1)],
+alone(Ladder, Kind, Starts) ->
+    Outcomes = [solo(Ladder, Kind, I) || I <- lists:seq(0, Starts - 1)],
     {Kind,
      length([O || O <- Outcomes, O =:= died]),
      length([O || O <- Outcomes, O =:= withdrew])}.
 
-solo(Kind, Index) ->
-    {ok, Subject} = engagement:controller(Kind),
+solo(Ladder, Kind, Index) ->
+    {ok, Subject} = engagement:controller({Ladder, Kind}),
     {ok, Passive} = engagement:controller(hoverer),
     Placed = drone_starts:place(1, 1, Index),
     [{AId, _, _, _, _, _}, {DId, _, _, _, _, _}] = Placed,
@@ -84,9 +118,9 @@ controllers() ->
      | [{lists:flatten(io_lib:format("seed ~2b   (random weights)", [S])), random(S)}
         || S <- lists:seq(1, 8)]].
 
-report(Name, Genome, Starts) ->
+report(Name, Genome, Starts, Ladder) ->
     T0 = erlang:monotonic_time(millisecond),
-    {ok, P} = benchmark:sit(Genome, #{starts => Starts}),
+    {ok, P} = benchmark:sit(Genome, #{starts => Starts, ladder => Ladder}),
     T1 = erlang:monotonic_time(millisecond),
     #{rungs := Rungs, wins := W, draws := D, losses := L, starts := N} = P,
     io:format("~s~n", [Name]),

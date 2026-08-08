@@ -43,11 +43,12 @@
 
 -include("airspace.hrl").
 
--export([sit/1, sit/2, rungs/0, starts/0, empty/0]).
+-export([sit/1, sit/2, rungs/0, rungs/1, starts/0, empty/0, empty/1]).
+-export([curriculum_ladder/0, held_out_ladder/0]).
 
 -export_type([profile/0]).
 
--type profile() :: #{rungs := [drone_drills:kind()],
+-type profile() :: #{rungs := [atom()],
                      wins := [non_neg_integer()],
                      draws := [non_neg_integer()],
                      losses := [non_neg_integer()],
@@ -57,8 +58,37 @@
                      %% exists, so the type has to be able to say it.
                      starts := non_neg_integer()}.
 
--spec rungs() -> [drone_drills:kind()].
-rungs() -> drone_drills:kinds().
+%% @doc The curriculum ladder: the trainer's scripted opponents.
+%%
+%% ⚠⚠⚠ THIS IS NOT A HELD-OUT EXAM AND NEVER WAS, WHICH TOOK UNTIL 2026-08-08 TO
+%% NOTICE. `trainer:opponents/1' is `drone_drills:kinds() ++ roster', so these six
+%% are inside the training distribution, over the same 48 start geometries, and
+%% have been since the trainer was written. Between about 11% and 28% of breeding
+%% rounds per island draw at least one of them as an opponent. `REGISTER I.22'
+%% has the arithmetic and the correction to `D.5', whose headline sentence was
+%% "the population improved against an exam it never trains on".
+%%
+%% It keeps being published, because a number withdrawn leaves a hole in a
+%% history and a number labelled leaves a record. What may be read off it is
+%% "performance against the curriculum", which is a real quantity and is not
+%% improvement.
+-spec curriculum_ladder() -> module().
+curriculum_ladder() -> drone_drills.
+
+%% @doc The held-out ladder: six opponents nothing trains against.
+%%
+%% ⚠ THE SEPARATION IS ENFORCED BY `trials_tests', not by this comment. The first
+%% exam was held out by assertion in four documents and by nothing in the code.
+-spec held_out_ladder() -> module().
+held_out_ladder() -> drone_trials.
+
+%% @doc The rungs of the curriculum ladder. Unchanged, so every caller that had
+%% one exam still has that one.
+-spec rungs() -> [atom()].
+rungs() -> rungs(curriculum_ladder()).
+
+-spec rungs(module()) -> [atom()].
+rungs(Ladder) -> Ladder:kinds().
 
 -spec starts() -> pos_integer().
 starts() -> drone_starts:count().
@@ -71,9 +101,12 @@ starts() -> drone_starts:count().
 %% while every rung is zero is the first; this shape with `starts' present is
 %% what makes the distinction expressible at all.
 -spec empty() -> profile().
-empty() ->
-    Z = lists:duplicate(length(rungs()), 0),
-    #{rungs => rungs(), wins => Z, draws => Z, losses => Z, starts => 0}.
+empty() -> empty(curriculum_ladder()).
+
+-spec empty(module()) -> profile().
+empty(Ladder) ->
+    Z = lists:duplicate(length(rungs(Ladder)), 0),
+    #{rungs => rungs(Ladder), wins => Z, draws => Z, losses => Z, starts => 0}.
 
 %% @doc Sit the whole exam.
 -spec sit(drone_genome:genome()) -> {ok, profile()} | {error, term()}.
@@ -85,21 +118,27 @@ sit(Genome) -> sit(Genome, #{}).
 %% ⚠ A PARTIAL RUN REPORTS THE COUNT IT ACTUALLY RAN, so a reader can never
 %% mistake a cheap reading for a full one. Silent truncation reads as complete
 %% coverage when it is not.
+%% ⚠ `ladder' IS AN OPTION AND ITS DEFAULT IS THE CURRICULUM, so every existing
+%% caller keeps the exam it had and the profile it publishes does not change
+%% shape. The profile carries its own `rungs' names, so which ladder produced a
+%% reading is a property of the reading rather than something a reader has to
+%% remember.
 -spec sit(drone_genome:genome(), map()) -> {ok, profile()} | {error, term()}.
 sit(Genome, Opts) -> admitted(drone_genome:validate(Genome), Genome, Opts).
 
 admitted({error, _} = E, _G, _Opts) -> E;
 admitted(ok, Genome, Opts) ->
+    Ladder = maps:get(ladder, Opts, curriculum_ladder()),
     N = min(maps:get(starts, Opts, starts()), starts()),
-    Tallies = [rung(Genome, Kind, N) || Kind <- rungs()],
-    {ok, #{rungs => rungs(),
+    Tallies = [rung(Genome, Ladder, Kind, N) || Kind <- rungs(Ladder)],
+    {ok, #{rungs => rungs(Ladder),
            wins => [W || {W, _D, _L} <- Tallies],
            draws => [D || {_W, D, _L} <- Tallies],
            losses => [L || {_W, _D, L} <- Tallies],
            starts => N}}.
 
-rung(Genome, Kind, N) ->
-    lists:foldl(fun (I, Acc) -> tally(one(Genome, Kind, I), Acc) end,
+rung(Genome, Ladder, Kind, N) ->
+    lists:foldl(fun (I, Acc) -> tally(one(Genome, Ladder, Kind, I), Acc) end,
                 {0, 0, 0}, lists:seq(0, N - 1)).
 
 tally(attacker, {W, D, L}) -> {W + 1, D, L};
@@ -111,9 +150,9 @@ tally(defender, {W, D, L}) -> {W, D, L + 1}.
 %% the sides in a one-against-one, so the second seat would cost twice the time
 %% for the same numbers. `benchmark_tests' asserts the symmetry, so the day it
 %% stops holding, this stops being justified and a test says so.
-one(Genome, Kind, Index) ->
+one(Genome, Ladder, Kind, Index) ->
     {ok, Pilot} = engagement:controller(Genome),
-    {ok, Drill} = engagement:controller(Kind),
+    {ok, Drill} = engagement:controller({Ladder, Kind}),
     Placed = drone_starts:place(1, 1, Index),
     [{AttackerId, _, _, _, _, _}, {DefenderId, _, _, _, _, _}] = Placed,
     %% ⚠ SPELLED OUT, NOT LEFT TO THE DEFAULT. The benchmark is an away game
