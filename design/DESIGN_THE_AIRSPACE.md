@@ -182,8 +182,28 @@ leading a manoeuvring target stays something this substrate can find rather than
 something it was handed. That question survives precisely because this weapon
 was kept.
 
-**The interceptor**, guided, 80 m/s, a magazine of four, expensive in battery,
-and it hits for twice as much so two of them kill.
+**The interceptor**, guided, 80 m/s, a magazine of two, expensive in battery, and
+it hits for twice as much so two of them kill. It reaches **60 m**.
+
+⚠ **THAT WAS 600 m AND A MAGAZINE OF FOUR UNTIL 2026-08-09, AND THE CHANGE IS THE
+LARGEST THIS SIMULATION HAS HAD.** A weapon reaching 600 m in a 1000 m arena
+covers most of the world from anywhere in it, so every fight was settled by a
+ranged exchange that began the moment two sides could see each other, and closing
+was never worth doing. Six live recordings out of six had a munition in the air at
+**frame zero**, in fights running 58 to 192 ticks against the 114 two sides need
+to close.
+
+At 60 m the weapon owns about 6% of the arena instead of 60%, and a drone carries
+exactly one kill's worth of guided damage. Flying decides most of a fight and the
+weapon decides the end.
+
+⚠⚠ **AND THE SEEKER STILL LOCKS AT 600 m, WHICH IS DELIBERATE.** A launch with no
+lock spends nothing, so a lock range cut to match the reach would let a controller
+hold `launch` high from the first tick for free and the weapon would fire itself
+the moment it could connect. With the gap, holding it high throws both rounds away
+ten times further out than they reach. Knowing *when* is two thirds of the
+offence. See `airspace.erl`'s `LOCK_RANGE` — it is the thing most likely to be
+"fixed" by someone who has not read this.
 
 ⚠ **This paragraph used to claim the interceptor was beatable and it was wrong.
 Measured 2026-08-05, registers `D.8` to `D.10`.**

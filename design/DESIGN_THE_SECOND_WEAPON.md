@@ -27,10 +27,23 @@ inert.
 |---|---|---|
 | damage | 2500 of 10000, so four kill | 5000, so two kill |
 | cost per shot | 20000 (200 J) | 100000 (1000 J) |
-| magazine | **none** | 4, exactly enough for two drones |
+| magazine | **none** | 2, exactly enough for one drone |
 | other limit | 20-tick cooldown | battery |
 | speed | 61440/tick, plus the launcher's velocity | 81920/tick, homing |
-| time to live | 100 ticks, ~300 m of reach | 150 ticks, ~600 m |
+| time to live | 100 ticks, ~300 m of reach | 15 ticks, ~60 m |
+| lock range | n/a | 600 m, **ten times its reach, on purpose** |
+
+⚠ **THE GUIDED COLUMN CHANGED ON 2026-08-09 AND THIS DOCUMENT'S ARGUMENT SURVIVES
+IT.** It was a magazine of 4 and 150 ticks, so ~600 m of reach, in a 1000 m arena.
+Everything below about scarcity, about the magazine being the cost of missing, and
+about proximity damage being the reward for aiming, is unchanged and now bites
+harder: two rounds is one kill's worth, so a wasted shot is half the drone's
+offence rather than a quarter.
+
+What is new is that the weapon no longer owns the arena. It reaches 60 m and locks
+at 600 m, and the gap is the design: **a launch with no lock spends nothing**, so
+matching the two would make holding `launch` high free and optimal. With the gap it
+throws both rounds away ten times further out than they can reach.
 
 ⚠ **The gun has no magazine at all.** Battery would allow 396 shots; the
 cooldown allows 60 in a 1200-tick fight. **60 is the real cap**, and battery
@@ -164,9 +177,9 @@ now, or keep it for a shot worth taking. That is a decision a controller can be
 better or worse at, which means it is a thing selection can act on.
 
 The interceptor already works this way and it is the contrast that makes the
-case: magazine 4, two hits kill, and the code says *"a full magazine is exactly
-enough for two drones."* That weapon is deliberately scarce. The gun has no
-equivalent, and it shows.
+case: magazine 2, two hits kill, so a full magazine is exactly one drone. That
+weapon is deliberately scarce, and since 2026-08-09 it is scarcer — it was 4. The
+gun has no equivalent, and it shows.
 
 ⚠⚠ **THE NUMBER IS A SWEEP DIAL, NOT A CHOICE.** Raf proposed 50. Against a
 real cap of 60 that binds about half the swarm and shaves the top shooters by

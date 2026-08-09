@@ -117,7 +117,7 @@ Ten.
 | 3 | thrust vertical |
 | 4 | yaw rate command |
 | 5 | **release**, above a threshold. Unguided, cheap, knife range |
-| 6 | **launch**, above a threshold. Guided interceptor, needs a lock, magazine of four |
+| 6 | **launch**, above a threshold. Guided interceptor, needs a lock, magazine of two |
 | 7 to 10 | the four transmitted comms channels |
 
 ⚠ **Two weapons rather than one, and the earlier rule is withdrawn on
