@@ -7,6 +7,77 @@ The index, and the rule itself, are in [`../REGISTER.md`](../REGISTER.md).
 
 ---
 
+## I.27: three constants that meant something only while a fourth stood still
+
+Raf asked whether elvis has a "no magic numbers" rule while the interceptor was
+being shortened from 600 m to 60 m. It does not — `numeric_format` constrains how
+a literal is *written*, not whether it is named — and it would not have helped,
+because all three offenders were perfectly ordinary numbers. Only the coupling was
+wrong.
+
+1. **`R =< 0.1` in three launch gates**, meaning "60 m", written by hand to match
+   the new weapon. Tied to `INTERCEPTOR_TTL` by nothing.
+2. **`?STANDOFF` of `0.15`**, the range `circler` holds. 90 m: comfortably inside
+   a 600 m weapon and **outside** a 60 m one. That rung would have held station
+   beyond its own launch gate, fired nothing for a whole engagement, and become
+   the hoverer its own comment warns against.
+3. **`R =< 0.3`** in `marksman`, its "disciplined" band. 180 m, three times the
+   weapon.
+
+⚠ **NONE OF THE THREE WOULD HAVE FAILED ANYTHING.** No test breaks when a drill
+stops shooting or shoots into fuel it does not have. The ladders would simply have
+got easier, quietly, which is the one failure mode a benchmark cannot survive —
+and both ladders' scores are published to the exhibit as improvement.
+
+All three now derive from `drone_senses:reach_fraction/0`, which reads the weapon
+out of `airspace:limits/0`. The test that protects it flies a drill at a target
+just inside and just outside the weapon and asserts the drill's own trigger
+follows, and it was **verified to go red** by hardcoding the gate back and moving
+the weapon. A first attempt at that test recomputed `speed * ttl / range` and
+compared it to the function — the same expression twice, passing for as long as
+the function exists at all.
+
+**ELI5.** Someone wrote "60" in three places because the ruler was 60 long. Then
+the ruler was replaced with a shorter one, and the three notes still said 60, so
+they now measured nothing in particular. Nothing broke loudly. The answers just
+quietly got easier to give. Now the notes say "as long as the ruler" instead.
+
+## I.26: two probes lied about the same API, in opposite directions, within a minute
+
+Changing the roster's event stream to wipe the fleet needed a name the store
+accepts. `reckon_db_stream_path:stream_path/1` was asked directly, twice, and both
+answers were wrong because of how the question was wrapped.
+
+- The first probe wrapped its result as `try ... of V -> {ok, V}`, so a function
+  that returns a **bare path** looked like it returned `{ok, Path}`. The test
+  written from that reading failed.
+- The second used `catch`, so a failure that **raises** printed as
+  `{error, {invalid_stream_id, _}}`. The test written from *that* reading failed
+  too.
+
+The API is asymmetric: bare value on success, raise on failure. Both probes
+normalised the two ends into one shape, which erased exactly the difference that
+mattered.
+
+⚠ **AND THE DIFFERENCE WAS THE WHOLE POINT.** `$dronex:roster:g2` — the obvious
+way to write a second generation — is rejected, and it is rejected by *raising*.
+`roster_log`'s own header already records the consequence: `reckon_gater_retry`
+cannot match an exit against its non-retriable list, so it treats it as transient
+and retries eleven times with backoff, about four minutes, **inside the island
+process**. Five islands, on a deploy, over a colon. The name shipped is
+`$dronex:roster_g2`.
+
+⚠⚠ **AND NOTHING CHECKED THE STREAM NAME UNTIL IT WAS CHANGED.** All fifteen tests
+in `roster_log_tests` are built on fixtures shaped like store replies, so the name
+is never handed to the store there and every one of them passes on a name that
+cannot be used. Two tests now cover it, and the one asserting the rejection
+asserts the **raise**, because the raise is the expensive part.
+
+**ELI5.** We asked a machine "will you accept this name?" twice, and both times we
+put the answer in our own envelope before reading it — so we could not tell "yes"
+from "no". The name we nearly used would not have failed politely. It would have
+made every island sit and retry for four minutes, all at once, on a deploy.
+
 ## I.25: two counters that could never count, and one of them made the central claim unobservable
 
 Raf looked at the exhibit and asked whether it made sense. It did not, in two

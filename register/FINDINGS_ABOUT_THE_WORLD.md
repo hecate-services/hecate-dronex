@@ -7,6 +7,79 @@ The index, and the rule itself, are in [`../REGISTER.md`](../REGISTER.md).
 
 ---
 
+## D.18: a random controller could win rungs, and the weapon was paying for it
+
+Under the 600 m interceptor, a null and eight random controllers used to take
+rungs off both ladders: three of eight swept `circler`, `bruiser` and `marksman`
+on the held-out set, which `I.23` recorded as "blind at the bottom" and read as
+the rungs being too easy.
+
+They are not too easy. On 2026-08-09 the interceptor's reach went from 600 m to
+60 m, and the same reference controllers now win **0 of 48 on every rung of both
+ladders**.
+
+The two candidate causes were separated rather than argued about, because fights
+also moved from opening 400 m apart to 800 m the same day:
+
+| start set | separation | attacker wins, 6 controllers x 8 starts |
+|---|---|---|
+| `drone_starts` | 400 m | 0/48 |
+| `distant_starts` | 800 m | 0/48 |
+
+Identical, so it is not the geometry. It is the weapon.
+
+What those wins were is now visible: hold `launch` high at a target that is
+visible and inside weapon range from tick zero, and a missile that cannot be
+dodged (`D.10`, re-confirmed at `D.17`) does the rest. No aiming, no closing, no
+timing. A controller with random weights holds every output high about half the
+time, so it got the free kill about half the time.
+
+⚠ **SO THE BOTTOM OF BOTH LADDERS WAS MEASURING THE WEAPON, NOT THE CONTROLLER**,
+and every rung order recorded before this date was graded partly on it. Both
+orders are now void. They cannot be re-measured either, because grading a ladder
+needs controllers that can tell rungs apart and every reference controller now
+scores zero. Re-measure after the first population is bred against these physics.
+
+**ELI5.** The test looked like it had easy questions and hard ones. It turned out
+the easy ones could be passed by pressing a button that always worked, so pressing
+buttons at random got you marks. The button was taken away. Now the same random
+pressing scores nothing at all, which means the "easy questions" were never
+measuring anything about the pupil.
+
+## D.17: nothing can dodge the interceptor, at any range, and the sweep built to check that cannot see it
+
+`D.10` recorded that the guided interceptor hits 100% of the time from 30 m to
+450 m and that no setting of its turn rate fixes this while leaving the game
+playable. On 2026-08-09 an argument was built on top of the opposite assumption —
+that a longer time of flight gives a target room to swing out of the seeker's 60
+degree field of view, so the weapon's reach must be long enough for a hard break
+to work.
+
+Measured, with fuel held at 600 m so nothing was limited by it:
+
+| launch range | 30 m | 50 m | 100 m | 200 m | 300 m | 450 m |
+|---|---|---|---|---|---|---|
+| hit, target running | 100% | 100% | 100% | 100% | 100% | 100% |
+| hit, target breaking | 100% | 100% | 100% | 100% | 100% | 100% |
+
+A maximum-rate break never works. Time of flight buys a target nothing, so reach
+cannot be chosen on counterplay, because there is none to protect. Reach decides
+one thing only: **how close you must fly to earn a certain hit.**
+
+⚠ **AND `sweep_the_interceptor.sh` COULD NOT HAVE CAUGHT THE MISTAKE**, which is
+the part worth keeping. It varies the weapon's REACH and reads two numbers, hit
+rate at 50 m and at 300 m. When reach is short the 300 m number goes to zero
+because the missile **ran out of fuel**, which is indistinguishable in that table
+from a target that dodged it. An instrument that collapses "was broken" and
+"never arrived" into one column will confirm whichever of the two you already
+believe. `at_what_range_can_a_break_work.sh` holds reach fixed and long, so every
+number it prints is about guidance against manoeuvre.
+
+**ELI5.** We thought a slower-arriving arrow gives you time to duck. We checked,
+and ducking never works, at any distance. So how far the arrow flies is not about
+fairness at all: it only decides how close you have to walk before you are
+allowed to shoot.
+
 ## D.16: the fleet solved the frozen exam in about a day, once it could keep a lineage
 
 On the morning of 2026-08-07 the islands were restored to keeping their

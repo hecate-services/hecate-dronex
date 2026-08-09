@@ -186,6 +186,8 @@ In [`register/FINDINGS_ABOUT_THE_WORK.md`](register/FINDINGS_ABOUT_THE_WORK.md),
 
 | | |
 |---|---|
+| [`I.27`](register/FINDINGS_ABOUT_THE_WORK.md#i27-three-constants-that-meant-something-only-while-a-fourth-stood-still) | three constants that meant something only while a fourth stood still |
+| [`I.26`](register/FINDINGS_ABOUT_THE_WORK.md#i26-two-probes-lied-about-the-same-api-in-opposite-directions-within-a-minute) | two probes lied about the same API, in opposite directions, within a minute |
 | [`I.25`](register/FINDINGS_ABOUT_THE_WORK.md#i25-two-counters-that-could-never-count-and-one-of-them-made-the-central-claim-unobservable) | two counters that could never count, and one of them made the central claim unobservable |
 | [`I.24`](register/FINDINGS_ABOUT_THE_WORK.md#i24-the-island-advertised-once-at-the-wrong-moment-and-could-never-be-raided) | the island advertised once, at the wrong moment, and could never be raided |
 | [`I.23`](register/FINDINGS_ABOUT_THE_WORK.md#i23-a-rung-that-measured-nothing-and-only-known-controllers-could-say-so) | a rung that measured nothing, and only known controllers could say so |
@@ -218,6 +220,8 @@ In [`register/FINDINGS_ABOUT_THE_WORLD.md`](register/FINDINGS_ABOUT_THE_WORLD.md
 
 | | |
 |---|---|
+| [`D.18`](register/FINDINGS_ABOUT_THE_WORLD.md#d18-a-random-controller-could-win-rungs-and-the-weapon-was-paying-for-it) | a random controller could win rungs, and the weapon was paying for it |
+| [`D.17`](register/FINDINGS_ABOUT_THE_WORLD.md#d17-nothing-can-dodge-the-interceptor-at-any-range-and-the-sweep-built-to-check-that-cannot-see-it) | nothing can dodge the interceptor, at any range, and the sweep built to check that cannot see it |
 | [`D.16`](register/FINDINGS_ABOUT_THE_WORLD.md#d16-the-fleet-solved-the-frozen-exam-in-about-a-day-once-it-could-keep-a-lineage) | the fleet solved the frozen exam in about a day, once it could keep a lineage |
 | [`D.15`](register/FINDINGS_ABOUT_THE_WORLD.md#d15-the-frozen-exam-swings-by-a-hundred-points-in-a-day-on-a-bred-champion) | the frozen exam swings by a hundred points in a day, on a bred champion |
 | [`D.14`](register/FINDINGS_ABOUT_THE_WORLD.md#d14-the-gun-is-fired-constantly-and-appears-never-to-hit) | the gun is fired constantly and appears never to hit |
