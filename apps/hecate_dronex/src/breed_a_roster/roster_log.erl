@@ -72,11 +72,42 @@
 %% whitelist and retried eleven times with exponential backoff, for about four
 %% minutes, inside the island's process. See `roster_log_writer'.
 %%
+%% ==========================================================================
+%% ⚠⚠⚠⚠ `_g2' IS A DELIBERATE FLEET WIPE, 2026-08-09. CHANGING IT BACK RESURRECTS
+%% A LINEAGE BRED UNDER PHYSICS THAT NO LONGER EXIST
+%% ==========================================================================
+%%
+%% The guided weapon went from 600 m of reach to 60 m and from four rounds to
+%% two, and engagements now open 800 m apart instead of 400 m. Every genome in
+%% the `$dronex:roster' stream was bred against the old ones, and every invader
+%% archived there was captured under them. Their fitness numbers are not merely
+%% stale, they were earned in a different game.
+%%
+%% So the lineage starts empty rather than being migrated. A new stream NAME does
+%% that without destroying anything: the old stream stays in every store, intact
+%% and readable, and nothing reads it. That also means the wipe ships in the image
+%% through CI and watchtower like any other change, with no ssh to any box and no
+%% `rm' anywhere near a store.
+%%
+%% ⚠ AND `_g2' IS AN UNDERSCORE BECAUSE A SECOND COLON DOES NOT PARSE. Verified
+%% against `reckon_db_stream_path:stream_path/1' before shipping:
+%%
+%%   $dronex:roster        ->  {ok, [streams, <<"$dronex">>, <<"roster">>]}
+%%   $dronex:roster:g2     ->  {error, {invalid_stream_id, ...}}
+%%   $dronex:roster_g2     ->  {ok, [streams, <<"$dronex">>, <<"roster_g2">>]}
+%%
+%% The obvious name is the broken one. Worse, the paragraph below records what
+%% that failure looks like from here: an exit rather than a return, which
+%% `reckon_gater_retry' cannot match against its non-retriable list, so it retries
+%% eleven times with backoff for about four minutes INSIDE the island process. On
+%% five islands at once, on a deploy, that is a fleet-wide stall caused by a
+%% punctuation choice. `roster_log_tests' now checks the name parses.
+%%
 %% A SYSTEM stream rather than a user one, because this is a singleton per store
 %% and system streams exist for exactly that operational legibility. A user
 %% stream would need 32 hex digits of identity for a thing there is only ever one
 %% of, and the store is already per-island.
--define(STREAM, <<"$dronex:roster">>).
+-define(STREAM, <<"$dronex:roster_g2">>).
 
 %% How far back `restore/1' will look for a snapshot before giving up and
 %% starting from nothing. Generous, because the cost is paid once at boot and the

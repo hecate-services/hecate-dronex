@@ -205,3 +205,44 @@ a_corrupt_invader_costs_one_invader_test() ->
                                  #{entries => [], capacity => 8,
                                    invaders => [Good, Bad]})]),
     ?assertEqual(1, invaders:depth(A)).
+
+%%==============================================================================
+%% The stream name, which nothing checked until it was changed
+%%==============================================================================
+
+%% ⚠ THE OBVIOUS EPOCH NAME DOES NOT PARSE, AND EVERY TEST IN THIS FILE WOULD HAVE
+%% PASSED ANYWAY. They are built on fixtures shaped like store replies, so the
+%% name is never handed to the store here. `$dronex:roster:g2' — the natural way
+%% to write a second generation — is rejected by
+%% `reckon_db_stream_path:stream_path/1', and this module's own header records
+%% what that costs: the rejection arrives as an exit rather than a return,
+%% `reckon_gater_retry' cannot match it against its non-retriable list, and it
+%% retries eleven times with backoff for about four minutes inside the island
+%% process. Five islands, on a deploy, over a colon.
+the_stream_name_is_one_the_store_will_accept_test() ->
+    %% ⚠ IT RETURNS THE BARE PATH ON SUCCESS AND A TAGGED TUPLE ON FAILURE, which
+    %% is worth spelling out because the asymmetry cost a red test here: a probe
+    %% written to check this wrapped its own result in `{ok, _}' and made the
+    %% success case look tagged too.
+    ?assertMatch([streams, _, _],
+                 reckon_db_stream_path:stream_path(roster_log:stream())),
+    %% And stated the other way round, so this test cannot pass by the parser
+    %% having been made permissive.
+    %%
+    %% ⚠⚠ IT RAISES RATHER THAN RETURNING AN ERROR, WHICH IS THE WHOLE REASON A
+    %% BAD NAME IS EXPENSIVE INSTEAD OF LOUD. A returned `{error, _}' would be
+    %% matched by `reckon_gater_retry' against its non-retriable list and dropped
+    %% immediately. An exit is not matchable there, so it is treated as a
+    %% transient fault and retried eleven times with backoff, about four minutes,
+    %% inside the island process. Asserting the RAISE rather than a return value
+    %% is therefore the point of this half.
+    ?assertError({invalid_stream_id, _},
+                 reckon_db_stream_path:stream_path(<<"$dronex:roster:g2">>)).
+
+%% ⚠⚠ AND IT IS NOT THE PRE-WIPE STREAM. On 2026-08-09 the fleet was wiped by
+%% starting a new lineage rather than deleting a store: the physics changed
+%% underneath every genome bred so far, so their fitness was earned in a different
+%% game. Pointing this back at `$dronex:roster' silently resurrects all of it, on
+%% every island, at the next boot.
+the_lineage_is_not_the_one_bred_under_the_old_physics_test() ->
+    ?assertNotEqual(<<"$dronex:roster">>, roster_log:stream()).
