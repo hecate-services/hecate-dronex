@@ -54,12 +54,20 @@ the_default_ladder_is_unchanged_test() ->
 %% The rungs
 %%==============================================================================
 
-%% ⚠ THE ORDER IS MEASURED AND FROZEN. Over 48 starts against the five live
-%% champions the wins out of 240 were circler 227, harrier 202, marksman 192,
-%% bruiser 185, swooper 139, leader 130, which is not the order the rungs were
-%% written in. `REGISTER D.4' and `I.23': a rung order asserted rather than
-%% measured is a curve that reads backwards, and a benchmark reads as a curve.
-there_are_six_held_out_rungs_in_the_measured_order_test() ->
+%% ⚠ THIS PINS STABILITY, NOT CORRECTNESS, AND SINCE 2026-08-09 THE DIFFERENCE
+%% MATTERS. The order below was measured over 48 starts against five live
+%% champions — circler 227, harrier 202, marksman 192, bruiser 185, swooper 139,
+%% leader 130 out of 240 — under a guided weapon reaching 600 m and a start set
+%% opening at 400 m. The weapon now reaches 60 m, the set opens at 800 m, and
+%% those champions have been wiped, so the ORDER IS UNKNOWN.
+%%
+%% ⚠⚠ IT IS STILL ASSERTED, ON PURPOSE, SO THE LIST CANNOT DRIFT WHILE NOBODY IS
+%% LOOKING. What this catches today is a silent reorder or a rung appearing and
+%% disappearing. What it does NOT do any more is certify that the curve runs easy
+%% to hard. Re-measure once a population exists that can tell rungs apart: a null
+%% and five random controllers currently win 0 of 48 on every rung, so there is
+%% nothing to grade with. `REGISTER D.4'.
+there_are_six_held_out_rungs_in_a_provisional_order_test() ->
     ?assertEqual([circler, harrier, marksman, bruiser, swooper, leader],
                  drone_trials:kinds()),
     ?assertEqual(6, length(drone_trials:kinds())).
@@ -294,7 +302,9 @@ above() ->
     hd(airspace:drones(airspace:new([{b, defender, 560 * 20480, 500 * 20480,
                                       130 * 20480, 0}]))).
 
-%% Beyond the 90 m standoff, off the nose so a turn is not a no-op.
+%% Beyond the circler's standoff, off the nose so a turn is not a no-op. About
+%% 128 m out, which cleared the standoff when it was a flat 90 m and still clears
+%% it now that it is three quarters of the weapon's 60 m reach.
 far_off_axis() ->
     hd(airspace:drones(airspace:new([{b, defender, 620 * 20480, 540 * 20480,
                                       100 * 20480, 0}]))).
@@ -306,13 +316,46 @@ barely_left() ->
                                       100 * 20480, 0}]))).
 
 %% Inside the chaser's 26 degree gate and outside the marksman's 11 degree one:
-%% 100 m ahead and 30 m off, which is about 17 degrees.
+%% 45 m ahead and 14 m off, which is about 17 degrees.
+%%
+%% ⚠ 45 m, AND IT WAS 100 m UNTIL 2026-08-09. The guided weapon reached 600 m and
+%% now reaches 60 m, so both rungs refuse a 100 m shot and the fixture stopped
+%% separating them: the test went red saying the CHASER would not fire, which was
+%% correct and was not what it is here to check. Any distance inside the envelope
+%% works; this one keeps the same angle the comment always claimed.
 wide_but_visible() ->
-    hd(airspace:drones(airspace:new([{b, defender, 600 * 20480, 530 * 20480,
+    hd(airspace:drones(airspace:new([{b, defender, 545 * 20480, 514 * 20480,
                                       100 * 20480, 0}]))).
 
-%% Straight ahead at 100 m: inside both gates and inside the marksman's range
+%% Straight ahead at 45 m: inside both gates and inside the marksman's range
 %% band, so it is the shot the discipline was saving for.
 dead_ahead() ->
-    hd(airspace:drones(airspace:new([{b, defender, 600 * 20480, 500 * 20480,
+    hd(airspace:drones(airspace:new([{b, defender, 545 * 20480, 500 * 20480,
                                       100 * 20480, 0}]))).
+
+%% ⚠ THE CIRCLER'S STANDOFF IS BOUNDED, NOT PINNED, WHICH IS WHY THIS CHECKS THE
+%% TWO CLAIMS ITS COMMENT MAKES RATHER THAN A NUMBER. It has to sit inside the
+%% guided weapon, or the rung holds station where it can never shoot and quietly
+%% becomes a hoverer, and it has to sit well outside the roughly 15 m where an
+%% unguided release works, or it is a chaser with extra steps. Both were true of
+%% the literal 0.15 until the weapon shrank on 2026-08-09, and the first stopped
+%% being true the same hour without anything failing.
+the_circlers_standoff_stays_inside_its_own_weapon_test() ->
+    Reach = drone_senses:reach_fraction(),
+    Standoff = reported_standoff(),
+    ?assert(Standoff < Reach),
+    ?assert(Standoff * drone_senses:range() > 30 * 20480).
+
+%% Read back through the behaviour rather than by exporting the constant: the
+%% range at which the circler stops closing IS its standoff.
+reported_standoff() ->
+    Ranges = [R / 1000 || R <- lists:seq(1, 999)],
+    Closing = [R || R <- Ranges, closes_at(R)],
+    lists:min(Closing).
+
+closes_at(R) ->
+    D = hd(airspace:drones(airspace:new(
+            [{b, defender, trunc(500 * 20480 + R * drone_senses:range()),
+              500 * 20480, 100 * 20480, 0}]))),
+    {I, _} = drone_trials:act(drone_trials:init(circler), lone(), [D], []),
+    I#intent.thrust_fwd > 0.

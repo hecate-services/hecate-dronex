@@ -285,7 +285,7 @@ mustered_defence({_I, []}, S) ->
 mustered_defence({I2, Party}, #{island := I} = S) ->
     %% The start geometry is derived from the tick rather than drawn, so a raid
     %% is reproducible from the facts it publishes.
-    Index = island:tick_of(I) rem drone_starts:count(),
+    Index = island:tick_of(I) rem distant_starts:count(),
     %% ⚠ THE ROSTER STAMP RIDES BACK ON A CALL THAT WAS ALREADY HAPPENING. The
     %% raid recording needs to say where this island was in its own evolution,
     %% and the recording is built OFF this process on purpose — it is ~1.6 MB of
@@ -594,7 +594,7 @@ chosen(Pool, Tick) -> lists:nth(Tick rem length(Pool) + 1, Pool).
 
 against(undefined, _Entry, _I, _Tick) -> {error, no_opponent};
 against(Opponent, Entry, I, Tick) ->
-    Index = Tick rem drone_starts:count(),
+    Index = Tick rem distant_starts:count(),
     flown(I, Entry, Opponent, Index, engagement:controller(roster:entry_genome(Entry))).
 
 flown(_I, _E, _O, _Ix, {error, _Why}) -> {error, unflyable};
@@ -606,7 +606,7 @@ flown(I, Entry, Opponent, Index, {ok, Mine}) ->
 %% flown, rather than a crash on the island's own timer.
 manned(_I, _E, _O, _Ix, _Mine, {error, _Why}) -> {error, opponent_gone};
 manned(I, Entry, Opponent, Index, Mine, {ok, Theirs}) ->
-    Placed = drone_starts:place(1, 1, Index),
+    Placed = distant_starts:place(1, 1, Index),
     [{AId, _, _, _, _, _}, {DId, _, _, _, _, _}] = Placed,
     %% A training bout is flown at home like every other training fight, so the
     %% exhibit shows the island's towers standing in its own airspace.
@@ -747,11 +747,11 @@ first_or([], Fallback) -> Fallback.
 %% specialists, and a heterogeneous swarm here would fold `which genome' into a
 %% number that is supposed to be about `which channel'.
 swarm_fights(Mine, Theirs, Tick) ->
-    Starts = [(Tick + N) rem drone_starts:count() || N <- lists:seq(0, ?ABLATE_STARTS - 1)],
+    Starts = [(Tick + N) rem distant_starts:count() || N <- lists:seq(0, ?ABLATE_STARTS - 1)],
     lists:filtermap(fun (Ix) -> composed(Mine, Theirs, Ix) end, Starts).
 
 composed(Mine, Theirs, Index) ->
-    Placed = drone_starts:place(?ABLATE_PER_SIDE, ?ABLATE_PER_SIDE, Index),
+    Placed = distant_starts:place(?ABLATE_PER_SIDE, ?ABLATE_PER_SIDE, Index),
     manned(Placed, roster:entry_genome(Mine), roster:entry_genome(Theirs)).
 
 %% A genome that will not fly is dropped rather than scored, exactly as the

@@ -21,7 +21,7 @@
 %% ⚠⚠ ATTACKER AND DEFENDER ARE THE ENGAGEMENT'S OWN SIDES, NOT A RELABELLING
 %% ==========================================================================
 %%
-%% `drone_starts:place/3' already lays out an `attacker' side and a `defender'
+%% `distant_starts:place/3' already lays out an `attacker' side and a `defender'
 %% side, and a raid maps straight onto them. The raiding party flies as the
 %% attacker, into the defender's volume, which is where the second price lives:
 %% at item 8 the defender's static sensor network will cover this airspace and
@@ -71,7 +71,7 @@ host(Controllers) ->
 compose([], _Raiders, _Index) -> {error, no_defenders};
 compose(_Defenders, [], _Index) -> {error, no_raiders};
 compose(Defenders, Raiders, Index) ->
-    Placed = drone_starts:place(length(Raiders), length(Defenders), Index),
+    Placed = distant_starts:place(length(Raiders), length(Defenders), Index),
     crew(Placed, sides(Placed, Defenders, Raiders)).
 
 %% ⚠ THE MAP FROM A DRONE'S ID BACK TO A GENOME'S ID IS THE WHOLE REPLY. A drone

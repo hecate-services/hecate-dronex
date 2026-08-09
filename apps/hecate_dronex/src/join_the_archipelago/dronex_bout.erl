@@ -180,7 +180,7 @@ munition_row(#munition{} = M) ->
 guided(true) -> 1;
 guided(false) -> 0.
 
-%% `drone_starts' names entrants `{attacker, K}' and `{defender, K}'. The wire
+%% `distant_starts' names entrants `{attacker, K}' and `{defender, K}'. The wire
 %% carries a small integer instead: side in the low bit, position above it, so a
 %% reader can colour a mark without decoding a tuple. Tuples do not survive the
 %% encoder cleanly, which is the wire rule this obeys.

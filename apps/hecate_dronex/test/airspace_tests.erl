@@ -515,17 +515,41 @@ a_launch_spends_a_round_and_starts_its_own_cooldown_test() ->
     ?assertEqual(B - C, Shooter#drone.battery),
     ?assertEqual(1, length(airspace:munitions(After))).
 
-%% ⚠ THE PROPERTY THE WHOLE SECOND WEAPON EXISTS FOR. The target is 200 m away
-%% and running: an unguided shot has no chance at that range, and a guided one
-%% closes.
+%% ⚠ THE PROPERTY THE WHOLE SECOND WEAPON EXISTS FOR: it beats RUNNING. The
+%% target is 45 m away at full thrust directly away, which an unguided round
+%% cannot answer because it leads nothing, and the guided one closes anyway.
+%%
+%% ⚠⚠ 45 m, AND IT USED TO BE 200 m. The interceptor reached 600 m until
+%% 2026-08-09 and reaches 60 m now, so the old distance tested a weapon that no
+%% longer exists. The PROPERTY is unchanged and is what this still asserts;
+%% only the envelope it holds in moved.
 a_guided_interceptor_runs_a_fleeing_target_down_test() ->
     #{max_accel := T, gravity := G, start_health := H} = airspace:limits(),
+    Near = airspace:new([{a, attacker, 455 * ?M, 500 * ?M, 100 * ?M, 0},
+                         {b, defender, 500 * ?M, 500 * ?M, 100 * ?M, 0}]),
+    Chase = #{a => #intent{launch = 1, thrust_vert = G},
+              b => #intent{thrust_fwd = T, thrust_vert = G}},
+    After = run(Near, Chase, 90),
+    ?assert((airspace:drone(After, b))#drone.health < H).
+
+%% ⚠⚠⚠ AND IT CANNOT REACH PAST ITS RANGE, WHICH IS THE HALF THAT HAD NO TEST AND
+%% IS NOW THE LOAD-BEARING ONE. A 600 m interceptor in a 1000 m arena settled
+%% every fight before the sides could meet: six live recordings of six had a
+%% munition in the air at frame zero. The whole redesign of 2026-08-09 is this
+%% number, so a silent revert of `INTERCEPTOR_TTL' has to fail something.
+%%
+%% 200 m is well outside the 60 m reach, and the shot is otherwise identical to
+%% the one above: same intent, same duration, same fleeing target.
+a_guided_interceptor_cannot_reach_past_its_range_test() ->
+    #{max_accel := T, gravity := G, start_health := H,
+      interceptor_speed := S, interceptor_ttl := Ttl} = airspace:limits(),
+    ?assert(S * Ttl < 200 * ?M),
     Far = airspace:new([{a, attacker, 300 * ?M, 500 * ?M, 100 * ?M, 0},
                         {b, defender, 500 * ?M, 500 * ?M, 100 * ?M, 0}]),
     Chase = #{a => #intent{launch = 1, thrust_vert = G},
               b => #intent{thrust_fwd = T, thrust_vert = G}},
     After = run(Far, Chase, 90),
-    ?assert((airspace:drone(After, b))#drone.health < H).
+    ?assertEqual(H, (airspace:drone(After, b))#drone.health).
 
 %% And it is beatable, which is what stops it being an auto-kill. The
 %% interceptor turns in about 43 m at 80 m/s; a drone turns in about 25 m at

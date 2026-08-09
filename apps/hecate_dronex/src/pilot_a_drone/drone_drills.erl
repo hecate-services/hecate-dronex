@@ -83,6 +83,33 @@
 %% it yet. Once something has, a ladder adjusted afterwards measures the
 %% adjustment, and a NEW ladder is added beside this one with its own name and
 %% its own history while this one keeps being published.
+%%
+%% ==========================================================================
+%% ⚠⚠⚠⚠ THE ORDER ABOVE IS VOID AS OF 2026-08-09 AND HAS NOT BEEN REPLACED. DO
+%% NOT READ A PROFILE OVER THESE RUNGS AS A CURVE UNTIL IT HAS BEEN
+%% ==========================================================================
+%%
+%% The guided interceptor went from 600 m of reach to 60 m the same day. Every
+%% number in the paragraphs above was measured against the old weapon, including
+%% the finding that separated the rungs — random controllers scoring 3 and 2
+%% against the sniper and 22 and 8 against the chaser.
+%%
+%% ⚠ AND RE-GRADING IT IS NOT POSSIBLE YET, WHICH IS THE UNCOMFORTABLE PART. Over
+%% 48 starts, a null and five random controllers now win NOTHING: 0 of 48 on
+%% every rung, on both start sets. Measured, so the two candidate causes could be
+%% told apart — 0 of 48 on the 400 m set as well as the 800 m one, which rules
+%% out the new geometry and leaves the weapon.
+%%
+%% ⚠⚠ WHICH SAYS SOMETHING ABOUT WHAT THE OLD LADDER WAS PARTLY MEASURING. A
+%% random controller used to win rungs. It did that by holding `launch' high at a
+%% target that was visible and inside weapon range from tick zero, and a 600 m
+%% interceptor that cannot be dodged did the rest. That is not skill at anything,
+%% and grading an instrument on it flattered the bottom of the range.
+%%
+%% So the rung order is UNKNOWN until a population exists that can distinguish
+%% rungs at all. `REGISTER D.4' is the standing rule and it cuts both ways: an
+%% order asserted rather than measured reads backwards, and an order measured
+%% against controllers that all score zero is not measured.
 -define(KINDS, [hoverer, orbiter, evader, chaser, duellist, sniper]).
 
 %% How often the two drills with a period reverse. 40 ticks is 2 seconds, which is
@@ -158,12 +185,31 @@ running(#{bearing_sin := S}, N) ->
     #intent{thrust_fwd = accel() * 3 div 4, thrust_vert = gravity() + climb(N),
             yaw_rate = turn(S, away)}.
 
+%% ⚠⚠ THE LAUNCH GATE HAS AN UPPER BOUND NOW, AND WITHOUT ONE EVERY RUNG WOULD
+%% HAVE BECOME A PUSHOVER ON 2026-08-09. `R' is a fraction of the 600 m sensor,
+%% and this used to read `R >= 0.05' with no ceiling: fire the guided weapon at
+%% anything past 30 m. That was reasonable when the interceptor reached 600 m and
+%% is nonsense now that it reaches 60 m, because a drill would have spent its
+%% whole magazine — two, not four — at four hundred metres, into fuel it does not
+%% have, and closed to every fight unarmed.
+%%
+%% 0.1 is 60 m, which is the reach exactly. Below 0.05 is 30 m, where the dumb
+%% round takes over. So a drill now shoots the guided weapon only in the 30 m
+%% band where the guided weapon works, and closing at 3.5 m per tick that band
+%% lasts about 9 ticks — against a 40 tick cooldown, one shot per merge.
+%%
+%% ⚠ THIS IS A CHANGE TO THE STANDARD AND IT ONLY HAPPENED BECAUSE THE FLEET WAS
+%% WIPED THE SAME DAY. A ladder freezes the moment a population is bred against
+%% it, and this one was frozen. Nothing is bred against anything now, so the
+%% freeze restarts here. The rung ORDER was also measured under the old weapon
+%% and no longer means anything, which is `REGISTER D.4' and is re-measured
+%% rather than assumed.
 shooting(undefined, _Move) -> #intent{thrust_vert = gravity()};
 shooting(#{bearing_sin := S, bearing_cos := C, range := R}, Move) ->
     #intent{thrust_fwd = forward(Move), thrust_vert = gravity(),
             yaw_rate = turn(S, toward),
             release = trigger(C > 0.9 andalso R < 0.05),
-            launch = trigger(C > 0.9 andalso R >= 0.05)}.
+            launch = trigger(C > 0.9 andalso R >= 0.05 andalso R =< drone_senses:reach_fraction())}.
 
 forward(still) -> 0;
 forward(closing) -> accel() * 3 div 4.

@@ -158,7 +158,7 @@ tally(defender, {W, D, L}) -> {W, D, L + 1}.
 one(Mine, Theirs, Index) ->
     {ok, A} = engagement:controller(Mine),
     {ok, D} = engagement:controller(Theirs),
-    Placed = drone_starts:place(1, 1, Index),
+    Placed = distant_starts:place(1, 1, Index),
     [{AId, _, _, _, _, _}, {DId, _, _, _, _, _}] = Placed,
     Result = engagement:run(airspace:new(Placed), #{AId => A, DId => D},
                             #{network => ground_network:none()}),

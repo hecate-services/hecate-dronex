@@ -1,4 +1,24 @@
-%% @doc Where an engagement begins. PURE and DETERMINISTIC.
+%% @doc Where an engagement used to begin. PURE and DETERMINISTIC.
+%%
+%% ==========================================================================
+%% ⚠⚠⚠⚠ RETIRED 2026-08-09. NOTHING FLIES THIS ANY MORE. `distant_starts' IS THE
+%% SET, AND THIS IS KEPT AS THE CONTROL IN A MEASUREMENT THAT CAN BE RE-RUN
+%% ==========================================================================
+%%
+%% It puts two sides 400 m apart. The sensor reaches 600 m and, until the same
+%% day, so did the guided interceptor — so every engagement opened with both
+%% sides visible AND both able to shoot, and the comment below justifying 400 m
+%% as "outside the unguided weapon's useful reach" was true of the dumb round and
+%% silent about the guided one. Six live recordings of six had a munition in the
+%% air at frame zero.
+%%
+%% It is NOT dead code and should not be deleted on that reasoning.
+%% `scripts/what_does_a_distant_start_look_like.escript' flies both sets with the
+%% same controllers and prints the difference, which is the evidence for the
+%% replacement and stops being re-runnable the moment this module goes. The whole
+%% sweep is in `measurements/distant_starts_48.txt'.
+%%
+%% Everything from here down is the original reasoning, kept intact.
 %%
 %% THIS EXISTS SO TWO ISLANDS AGREE ON WHAT A FIGHT WAS. A start set is not a
 %% test fixture: two machines running the same controllers from different

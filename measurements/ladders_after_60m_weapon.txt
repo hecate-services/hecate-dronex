@@ -1,0 +1,70 @@
+════ drone_drills ════
+The drone_drills ladder, over 48 of 48 starts.
+A profile is a CURVE and is never summed. Six rungs, each a
+win rate. Won at the bottom and lost at the top is what a
+graded instrument looks like.
+  rungs: [hoverer,orbiter,evader,chaser,duellist,sniper]
+null      (all weights zero, commands nothing)
+  rung          won   drew   lost   
+  hoverer         0      0     48   
+  orbiter         0      0     48   
+  evader          0      0     48   
+  chaser          0      0     48   
+  duellist        0      0     48   
+  sniper          0      0     48   
+  288 engagements in 2007 ms
+seed  1   (random weights)
+  rung          won   drew   lost   
+  hoverer         0      0     48   
+  orbiter         0      0     48   
+  evader          0      0     48   
+  chaser          0      0     48   
+  duellist        0      0     48   
+  sniper          0      0     48   
+  288 engagements in 1250 ms
+seed  2   (random weights)
+  rung          won   drew   lost   
+  hoverer         0      0     48   
+  orbiter         0      0     48   
+  evader          0      0     48   
+  chaser          0      0     48   
+  duellist        0      0     48   
+  sniper          0      0     48   
+  288 engagements in 1048 ms
+seed  3   (random weights)
+  rung          won   drew   lost   
+════ drone_trials ════
+The drone_trials ladder, over 48 of 48 starts.
+A profile is a CURVE and is never summed. Six rungs, each a
+win rate. Won at the bottom and lost at the top is what a
+graded instrument looks like.
+  rungs: [circler,harrier,marksman,bruiser,swooper,leader]
+null      (all weights zero, commands nothing)
+  rung          won   drew   lost   
+  circler         0      0     48   
+  harrier         0      0     48   
+  marksman        0      0     48   
+  bruiser         0      0     48   
+  swooper         0      0     48   
+  leader          0      0     48   
+  288 engagements in 1988 ms
+seed  1   (random weights)
+  rung          won   drew   lost   
+  circler         0      0     48   
+  harrier         0      0     48   
+  marksman        0      0     48   
+  bruiser         0      0     48   
+  swooper         0      0     48   
+  leader          0      0     48   
+  288 engagements in 1032 ms
+seed  2   (random weights)
+  rung          won   drew   lost   
+  circler         0      0     48   
+  harrier         0      0     48   
+  marksman        0      0     48   
+  bruiser         0      0     48   
+  swooper         0      0     48   
+  leader          0      0     48   
+  288 engagements in 998 ms
+seed  3   (random weights)
+  rung          won   drew   lost   

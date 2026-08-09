@@ -178,10 +178,16 @@ ids(A) -> [D#drone.id || D <- airspace:drones(A)].
 command(Id, Cs, A) -> asked(maps:get(Id, Cs), Id, A).
 
 asked({fixed_intent, I}, _Id, _A) -> I;
-asked({drill, D}, Id, A) ->
+%% ⚠ THREE ELEMENTS, BECAUSE A CONTROLLER NAMES ITS LADDER. When the benchmark
+%% was parameterised so `drone_trials' could be flown by the same machinery as
+%% `drone_drills', `engagement:controller/1' started returning
+%% `{drill, Ladder, State}'. Line 129 above was updated and this clause was not,
+%% so the script crashed the next time anybody ran it, which was three weeks
+%% later. Nothing else here reads a controller, so no test caught it.
+asked({drill, Ladder, D}, Id, A) ->
     Self = airspace:drone(A, Id),
     Others = [O || O <- airspace:drones(A), O#drone.id =/= Id],
-    {I, _} = drone_drills:act(D, Self, Others, []),
+    {I, _} = Ladder:act(D, Self, Others, []),
     I.
 
 ttl() ->

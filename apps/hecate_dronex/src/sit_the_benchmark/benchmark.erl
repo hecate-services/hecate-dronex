@@ -91,7 +91,7 @@ rungs() -> rungs(curriculum_ladder()).
 rungs(Ladder) -> Ladder:kinds().
 
 -spec starts() -> pos_integer().
-starts() -> drone_starts:count().
+starts() -> distant_starts:count().
 
 %% @doc A profile with nothing measured, for an island that has not sat it yet.
 %%
@@ -146,14 +146,14 @@ tally(draw, {W, D, L}) -> {W, D + 1, L};
 tally(defender, {W, D, L}) -> {W, D, L + 1}.
 
 %% ⚠ THE GENOME FLIES AS THE ATTACKER, ONE SEAT ONLY, AND THAT IS JUSTIFIED BY A
-%% TEST RATHER THAN ASSUMED. `drone_starts:place/3` is symmetric under swapping
+%% TEST RATHER THAN ASSUMED. `distant_starts:place/3` is symmetric under swapping
 %% the sides in a one-against-one, so the second seat would cost twice the time
 %% for the same numbers. `benchmark_tests' asserts the symmetry, so the day it
 %% stops holding, this stops being justified and a test says so.
 one(Genome, Ladder, Kind, Index) ->
     {ok, Pilot} = engagement:controller(Genome),
     {ok, Drill} = engagement:controller({Ladder, Kind}),
-    Placed = drone_starts:place(1, 1, Index),
+    Placed = distant_starts:place(1, 1, Index),
     [{AttackerId, _, _, _, _, _}, {DefenderId, _, _, _, _, _}] = Placed,
     %% ⚠ SPELLED OUT, NOT LEFT TO THE DEFAULT. The benchmark is an away game
     %% ALWAYS: drills, fixed geometry, no sensors, no cueing, ground bank forced

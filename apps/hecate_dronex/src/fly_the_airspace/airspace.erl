@@ -191,8 +191,65 @@
 -ifndef(INTERCEPTOR_TURN).
 -define(INTERCEPTOR_TURN, 7680).
 -endif.
+%% ⚠⚠⚠⚠ 15 TICKS, SO 60 m OF REACH, AND IT USED TO BE 150 FOR 600 m. THIS IS THE
+%% CHANGE THAT DECIDES WHAT A FIGHT IS.
+%%
+%% At 600 m the interceptor reached as far as the sensor did, which meant it
+%% covered most of a 1000 m arena from anywhere in it. Every engagement was
+%% therefore settled by a ranged exchange that began the moment two sides could
+%% see each other, and closing was never worth doing. Measured on the live
+%% exhibit on 2026-08-09: six recordings of six had a munition in the air at
+%% frame zero, and fights ran 58 to 192 ticks against the 114 two sides need to
+%% close, so about half were decided before the sides could have met.
+%%
+%% ==========================================================================
+%% ⚠⚠⚠ THE OBVIOUS REASON FOR PICKING A NUMBER HERE IS WRONG, AND IT WAS ACTED ON
+%% BEFORE IT WAS CHECKED
+%% ==========================================================================
+%%
+%% The tempting argument runs: a longer reach means a longer time of flight, a
+%% longer flight gives the target more time to swing out of the seeker's 60
+%% degree field of view, so reach must be long enough for a hard break to work.
+%% By that argument 60 m is too short, because 60 m is an 8 tick flight and a
+%% drone turning flat out swings only 33 degrees in 8 ticks. That argument was
+%% made here on 2026-08-09 and it is false.
+%%
+%% Measured, with fuel held at 600 m so that nothing was limited by it:
+%%
+%%   launch range   30 m   50 m  100 m  200 m  300 m  450 m
+%%   hit, running   100%   100%   100%   100%   100%   100%
+%%   hit, breaking  100%   100%   100%   100%   100%   100%
+%%
+%% A MAXIMUM RATE BREAK NEVER WORKS, AT ANY RANGE. Register `D.10' already said
+%% so and this re-confirms it. Time of flight buys a target nothing, so reach
+%% cannot be chosen on counterplay, because there is none to protect.
+%%
+%% ==========================================================================
+%% ⚠⚠ SO REACH DECIDES ONE THING ONLY: HOW CLOSE YOU MUST FLY TO EARN A CERTAIN
+%% HIT
+%% ==========================================================================
+%%
+%% Since a lock inside reach is a guaranteed 5,000 of a drone's 10,000, the whole
+%% skill is in obtaining the lock — pointing a 45 degree cone at something, at
+%% the right distance, with a magazine you have not already thrown away. Reach is
+%% the size of the zone where that pays, and shrinking it is exactly equivalent
+%% to demanding more flying before the shot.
+%%
+%% 60 m, so the guided weapon owns 15 m to 60 m — the dumb round is effective
+%% inside about 15 m — and 6% of a 1000 m arena rather than the 60% it owned at
+%% 600 m. A fight is now: search from 800 m to first contact at 600 m, a long
+%% approach under observation, and a decision inside 60 m. These are drones, not
+%% interceptor aircraft, and an engagement that opens at half a kilometre was
+%% never the thing being modelled.
+%%
+%% ⚠ AND 60 m IS THE SHORT END OF WHAT STILL FUNCTIONS, WHICH IS WHY IT IS NOT
+%% SHORTER. The missile needs fuel to curve onto its target, so too short a reach
+%% misses for a reason that has nothing to do with the fight. Measured at this
+%% value: 100% at a 30 m launch, 100% at 50 m, 0% at 100 m, the last of those
+%% being fuel and not flying. At 32 m of reach it fails to connect even at 50 m.
+%% The whole table is `scripts/at_what_range_can_a_break_work.sh'.
 -ifndef(INTERCEPTOR_TTL).
--define(INTERCEPTOR_TTL, 150).
+-define(INTERCEPTOR_TTL, 15).
 -endif.
 %% ⚠ THE SEEKER HAS A FIELD OF VIEW, AND LEAVING IT OUT WAS THE DEFECT REGISTER
 %% `D.8' RECORDS. Without one the interceptor steers toward its target for ever,
@@ -211,9 +268,38 @@
 -define(INTERCEPTOR_COST, 100000).
 -define(INTERCEPTOR_DAMAGE, 5000).
 -define(LAUNCH_COOL, 40).
--define(MAGAZINE, 4).
+%% ⚠ TWO, DOWN FROM FOUR, SO ONE DRONE CARRIES EXACTLY ONE KILL'S WORTH OF GUIDED
+%% DAMAGE. The interceptor does 5,000 against 10,000 of health, so two connected
+%% shots are a kill and there is no third to be sloppy with. Four made a wasted
+%% shot an inconvenience; two make it half the drone's offence.
+-define(MAGAZINE, 2).
 %% 600 m, and a 45 degree half-angle seeker. `cos(32)' is cos(45) on the binary
 %% scale, so the cone test is a dot product and never an inverse trig call.
+%%
+%% ⚠⚠⚠ THIS IS DELIBERATELY TEN TIMES THE INTERCEPTOR'S 60 m REACH, AND THE GAP
+%% IS THE POINT. DO NOT "FIX" IT.
+%%
+%% A future reader will see a weapon that locks at 600 m and dies at 60 m and
+%% read it as an inconsistency. It is the single thing that makes fire discipline
+%% a skill rather than a formality, and here is the mechanism, which is easy to
+%% miss because it lives in `committed/3' rather than here:
+%%
+%%   a launch with NO lock spends NOTHING.
+%%
+%% So if lock range were cut to 60 m as well, a controller could hold `launch'
+%% high from the first tick for free, and the weapon would fire itself at the
+%% first moment it could connect. Optimal play would be a constant, evolution
+%% would have nothing to find, and `marksman' — the ladder rung whose whole
+%% identity is not shooting yet — would be measuring nothing.
+%%
+%% With the gap, holding `launch' high spends both interceptors the instant an
+%% enemy crosses 600 m and the seeker cone, ten times further out than they can
+%% reach. That drone then closes to the fight unarmed. Knowing WHEN is therefore
+%% worth two thirds of the offence, and it has to be learned from bearing, range
+%% and closure, which the controller already has.
+%%
+%% There is nothing exotic about it physically either: a seeker sees further than
+%% its own motor can carry it. Aircraft have been flown that way for sixty years.
 -define(LOCK_RANGE, 12288000).
 -define(SEEKER_COS, 23170).
 

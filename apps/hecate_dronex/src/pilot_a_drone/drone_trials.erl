@@ -44,12 +44,12 @@
 %%   circler   holds a range it chose          you cannot out-run or rush it
 %%   swooper   attacks from above              it fights where you are not looking
 %%   leader    aims where you will be          a straight line is not an escape
-%%   marksman  holds fire for a shot worth 4   it does not waste a magazine
+%%   marksman  holds fire for a shot worth 2   it does not waste a magazine
 %%
 %% The base is `drone_drills:chaser' in every case: close at three quarters
-%% thrust, turn toward, release inside 30 m and launch beyond it. One addition
-%% per rung is what makes a profile readable. A rung that stacked three
-%% improvements would report a deficit without naming it, and the point of a
+%% thrust, turn toward, release inside 30 m and launch out to the weapon's reach.
+%% One addition per rung is what makes a profile readable. A rung that stacked
+%% three improvements would report a deficit without naming it, and the point of a
 %% ladder is that a failure says WHICH demand was not met.
 %%
 %% ==========================================================================
@@ -137,6 +137,32 @@
 %% So `circler' is the bottom rung and not the third, which is exactly `D.4'
 %% happening again: a rung order asserted rather than measured is a curve that
 %% reads backwards. Raw output in `measurements/held_out_ladder_48_starts.txt'.
+%%
+%% ==========================================================================
+%% ⚠⚠⚠⚠ AND ALL SIX OF THOSE NUMBERS ARE VOID AS OF 2026-08-09. THE ORDER IS
+%% UNKNOWN, NOT WRONG, AND IT CANNOT BE RE-MEASURED YET
+%% ==========================================================================
+%%
+%% They were measured against five champions bred under a guided weapon reaching
+%% 600 m, which now reaches 60 m, on a start set that opened at 400 m, which now
+%% opens at 800 m. Every one of those champions has since been wiped.
+%%
+%% ⚠ RE-GRADING NEEDS CONTROLLERS THAT CAN TELL RUNGS APART, AND THERE ARE NONE.
+%% A null and five random controllers now win 0 of 48 on every rung here and on
+%% every rung of the curriculum, on BOTH start sets — measured that way on
+%% purpose, so the geometry and the weapon could be told apart, and it is the
+%% weapon. A ladder graded against controllers that all score zero has been
+%% asserted, not measured, which is the failure `D.4' names.
+%%
+%% ⚠⚠ AND IT SAYS SOMETHING ABOUT WHAT THE OLD BOTTOM OF THIS LADDER WAS. The
+%% paragraph above admits three of eight random controllers used to sweep
+%% `circler', `bruiser' and `marksman'. They did it by holding `launch' high at a
+%% target visible and in range from tick zero, with a 600 m interceptor that
+%% cannot be dodged. The blindness at the bottom was not that the rungs were too
+%% easy. It was that the weapon paid out for nothing.
+%%
+%% So: re-measure after the first population is bred against these physics, and
+%% until then read a profile rung by rung and never as a curve.
 -define(KINDS, [circler, harrier, marksman, bruiser, swooper, leader]).
 
 %% How often the weave reverses. 40 ticks is 2 seconds, matching `drone_drills'
@@ -144,13 +170,25 @@
 %% tempo.
 -define(PERIOD, 40).
 
-%% ⚠ THE RANGE `circler' HOLDS, AS A FRACTION OF THE 600 m SENSOR. 90 m, and the
-%% choice is bounded at both ends rather than picked: inside the interceptor's
-%% envelope with margin, since it reaches the full 600 m in its 150 ticks, and
-%% far outside the roughly 15 m where an unguided release is effective. A circler
-%% that sat at knife range would be a chaser with extra steps, and one that sat
-%% beyond the seeker would be a hoverer.
--define(STANDOFF, 0.15).
+%% @doc The range `circler' holds, as a fraction of the 600 m sensor.
+%%
+%% ⚠ THE CHOICE IS BOUNDED AT BOTH ENDS RATHER THAN PICKED: inside the guided
+%% weapon's envelope with margin, and far outside the roughly 15 m where an
+%% unguided release is effective. A circler at knife range would be a chaser with
+%% extra steps, and one sitting beyond its own weapon would be a hoverer.
+%%
+%% ⚠⚠ AND IT WAS A LITERAL `0.15' UNTIL 2026-08-09, WHICH BROKE THE RUNG SILENTLY
+%% THE HOUR THE WEAPON CHANGED. 0.15 is 90 m. That was comfortably inside a
+%% weapon reaching 600 m, and is outside one reaching 60 m — so the circler would
+%% have held station beyond its own launch gate, shot nothing for the whole
+%% engagement, and become the hoverer its own comment warned about. Nothing would
+%% have failed. The rung would just have gone quietly easy, and a benchmark that
+%% goes quietly easy is worse than one that breaks.
+%%
+%% Three quarters of the reach, so the relationship the paragraph above describes
+%% survives whatever the weapon becomes. `trials_tests' checks the bounds rather
+%% than the number.
+standoff() -> drone_senses:reach_fraction() * 0.75.
 
 %% How hard `leader' extrapolates the bearing drift it remembers. Turning is
 %% bang-bang at `max_yaw_rate', so this gain does not change how FAST it turns:
@@ -163,7 +201,7 @@ kinds() -> ?KINDS.
 -spec describe(kind()) -> binary().
 describe(bruiser) -> <<"closes and shoots in three dimensions. You cannot climb away">>;
 describe(harrier) -> <<"closes and shoots while side-slipping. It does not fly the line it aims">>;
-describe(circler) -> <<"holds 90 m and shoots. You cannot out-run it or rush it">>;
+describe(circler) -> <<"holds a range it chose and shoots. You cannot out-run it or rush it">>;
 describe(swooper) -> <<"climbs above, then dives shooting. It fights where you are not looking">>;
 describe(leader) -> <<"closes and shoots where you will be. A straight line is not an escape">>;
 describe(marksman) -> <<"closes and holds fire until the shot is worth four. It does not waste a magazine">>.
@@ -252,13 +290,25 @@ closing_on(#{bearing_sin := S, bearing_cos := C, range := R} = Seen, How) ->
             thrust_vert = gravity() + vertical(maps:get(vertical, How), Seen),
             yaw_rate = turn(S, toward),
             release = trigger(C > 0.9 andalso R < 0.05),
-            launch = trigger(C > 0.9 andalso R >= 0.05)}.
+            %% 0.2 is 120 m, the interceptor's whole reach since 2026-08-09.
+            %% Uncapped, as this read until that day, every rung would spend both
+            %% of its two shots at four hundred metres and arrive unarmed. Same
+            %% change and same reason as `drone_drills:shooting/2'.
+            launch = trigger(C > 0.9 andalso R >= 0.05 andalso R =< drone_senses:reach_fraction())}.
 
 forward(full, _R) -> accel() * 3 div 4;
 %% Positive outside the standoff, negative inside it. The sign IS the behaviour
 %% and no comparison against a state machine is needed.
-forward(standoff, R) when R > ?STANDOFF -> accel() * 3 div 4;
-forward(standoff, _R) -> -(accel() div 2).
+%%
+%% ⚠ THE COMPARISON IS IN THE BODY BECAUSE `standoff/0' IS A FUNCTION NOW. It was
+%% the macro `?STANDOFF', which a guard accepts because a macro is a literal by
+%% the time the guard sees it. Deriving the value from the weapon is what made it
+%% a call, and a call in a guard does not compile. Matching on the boolean keeps
+%% the two outcomes as two clauses, which is how the rest of this module reads.
+forward(standoff, R) -> closing(R > standoff()).
+
+closing(true) -> accel() * 3 div 4;
+closing(false) -> -(accel() div 2).
 
 vertical(hold, _Seen) -> 0;
 %% Elevation is the signed vertical offset to the contact, so thrusting along it
@@ -294,13 +344,20 @@ led(#{bearing_sin := S} = Seen, #{last_sin := Prev}) ->
 
 %% ⚠ THE AIM GATE REPLACES THE ONE `closing_on/2' ALREADY SET, rather than
 %% adding to it, so `marksman' fires strictly less often than the chaser and
-%% every shot it does take is inside 11 degrees and inside 180 m. Both halves are
-%% the same competence: do not spend a round of four on a shot that cannot
+%% every shot it does take is inside 11 degrees and inside 90 m. Both halves are
+%% the same competence: do not spend a round of two on a shot that cannot
 %% connect.
+%%
+%% ⚠⚠ 0.15 IS 90 m AND IT WAS 0.3, WHICH IS 180 m AND IS NOW BEYOND THE WEAPON.
+%% The interceptor reached 600 m until 2026-08-09 and reaches 120 m now, so the
+%% old band spent half its shots into empty air — with a magazine of two, that is
+%% the whole drone. This rung's identity is that it holds fire longer than the
+%% others do, so it keeps the tighter number: everyone else stops at 120 m, the
+%% marksman stops at 90 m and its shots connect.
 aimed(undefined, Intent) -> Intent;
 aimed(#{bearing_cos := C, range := R}, #intent{} = I) ->
     I#intent{release = trigger(C > 0.98 andalso R < 0.05),
-             launch = trigger(C > 0.98 andalso R >= 0.05 andalso R =< 0.3)}.
+             launch = trigger(C > 0.98 andalso R >= 0.05 andalso R =< drone_senses:reach_fraction())}.
 
 %% Turn toward a contact by steering in the direction its bearing sits. The sine
 %% is signed, so the sign IS the direction and no comparison against an angle is

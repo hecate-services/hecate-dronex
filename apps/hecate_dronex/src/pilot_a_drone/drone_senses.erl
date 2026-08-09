@@ -32,7 +32,7 @@
 -include("airspace.hrl").
 
 -export([sense/3, channels/0, contacts/0, contact_width/0, comms_width/0]).
--export([range/0, cone_cos/0, contact/2, nearest_hostile/1, self_reading/1]).
+-export([range/0, reach_fraction/0, cone_cos/0, contact/2, nearest_hostile/1, self_reading/1]).
 
 %% 8 proprioception + 3 contacts x 7 + 12 comms.
 -define(PROPRIOCEPTION, 8).
@@ -60,6 +60,27 @@ comms_width() -> ?COMMS_WIDTH.
 
 -spec range() -> pos_integer().
 range() -> ?SENSE_RANGE.
+
+%% @doc How far the guided interceptor reaches, in the units a contact's `range'
+%% is reported in: a fraction of sensor range, where 1.0 is the far edge of sight.
+%%
+%% ⚠ THIS EXISTS SO NOBODY WRITES `0.1' AGAIN. On 2026-08-09 the interceptor's
+%% reach went from 600 m to 60 m, and the launch gates in `drone_drills' and
+%% `drone_trials' were given the ceiling `R =< 0.1' in three places to match.
+%% That literal means "60 m" only for as long as `INTERCEPTOR_TTL' stays 15, and
+%% NOTHING connected the two: change the weapon and all six curriculum rungs and
+%% all six trial rungs quietly start firing into fuel they do not have, spending
+%% a magazine of two before contact. The ladders would not fail, they would just
+%% get easier, which is the failure mode a benchmark cannot survive.
+%%
+%% ⚠⚠ AND IT IS DERIVED RATHER THAN A SECOND CONSTANT, because a second constant
+%% is the same bug with a better name. Reach is `speed * ttl' exactly, so this
+%% reads both from `airspace:limits/0' and cannot disagree with the weapon.
+%% `senses_tests' pins the relationship rather than the value.
+-spec reach_fraction() -> float().
+reach_fraction() ->
+    #{interceptor_speed := S, interceptor_ttl := Ttl} = airspace:limits(),
+    S * Ttl / ?SENSE_RANGE.
 
 -spec cone_cos() -> integer().
 cone_cos() -> ?CONE_COS.

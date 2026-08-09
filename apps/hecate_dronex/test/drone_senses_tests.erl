@@ -188,3 +188,54 @@ sensed(Comms) ->
 a_malformed_comms_list_is_silence_test() ->
     A = world([]),
     ?assertEqual(vec(A), drone_senses:sense(self_of(A), [], [1, 2, 3])).
+
+%%==============================================================================
+%% The weapon and the ladders, kept in step
+%%==============================================================================
+
+%% ⚠ THIS PINS A RELATIONSHIP, NOT A VALUE, WHICH IS THE WHOLE POINT OF IT. If it
+%% asserted "reach_fraction is 0.1" it would be the same magic number it exists to
+%% remove, one file further away. What must hold is that the number the ladders
+%% gate on IS the weapon's reach, whatever the weapon becomes.
+%%
+%% ⚠⚠ AND IT IS CHECKED THROUGH A DRILL RATHER THAN AGAINST THE ARITHMETIC. The
+%% first version of this test recomputed `speed * ttl / range' and compared it to
+%% `reach_fraction/0', which is the same expression twice and passes for as long
+%% as the function exists at all. It could not fail for the reason the function
+%% was written: a gate somewhere else going back to a literal. So this flies a
+%% chaser at a target just inside the weapon and just outside it, and asserts the
+%% drill's own trigger follows the weapon.
+the_launch_gate_follows_the_weapon_test() ->
+    Reach = trunc(drone_senses:reach_fraction() * drone_senses:range()),
+    {In, _} = drone_drills:act(drone_drills:init(chaser), lone(),
+                               [ahead_at(Reach * 9 div 10)], []),
+    {Out, _} = drone_drills:act(drone_drills:init(chaser), lone(),
+                                [ahead_at(Reach * 3 div 2)], []),
+    ?assertEqual(1, In#intent.launch),
+    ?assertEqual(0, Out#intent.launch),
+    %% ⚠ AND THE FAR ONE IS STILL SEEN, so the refusal is the gate rather than a
+    %% target that fell out of the sensor and would have read the same.
+    ?assert(Reach * 3 div 2 < drone_senses:range()).
+
+%% A hostile straight ahead of `lone/0' at a distance in world units.
+ahead_at(D) ->
+    hd(airspace:drones(airspace:new([{b, defender, 500 * 20480 + D, 500 * 20480,
+                                      100 * 20480, 0}]))).
+
+lone() ->
+    hd(airspace:drones(airspace:new([{a, attacker, 500 * 20480, 500 * 20480,
+                                      100 * 20480, 0}]))).
+
+%% ⚠⚠ AND IT HAS TO LEAVE THE DUMB WEAPON SOMEWHERE TO LIVE. The ladders release
+%% the unguided round below 0.05 of sensor range, which is 30 m, and launch the
+%% guided one from there out to the reach. If reach ever fell below that floor the
+%% guided gate would be empty, every rung would silently stop launching, and the
+%% ladders would get easier without a single test going red.
+the_guided_band_is_not_empty_test() ->
+    ?assert(drone_senses:reach_fraction() > 0.05).
+
+%% ⚠⚠⚠ AND IT MUST NOT SWALLOW THE ARENA, which is the failure this replaced.
+%% A weapon reaching the full 600 m of sight settles a fight before the sides can
+%% meet: six live recordings of six had a munition in the air at frame zero.
+the_weapon_does_not_reach_as_far_as_the_eye_test() ->
+    ?assert(drone_senses:reach_fraction() < 0.5).

@@ -172,7 +172,7 @@ bout(Genome, Opponent, Index, R) ->
 
 against(_Mine, {error, _Why}, _Index) -> 0;
 against(Mine, {ok, Theirs}, Index) ->
-    Placed = drone_starts:place(1, 1, Index),
+    Placed = distant_starts:place(1, 1, Index),
     [{AId, _, _, _, _, _}, {DId, _, _, _, _, _}] = Placed,
     %% ⚠ TRAINING HAPPENS UNDER THE ISLAND'S OWN NETWORK, and without this the
     %% ground bank would be four zeroes for every generation that ever ran.
@@ -211,7 +211,7 @@ pick_n(Pool, N, S, Acc) ->
     Chosen = lists:nth(K, Pool),
     pick_n(Pool -- [Chosen], N - 1, S1, [Chosen | Acc]).
 
-start_sample(S) -> pick_n(lists:seq(0, drone_starts:count() - 1), ?STARTS, S, []).
+start_sample(S) -> pick_n(lists:seq(0, distant_starts:count() - 1), ?STARTS, S, []).
 
 %% A drill kind is an atom; a roster entry is referred to by its id.
 opponent_controller(Kind, _R) when is_atom(Kind) -> engagement:controller(Kind);
