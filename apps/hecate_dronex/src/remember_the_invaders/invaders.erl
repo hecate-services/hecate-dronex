@@ -53,7 +53,7 @@
 -module(invaders).
 
 -export([new/0, new/1, witness/5, holds/2, depth/1, capacity/1, entries/1]).
--export([bands/2, sample/4, era_of/2, ids/1]).
+-export([bands/2, group/2, sample/4, era_of/2, ids/1]).
 -export([entry_id/1, entry_genome/1, entry_from/1, entry_seen_at/1, entry_raid/1]).
 -export([sequestered/2, share/0]).
 
@@ -180,11 +180,21 @@ log2(N) when N > 0 -> trunc(math:log2(N)).
 
 %% @doc The archive grouped by era, oldest era being the highest number.
 -spec bands(archive(), non_neg_integer()) -> #{non_neg_integer() => [entry()]}.
-bands(A, Now) ->
-    lists:foldl(fun (E, Acc) ->
-                        B = era_of(E, Now),
-                        maps:update_with(B, fun (Es) -> [E | Es] end, [E], Acc)
-                end, #{}, entries(A)).
+bands(A, Now) -> group(entries(A), Now).
+
+%% @doc The same grouping over a LIST of entries, for a caller holding a sample.
+%%
+%% ⚠ EXPORTED SO `master' DOES NOT KEEP ITS OWN COPY. It had one, byte for byte,
+%% and two implementations of "which era is this in" is two places for the
+%% instrument's central definition to drift.
+-spec group([entry()], non_neg_integer()) -> #{non_neg_integer() => [entry()]}.
+group(Es, Now) -> lists:foldl(fun (E, Acc) -> banded(E, Now, Acc) end, #{}, Es).
+
+%% Flat rather than a fun inside a fun inside a fold: elvis caps nesting at two
+%% and it is right to, because the version with three was harder to read than
+%% this and said nothing more.
+banded(E, Now, Acc) ->
+    maps:update_with(era_of(E, Now), fun (Es) -> [E | Es] end, [E], Acc).
 
 %% @doc Up to `N' invaders, spread across eras rather than drawn from the whole.
 %%

@@ -108,7 +108,7 @@ flown(ok, Genome, Archive, Now, Opts) ->
 tallied([], _Genome, Archive, _Now, _Starts) ->
     (empty())#{archived => invaders:depth(Archive)};
 tallied(Picked, Genome, Archive, Now, Starts) ->
-    Grouped = by_era(Picked, Now),
+    Grouped = invaders:group(Picked, Now),
     Eras = lists:sort(maps:keys(Grouped)),
     Tallies = [era_tally(maps:get(E, Grouped), Genome, Starts) || E <- Eras],
 
@@ -118,12 +118,6 @@ tallied(Picked, Genome, Archive, Now, Starts) ->
       losses => [L || {_W, _D, L} <- Tallies],
       flown => length(Picked) * Starts,
       archived => invaders:depth(Archive)}.
-
-by_era(Picked, Now) ->
-    lists:foldl(fun (E, Acc) ->
-                        B = invaders:era_of(E, Now),
-                        maps:update_with(B, fun (Es) -> [E | Es] end, [E], Acc)
-                end, #{}, Picked).
 
 era_tally(Invaders, Genome, Starts) ->
     lists:foldl(fun (I, Acc) -> against(I, Genome, Starts, Acc) end, {0, 0, 0}, Invaders).
