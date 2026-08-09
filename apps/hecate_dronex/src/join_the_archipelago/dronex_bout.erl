@@ -79,6 +79,14 @@ encode(Meta, Result, Frames, Limits) ->
       bout => maps:get(bout, Meta, 0),
       start_index => maps:get(start_index, Meta, 0),
       entrants => maps:get(entrants, Meta, []),
+      %% ⚠ WHAT THE OPPONENT IS, NOT ONLY WHAT IT IS CALLED. `entrants' carries
+      %% two ids and a spectator cannot tell from an id whether the second one is
+      %% a scripted rung, a controller this island bred, or one it took off a
+      %% neighbour in a raid. The third is the whole point of the archipelago and
+      %% was indistinguishable from the second on the wire.
+      opponent => maps:get(opponent, Meta, <<"drill">>),
+      %% Present only when the opponent was captured: which island bred it.
+      opponent_from => maps:get(opponent_from, Meta, undefined),
       winner => maps:get(winner, Result, draw),
       ticks => maps:get(ticks, Result, 0),
       %% How much was said during this fight. A recording in which nobody

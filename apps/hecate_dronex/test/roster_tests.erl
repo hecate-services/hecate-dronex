@@ -412,3 +412,34 @@ a_bout_with_no_opponent_is_refused_rather_than_crashing_test() ->
     %% the degenerate case the guard exists for.
     ?assert(is_atom(island_server:bout_opponent(R, Only, 0))),
     ?assertEqual(Drills, length(trainer:opponents(R)) - 1).
+
+%% ⚠⚠ A CAPTURED OPPONENT MUST BE DISTINGUISHABLE ON THE WIRE. Two genome ids in
+%% `entrants' look identical whether the second was bred here or taken off a
+%% neighbour in a raid, and only the island can tell, because only it holds the
+%% roster entry's origin. A bout against a captured controller is the
+%% archipelago's central claim in its most watchable form.
+a_bout_says_what_kind_of_opponent_it_flew_test() ->
+    R0 = populated(6),
+    {ok, Foreign} = with_seed(77),
+    R = raid:absorb(R0, [{drone_genome:id(Foreign), Foreign}],
+                    #{from => <<"beam01">>, raid => <<"r9">>, tick => 0}),
+
+    Encoded = fun (Opponent) ->
+                      Meta = maps:merge(#{kind => training, bout => 1, start_index => 0,
+                                          entrants => [<<"mine">>, <<"theirs">>]},
+                                        island_server:bout_provenance(Opponent, R)),
+                      dronex_bout:encode(Meta, #{winner => draw, ticks => 1}, [],
+                                         airspace:limits())
+              end,
+
+    Drill = Encoded(hoverer),
+    ?assertEqual(<<"drill">>, maps:get(opponent, Drill)),
+    ?assertEqual(undefined, maps:get(opponent_from, Drill)),
+
+    Bred = Encoded(roster:entry_id(roster:best(R0))),
+    ?assertEqual(<<"bred">>, maps:get(opponent, Bred)),
+
+    Captured = Encoded(drone_genome:id(Foreign)),
+    ?assertEqual(<<"captured">>, maps:get(opponent, Captured)),
+    ?assertEqual(<<"beam01">>, maps:get(opponent_from, Captured)).
+

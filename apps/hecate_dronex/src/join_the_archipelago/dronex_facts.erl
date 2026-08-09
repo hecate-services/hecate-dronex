@@ -62,11 +62,15 @@
 %% reader: islands roll one at a time, so during any deploy some publish 3 and
 %% some publish 4, and a consumer that required the new fields would drop every
 %% fact from a node not yet upgraded.
+%% ⚠ 6 CARRIES WHAT A BOUT'S OPPONENT IS: `opponent' as drill, bred or captured,
+%% and `opponent_from' naming the island when it was captured. Until then a bout
+%% published two genome ids and nothing that told a scripted rung from a
+%% controller from a controller taken off a neighbour.
 %% ⚠ 5 CARRIES THE HELD-OUT EXAM: `trials_rungs' and its three vectors and its
 %% start count, beside the `benchmark_*' fields rather than replacing them. See
 %% `REGISTER I.22' for why both are published and only one of them may be called
 %% improvement.
--define(FACT_VERSION, 5).
+-define(FACT_VERSION, 6).
 
 -spec fact_version() -> pos_integer().
 fact_version() -> ?FACT_VERSION.

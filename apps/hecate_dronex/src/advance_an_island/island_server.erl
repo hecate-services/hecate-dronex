@@ -26,7 +26,7 @@
 -behaviour(gen_server).
 
 -export([start_link/0, snapshot/0, island/0, publishes/0, roster/0]).
--export([bout_opponent/3]).
+-export([bout_opponent/3, bout_provenance/2]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2]).
 
 %% 20 Hz of simulated time per design/DESIGN_THE_AIRSPACE.md: one tick per 50 ms
@@ -572,8 +572,10 @@ manned(I, Entry, Opponent, Index, Mine, {ok, Theirs}) ->
     %% exhibit shows the island's towers standing in its own airspace.
     Result = engagement:run(airspace:new(Placed), #{AId => Mine, DId => Theirs},
                             #{frames => true, network => ground_network:home()}),
-    Meta = #{kind => training, bout => island:tick_of(I), start_index => Index,
-             entrants => [roster:entry_id(Entry), named(Opponent)]},
+    Meta = maps:merge(
+             #{kind => training, bout => island:tick_of(I), start_index => Index,
+               entrants => [roster:entry_id(Entry), named(Opponent)]},
+             bout_provenance(Opponent, island:roster_of(I))),
     dronex_mesh:publish(dronex_facts:topic(bout),
                         dronex_facts:bout(I, Meta, Result,
                                           maps:get(frames, Result, []))).
@@ -583,6 +585,25 @@ manned(I, Entry, Opponent, Index, Mine, {ok, Theirs}) ->
 %% without the island having to label it.
 named(Kind) when is_atom(Kind) -> atom_to_binary(Kind, utf8);
 named(Id) when is_binary(Id) -> Id.
+
+%% ⚠ WHAT THE OPPONENT IS, SO A SPECTATOR CAN SEE THE ONE IDEA HAPPEN. A bout
+%% against a controller this island TOOK OFF A NEIGHBOUR is the archipelago's
+%% central claim in its most watchable form, and on the wire it looked exactly
+%% like a bout against one the island bred: two ids and nothing to tell them
+%% apart. The island is the only party that knows, because only it holds the
+%% roster entry's origin.
+-spec bout_provenance(atom() | binary(), roster:roster()) -> map().
+bout_provenance(Kind, _R) when is_atom(Kind) -> #{opponent => <<"drill">>};
+bout_provenance(Id, R) ->
+    from_origin([E || E <- roster:entries(R), roster:entry_id(E) =:= Id]).
+
+%% An opponent evicted between the draw and the flight. The bout is not published
+%% in that case, so this is belt and braces rather than a state a reader sees.
+from_origin([]) -> #{opponent => <<"gone">>};
+from_origin([E | _]) -> origin_named(roster:entry_origin(E)).
+
+origin_named({captured, From, _Raid}) -> #{opponent => <<"captured">>, opponent_from => From};
+origin_named(_bred) -> #{opponent => <<"bred">>}.
 
 %% The best entry sits the exam, because the exam asks what this island's drones
 %% can do and the best is the honest answer to that.
