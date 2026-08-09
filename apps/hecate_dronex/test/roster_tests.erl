@@ -364,3 +364,51 @@ populated(N) ->
 with_seed(Seed) ->
     {G, _S} = breed:random(rand:seed_s(exsss, {Seed, Seed, Seed})),
     {ok, G}.
+
+%%==============================================================================
+%% Whom the exhibit's bout is flown against
+%%==============================================================================
+
+%% ⚠ THE PUBLISHED BOUT WAS HARDCODED TO A SCRIPTED DRILL, AND SO SHOWED THE
+%% MINORITY CASE 100% OF THE TIME. `trainer:opponents/1' is the six curriculum
+%% drills PLUS every roster entry, and a round samples four from it, so with the
+%% live rosters between 70 and 240 a drill turns up in roughly 9% to 28% of
+%% rounds. The exhibit drew one in every bout.
+%%
+%% ⚠⚠ AND IT WAS THE LEAST INFORMATIVE FIGHT AVAILABLE. Since `REGISTER I.22' the
+%% drills are exactly the set the island trains against, so the page showed a
+%% saturated champion beating its own homework in about a hundred ticks, and
+%% never showed a controller against another controller — which is the
+%% coevolution the archipelago exists for.
+the_exhibited_bout_draws_from_the_real_opponent_set_test() ->
+    R = populated(40),
+    Champion = roster:entry_id(roster:best(R)),
+
+    Drawn = [island_server:bout_opponent(R, Champion, T) || T <- lists:seq(0, 199)],
+
+    %% Roster controllers dominate, because the pool is 40 of them against six
+    %% drills. A drill still appears, at about its real rate.
+    Controllers = length([O || O <- Drawn, is_binary(O)]),
+    Drills = length([O || O <- Drawn, is_atom(O)]),
+    ?assert(Controllers > 0),
+    ?assert(Drills > 0),
+    ?assert(Controllers > Drills),
+
+    %% ⚠ NEVER ITSELF. A champion against its own id is a mirror match, and the
+    %% roster holds exactly one of each genome.
+    ?assertEqual([], [O || O <- Drawn, O =:= Champion]),
+
+    %% Every drill drawn is a real rung and every controller drawn is really held.
+    [?assert(lists:member(O, drone_drills:kinds())) || O <- Drawn, is_atom(O)],
+    [?assert(roster:has(R, O)) || O <- Drawn, is_binary(O)].
+
+%% An island with nothing but its champion has nobody to fly against, and that is
+%% a bout not flown rather than a crash on the island's own timer.
+a_bout_with_no_opponent_is_refused_rather_than_crashing_test() ->
+    R = populated(1),
+    Only = roster:entry_id(roster:best(R)),
+    Drills = length(drone_drills:kinds()),
+    %% The drills are still there, so it is not undefined; strip them to reach
+    %% the degenerate case the guard exists for.
+    ?assert(is_atom(island_server:bout_opponent(R, Only, 0))),
+    ?assertEqual(Drills, length(trainer:opponents(R)) - 1).

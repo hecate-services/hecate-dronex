@@ -46,6 +46,11 @@
 -module(trainer).
 
 -export([round/2, evaluate/4, seed_roster/3, opponents/1, points/1]).
+%% ⚠ EXPORTED FOR THE EXHIBIT, NOT FOR THE SEARCH. `island_server' publishes one
+%% bout every twenty seconds and it must be an opponent drawn the way a real
+%% round draws one. Re-implementing "id or drill kind, into a controller" beside
+%% it would be a second answer to a question that has one.
+-export([opponent_controller/2]).
 
 %% How many opponents and how many starts one evaluation uses. Small on purpose:
 %% a round is meant to be cheap and frequent rather than thorough, and the frozen

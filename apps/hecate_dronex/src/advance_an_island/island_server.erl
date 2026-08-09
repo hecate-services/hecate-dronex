@@ -26,6 +26,7 @@
 -behaviour(gen_server).
 
 -export([start_link/0, snapshot/0, island/0, publishes/0, roster/0]).
+-export([bout_opponent/3]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2]).
 
 %% 20 Hz of simulated time per design/DESIGN_THE_AIRSPACE.md: one tick per 50 ms
@@ -505,26 +506,66 @@ targets(#{open_islands := O}) ->
            F =:= Mine,
            R > raid:floor_of()].
 
-%% @doc Fly the island's best controller against one of its drills, and publish
-%% the recording.
+%% @doc Fly the island's best controller against an opponent drawn the way a real
+%% training round draws one, and publish the recording.
 %%
-%% ⚠ THE DRILL ROTATES WITH THE CLOCK AND THE START DOES TOO, so a page left open
-%% sees a different fight each time rather than the same one replayed. Derived
-%% from the tick rather than drawn, because a bout must be reproducible from what
-%% the fact already carries.
+%% ⚠ IT WAS HARDCODED TO A SCRIPTED DRILL AND SHOWED THE MINORITY CASE EVERY TIME.
+%% `trainer:opponents/1' is the six curriculum drills PLUS every roster entry, and
+%% a round samples four from it. With rosters between 70 and 240 a drill turns up
+%% in roughly 9% to 28% of rounds — and this published a drill in 100% of bouts,
+%% so a visitor watching "a training bout" was watching the one-in-five case
+%% presented as typical.
+%%
+%% ⚠⚠ AND IT WAS THE LEAST INTERESTING FIGHT AVAILABLE. Since `REGISTER I.22' the
+%% drills are precisely the set the island TRAINS against, so the exhibit showed a
+%% saturated champion beating its own homework, in about a hundred ticks. What it
+%% never showed was a controller against another controller — a roster genome, or
+%% one of the thousands of captured foreign ones — which is the coevolution this
+%% archipelago exists for.
+%%
+%% ⚠⚠⚠ THE OPPONENT STILL ROTATES WITH THE CLOCK AND THE START STILL DOES, so a
+%% page left open sees a different fight each time rather than the same one
+%% replayed. Reproducibility does not depend on that: the fact carries `entrants',
+%% which names both sides, and a roster id IS the sha256 of the packed genome.
 publish_bout(I) -> featured(roster:best(island:roster_of(I)), I).
 
 featured(undefined, _I) -> {error, no_roster};
 featured(Entry, I) ->
-    Tick = island:tick_of(I),
-    Kind = lists:nth((Tick div 20) rem length(drone_drills:kinds()) + 1,
-                     drone_drills:kinds()),
-    Index = Tick rem drone_starts:count(),
-    flown(I, Entry, Kind, Index, engagement:controller(roster:entry_genome(Entry))).
+    against(bout_opponent(island:roster_of(I), roster:entry_id(Entry),
+                          island:tick_of(I)),
+            Entry, I, island:tick_of(I)).
 
-flown(_I, _E, _K, _Ix, {error, _Why}) -> {error, unflyable};
-flown(I, Entry, Kind, Index, {ok, Mine}) ->
-    {ok, Theirs} = engagement:controller(Kind),
+%% @doc Whom the next published bout is flown against.
+%%
+%% ⚠ PURE AND EXPORTED SO THE CHOICE CAN BE TESTED WITHOUT A MESH. The bout
+%% itself publishes, so nothing about it is reachable from a test; the decision
+%% that made it wrong for the whole life of the track is this one line, and it is
+%% now a function with a name.
+%%
+%% Never the champion itself: a controller against its own id is a mirror match
+%% that says nothing, and the roster holds exactly one of each genome.
+-spec bout_opponent(roster:roster(), binary(), non_neg_integer()) ->
+    atom() | binary() | undefined.
+bout_opponent(R, ChampionId, Tick) ->
+    chosen(trainer:opponents(R) -- [ChampionId], Tick).
+
+chosen([], _Tick) -> undefined;
+chosen(Pool, Tick) -> lists:nth(Tick rem length(Pool) + 1, Pool).
+
+against(undefined, _Entry, _I, _Tick) -> {error, no_opponent};
+against(Opponent, Entry, I, Tick) ->
+    Index = Tick rem drone_starts:count(),
+    flown(I, Entry, Opponent, Index, engagement:controller(roster:entry_genome(Entry))).
+
+flown(_I, _E, _O, _Ix, {error, _Why}) -> {error, unflyable};
+flown(I, Entry, Opponent, Index, {ok, Mine}) ->
+    manned(I, Entry, Opponent, Index, Mine,
+           trainer:opponent_controller(Opponent, island:roster_of(I))).
+
+%% An opponent that has left the roster since the pool was built is a bout not
+%% flown, rather than a crash on the island's own timer.
+manned(_I, _E, _O, _Ix, _Mine, {error, _Why}) -> {error, opponent_gone};
+manned(I, Entry, Opponent, Index, Mine, {ok, Theirs}) ->
     Placed = drone_starts:place(1, 1, Index),
     [{AId, _, _, _, _, _}, {DId, _, _, _, _, _}] = Placed,
     %% A training bout is flown at home like every other training fight, so the
@@ -532,10 +573,16 @@ flown(I, Entry, Kind, Index, {ok, Mine}) ->
     Result = engagement:run(airspace:new(Placed), #{AId => Mine, DId => Theirs},
                             #{frames => true, network => ground_network:home()}),
     Meta = #{kind => training, bout => island:tick_of(I), start_index => Index,
-             entrants => [roster:entry_id(Entry), atom_to_binary(Kind, utf8)]},
+             entrants => [roster:entry_id(Entry), named(Opponent)]},
     dronex_mesh:publish(dronex_facts:topic(bout),
                         dronex_facts:bout(I, Meta, Result,
                                           maps:get(frames, Result, []))).
+
+%% ⚠ A DRILL IS AN ATOM AND A CONTROLLER IS ALREADY A BINARY ID. Both go on the
+%% wire as an entrant, so a reader can tell which kind of fight it is watching
+%% without the island having to label it.
+named(Kind) when is_atom(Kind) -> atom_to_binary(Kind, utf8);
+named(Id) when is_binary(Id) -> Id.
 
 %% The best entry sits the exam, because the exam asks what this island's drones
 %% can do and the best is the honest answer to that.
