@@ -65,6 +65,19 @@ One node runs one island. An island holds:
 - a **held-out benchmark** it never trains against (`drone_trials`), which is the
   only number on this island that may be called improvement
 
+⚠ **AND AS OF 2026-08-09 THAT NUMBER IS READ RUNG BY RUNG AND NOT AS A CURVE.**
+Both ladders' rung ORDERS were graded against controllers bred under a guided
+weapon reaching 600 m; it reaches 60 m now, and the fleet was wiped, so the
+orders are **unknown rather than wrong** (`REGISTER D.18`). They also cannot be
+re-graded yet: a null and five random controllers now win 0 of 48 on every rung of
+both ladders, and a ladder graded against controllers that all score zero has been
+asserted, not measured.
+
+The bullet above still holds — the held-out score is the only number here that may
+be called improvement — but "island A scored higher than island B on rung 3" is
+the only shape of claim it currently supports. "The curve runs easy to hard" is
+not, until a population exists that can tell rungs apart.
+
 ⚠ **THE TWO SETS OF SCRIPTED OPPONENTS ARE DIFFERENT SETS, AND FOR MONTHS THEY
 WERE ONE.** These two bullets were both right and were served by the same six
 behaviours, so the exam sat inside its own training distribution: `REGISTER
