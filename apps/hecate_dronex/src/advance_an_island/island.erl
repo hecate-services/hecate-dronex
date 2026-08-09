@@ -351,7 +351,7 @@ defended(#island{roster = R, defences = D, captures = C} = I, Survivors, Party, 
     R2 = raid:absorb(R1, Opponents, Meta),
 
     I#island{roster = R2,
-             invaders = sequestered(I#island.invaders, Held, Meta, I#island.tick),
+             invaders = sequestered(I#island.invaders, Held, Meta),
              defences = D + 1,
              captures = C + (roster:depth(R2) - roster:depth(R1))}.
 
@@ -359,10 +359,20 @@ split(Raiders) ->
     lists:partition(fun ({Id, _G}) -> invaders:sequestered(Id, invaders:share()) end,
                     Raiders).
 
-sequestered(Archive, Held, Meta, Tick) ->
+%% ⚠ THE CLOCK ARRIVES IN THE META AND IS NOT READ HERE. This module is pure and
+%% stays pure: `REGISTER D.5' is what one unrecorded draw inside a library cost,
+%% and a clock reached for is the same fault wearing a different hat. The caller
+%% is `island_server', which has a clock and is allowed one.
+%%
+%% ⚠⚠ AND IT IS WALL CLOCK, NOT THE ISLAND'S TICK. Measured on the fleet on
+%% 2026-08-09: a tick is about six seconds rather than the nominal 50 ms, and the
+%% rate differs by more than two to one between islands, so an archive keyed on
+%% ticks could not be compared across the mesh at all.
+sequestered(Archive, Held, Meta) ->
     From = maps:get(from, Meta, <<"unknown">>),
     Raid = maps:get(raid, Meta, <<"unknown">>),
-    lists:foldl(fun ({_Id, G}, A) -> invaders:witness(A, G, From, Raid, Tick) end,
+    At = maps:get(at, Meta, 0),
+    lists:foldl(fun ({_Id, G}, A) -> invaders:witness(A, G, From, Raid, At) end,
                 Archive, Held).
 
 %% @doc Record the result of an ablation.

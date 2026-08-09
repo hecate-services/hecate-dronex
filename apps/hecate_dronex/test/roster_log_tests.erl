@@ -181,8 +181,10 @@ a_restored_invader_keeps_the_era_it_arrived_in_test() ->
     [E] = invaders:entries(A),
     ?assertEqual(40, invaders:entry_seen_at(E)),
     ?assertEqual(<<"beam01">>, invaders:entry_from(E)),
-    %% And it is genuinely old at a later tick, rather than newly witnessed.
-    ?assert(invaders:era_of(E, 10_000) > 5).
+    %% And it is genuinely old at a later moment, rather than newly witnessed.
+    %% `seen_at' is wall clock in milliseconds, so 40 ms in and an hour later is
+    %% an age of about an hour: era 11 or 12.
+    ?assert(invaders:era_of(E, 3_600_000) > 10).
 
 %% ⚠ A SNAPSHOT WRITTEN BEFORE THE ARCHIVE EXISTED HAS NO `invaders' KEY. Islands
 %% roll one at a time and a rollback must not be an outage, so that is an empty

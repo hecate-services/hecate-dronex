@@ -75,15 +75,49 @@ the_split_is_reproducible_from_the_genome_alone_test() ->
 %% survive without a policy that has to be maintained. Recent arrivals are
 %% numerous and crowd the low bands; a single old one holds a high band alone.
 eras_are_the_log_of_age_test() ->
-    A = witnessed([1000, 999, 992, 900, 500, 1]),
-    Now = 1000,
+    %% Milliseconds now, not ticks. `Now' is an hour, and the arrivals are
+    %% seconds, minutes and an hour ago.
+    Hour = 3_600_000,
+    A = witnessed([Hour, Hour - 1_000, Hour - 60_000, Hour - 600_000, 1]),
+    Now = Hour,
     Bands = invaders:bands(A, Now),
     %% Six invaders across several distinct eras rather than all in one.
     ?assert(maps:size(Bands) >= 4),
-    %% The one that arrived at tick 1 is the oldest and sits in the highest band.
+    %% The one that arrived at the very beginning is the oldest and sits alone in
+    %% the highest band.
     Oldest = lists:max(maps:keys(Bands)),
     [E] = maps:get(Oldest, Bands),
     ?assertEqual(1, invaders:entry_seen_at(E)).
+
+%% ⚠⚠⚠⚠ AN ERA IS THE LOG OF AGE IN SECONDS, AND THIS IS THE TEST THAT SAYS SO.
+%% The first version measured age in the island's TICK, and the exhibit derived a
+%% human-time axis from the DEFAULT tick constants. Measured on the fleet on
+%% 2026-08-09: the islands run `HECATE_DRONEX_TICKS_PER_SLOT=1' rather than 10,
+%% and observed they advanced 7 to 15 ticks a minute because the tick timer
+%% shares a mailbox with the trainer. A tick is about six seconds, so every band
+%% label was wrong by a factor near a hundred, and the rate differed more than
+%% two to one BETWEEN islands so the bands were not comparable across the mesh at
+%% all. Anything reading these numbers must be able to turn one into a duration.
+an_era_is_a_real_duration_and_says_which_test() ->
+    Now = 100_000_000,
+    Ages = [{0, 500}, {0, 1_500}, {6, 64_000}, {12, 4_100_000}, {16, 66_000_000}],
+
+    [begin
+         A = invaders:witness(invaders:new(), genome(N), <<"b">>, <<"r">>, Now - Ms),
+         [E] = invaders:entries(A),
+         ?assertEqual(Era, invaders:era_of(E, Now))
+     end || {N, {Era, Ms}} <- lists:zip(lists:seq(1, length(Ages)), Ages)],
+
+    %% And the era to seconds mapping is published rather than re-derived by
+    %% every reader, because a reader deriving it is what went wrong.
+    ?assertEqual({1, 2}, invaders:era_seconds(0)),
+    ?assertEqual({64, 128}, invaders:era_seconds(6)),
+    ?assertEqual({4096, 8192}, invaders:era_seconds(12)),
+    %% Era 12 is about an hour and era 16 about a day, in real time.
+    {Lo12, _} = invaders:era_seconds(12),
+    {Lo16, _} = invaders:era_seconds(16),
+    ?assert(Lo12 > 3000 andalso Lo12 < 5000),
+    ?assert(Lo16 > 60_000 andalso Lo16 < 70_000).
 
 %% ⚠⚠ FULL MEANS DROP FROM THE FULLEST ERA, NEVER THE OLDEST ENTRY. Evicting the
 %% oldest is the obvious policy and is exactly wrong: it empties the bands the
@@ -120,9 +154,9 @@ the_same_invader_twice_is_one_invader_test() ->
 %% fly the old one, so the measurement would quietly answer "can we beat what is
 %% attacking us lately" — which the roster already answers.
 a_sample_spreads_across_eras_before_it_doubles_up_test() ->
-    Recent = [10_000 - N || N <- lists:seq(1, 30)],
-    A = witnessed([1, 40, 600 | Recent]),
-    Now = 10_000,
+    Now = 100_000_000,
+    Recent = [Now - N * 1000 || N <- lists:seq(1, 30)],
+    A = witnessed([1, Now - 60_000_000, Now - 4_000_000 | Recent]),
 
     {Picked, _S} = invaders:sample(A, 4, Now, seeded(1)),
     ?assertEqual(4, length(Picked)),

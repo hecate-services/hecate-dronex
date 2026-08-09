@@ -317,7 +317,14 @@ handle_cast({commit_as, Role, RaidId, Opponent, Airframes}, #{island := I} = S) 
 %% once: the defenders that survived come back, and the attacker's genomes are
 %% kept whatever the outcome was.
 handle_cast({defended, Survivors, Party, Raiders, Meta}, #{island := I} = S) ->
-    {noreply, S#{island := island:defended(I, Survivors, Party, Raiders, Meta)}};
+    %% ⚠ THE CLOCK IS STAMPED HERE, WHERE THERE IS ONE. `island' is pure and must
+    %% not reach for a clock any more than it reaches for a generator, so the
+    %% arrival time of an invader rides in with the raid that delivered it. Wall
+    %% clock and not the island's tick: a tick is about six seconds on this fleet
+    %% rather than the nominal 50 ms, and it runs at different rates on different
+    %% islands.
+    Stamped = Meta#{at => erlang:system_time(millisecond)},
+    {noreply, S#{island := island:defended(I, Survivors, Party, Raiders, Stamped)}};
 %% A raid this island sent has come home, or has failed to.
 %% The handshake answered. Accepted means the party is committed and waits for a
 %% settlement fact; refused means it never engaged and comes straight home.
@@ -648,7 +655,10 @@ challenged(undefined, _I, _Back) -> false;
 challenged(Entry, I, Back) ->
     Genome = roster:entry_genome(Entry),
     Archive = island:invaders_of(I),
-    Now = island:tick_of(I),
+    %% ⚠ WALL CLOCK, NOT THE ISLAND'S TICK. An invader's era is the log of its age
+    %% in seconds, and a tick is neither a fixed duration nor the same duration on
+    %% two islands. See `invaders'.
+    Now = erlang:system_time(millisecond),
     _ = spawn(fun () -> Back ! {mastered, master:sit(Genome, Archive, Now)} end),
     true.
 

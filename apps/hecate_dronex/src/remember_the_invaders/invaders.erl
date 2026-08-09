@@ -44,16 +44,33 @@
 %% rises. That is the failure a master tournament is for, and it is invisible to
 %% any archive that keeps only recent arrivals.
 %%
-%% An entry's era is the base-2 logarithm of its age, so the bands are 1 tick, 2,
-%% 4, 8 and so on. That is self-maintaining: recent invaders are numerous and
-%% land in low bands, ancient ones are few and each holds its own high band, and
-%% nothing has to be rebalanced as time passes. When the archive is full it drops
-%% from the band that is FULLEST, so the oldest eras cannot be squeezed out by a
-%% busy afternoon.
+%% An entry's era is the base-2 logarithm of its age IN SECONDS, so the bands are
+%% 1 second, 2, 4, 8 and so on: era 6 is about a minute, era 12 about an hour,
+%% era 16 about a day, era 20 about a fortnight. That is self-maintaining:
+%% recent invaders are numerous and land in low bands, ancient ones are few and
+%% each holds its own high band, and nothing has to be rebalanced as time passes.
+%% When the archive is full it drops from the band that is FULLEST, so the oldest
+%% eras cannot be squeezed out by a busy afternoon.
+%%
+%% ⚠⚠⚠⚠ SECONDS, AND THE FIRST VERSION USED THE ISLAND'S TICK. That was wrong in
+%% two ways at once and both were measured on the fleet on 2026-08-09 rather than
+%% reasoned about.
+%%
+%% A tick is not 50 ms. The deployed islands run with
+%% `HECATE_DRONEX_TICKS_PER_SLOT=1' rather than the default 10, so nominal is 2 a
+%% second; and observed over a minute they advanced 7 to 15, because the tick
+%% timer shares a mailbox with the trainer and is starved by it. A tick is
+%% therefore about six seconds, and the era labels would have been wrong by a
+%% factor near a hundred.
+%%
+%% Worse, the rate DIFFERS BETWEEN ISLANDS by more than two to one, so era 12 on
+%% beam01 and era 12 on msi00 were different durations. An archive keyed on ticks
+%% cannot be compared across the mesh at all, which is the one thing this
+%% instrument exists to do.
 -module(invaders).
 
 -export([new/0, new/1, witness/5, holds/2, depth/1, capacity/1, entries/1]).
--export([bands/2, group/2, sample/4, era_of/2, ids/1]).
+-export([bands/2, group/2, sample/4, era_of/2, era_seconds/1, ids/1]).
 -export([entry_id/1, entry_genome/1, entry_from/1, entry_seen_at/1, entry_raid/1]).
 -export([sequestered/2, share/0]).
 
@@ -66,8 +83,9 @@
     %% is the half of the story a genome id cannot carry.
     from :: binary(),
     raid :: binary(),
-    %% The island's own tick when it arrived. Eras are computed from this, so it
-    %% is the one field the whole instrument rests on.
+    %% Wall clock in MILLISECONDS when it arrived. Eras are computed from this,
+    %% so it is the one field the whole instrument rests on, and it is real time
+    %% rather than the island's tick for the reasons in the header.
     seen_at :: non_neg_integer()
 }).
 
@@ -172,11 +190,25 @@ crowded(Bands) ->
 %% Band 0 is the tick it arrived, band 10 is roughly a thousand ticks ago, band 20
 %% roughly a million. Ages are unbounded above and the bands are not, which is the
 %% property that makes ancient invaders survive without a policy.
+%% ⚠ BOTH ARGUMENTS ARE MILLISECONDS, AND THE BAND IS THE LOG OF SECONDS. An age
+%% under a second is era 0 rather than a negative band, which is what a raid that
+%% has only just landed genuinely is.
 -spec era_of(entry(), non_neg_integer()) -> non_neg_integer().
-era_of(#invader{seen_at = At}, Now) when Now > At -> log2(Now - At);
+era_of(#invader{seen_at = At}, Now) when Now > At -> log2((Now - At) div 1000);
 era_of(#invader{}, _Now) -> 0.
 
-log2(N) when N > 0 -> trunc(math:log2(N)).
+log2(N) when N > 0 -> trunc(math:log2(N));
+log2(_Under_a_second) -> 0.
+
+%% @doc The seconds an era covers, so a caller can label an axis in real time
+%% rather than in powers of two.
+%%
+%% ⚠ EXPORTED BECAUSE A READER MUST NOT DO THIS ARITHMETIC ITSELF. The exhibit
+%% had a band table derived from a tick rate that was wrong by a factor near a
+%% hundred, written by reading the DEFAULT constants rather than the deployed
+%% ones. There is one definition of what an era means and it is here.
+-spec era_seconds(non_neg_integer()) -> {non_neg_integer(), non_neg_integer()}.
+era_seconds(Era) -> {1 bsl Era, 1 bsl (Era + 1)}.
 
 %% @doc The archive grouped by era, oldest era being the highest number.
 -spec bands(archive(), non_neg_integer()) -> #{non_neg_integer() => [entry()]}.
