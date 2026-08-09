@@ -57,7 +57,8 @@
 %% bred champion. One candidate is now that the champion was bred from scratch.
 -module(roster_log).
 
--export([stream/0, snapshot/3, admitted/2, evicted/2, restore/1, restore/2]).
+-export([stream/0, snapshot/3, snapshot/4, admitted/2, evicted/2]).
+-export([restore/1, restore/2]).
 -export([rebuild/2]).
 
 %% ⚠ A SYSTEM STREAM, AND THE FORMAT IS A CONTRACT RATHER THAN A PREFERENCE.
@@ -112,11 +113,36 @@ stream() -> ?STREAM.
 %% it is handed and gives it back, so a counter can be added there without a
 %% change to the durable format.
 -spec snapshot(atom(), roster:roster(), map()) -> ok | {error, term()}.
-snapshot(StoreId, R, Tally) when is_map(Tally) ->
+snapshot(StoreId, R, Tally) -> snapshot(StoreId, R, Tally, invaders:new()).
+
+%% @doc As above, and the invader archive with it.
+%%
+%% ⚠ ONE SNAPSHOT AND ONE STREAM, NOT TWO. The archive could have had its own log
+%% and its own restore, and the reason it does not is `REGISTER I.21': this
+%% restore path had THREE faults hiding each other and had never once succeeded,
+%% for the whole life of the track. A second copy of the same subtle machinery is
+%% a second place for the same three faults to live.
+%%
+%% ⚠⚠ AND THEY MUST BE RESTORED TOGETHER OR NOT AT ALL. The archive's eras are
+%% measured against the island's own tick, which arrives in the tally beside it.
+%% A roster restored with an archive from a different write would date every
+%% invader against the wrong clock.
+-spec snapshot(atom(), roster:roster(), map(), invaders:archive()) ->
+    ok | {error, term()}.
+snapshot(StoreId, R, Tally, Archive) when is_map(Tally) ->
     append(StoreId, <<"roster_snapshotted">>,
            #{entries => [packed(E) || E <- roster:entries(R)],
              capacity => roster:capacity(R),
-             tally => Tally}).
+             tally => Tally,
+             invaders => [packed_invader(I) || I <- invaders:entries(Archive)],
+             invader_capacity => invaders:capacity(Archive)}).
+
+packed_invader(I) ->
+    #{id => invaders:entry_id(I),
+      genome => drone_genome:pack(invaders:entry_genome(I)),
+      from => invaders:entry_from(I),
+      raid => invaders:entry_raid(I),
+      seen_at => invaders:entry_seen_at(I)}.
 
 %% @doc Record one admission, with everything needed to rebuild it.
 -spec admitted(atom(), roster:entry()) -> ok | {error, term()}.
@@ -165,10 +191,16 @@ packed(E) ->
 %% snapshot written before 2026-08-07. An absent tally is not a tally of zero:
 %% `island:with_tally/2' takes the larger of stored and live, so an old snapshot
 %% leaves the counters where they are rather than winding them back.
--spec restore(atom()) -> {ok, roster:roster(), map()} | {error, term()}.
+-spec restore(atom()) ->
+    {ok, roster:roster(), map(), invaders:archive()} | {error, term()}.
 restore(StoreId) -> restore(StoreId, roster:new(restored)).
 
--spec restore(atom(), roster:roster()) -> {ok, roster:roster(), map()} | {error, term()}.
+%% ⚠ FOUR ELEMENTS NOW, AND THE ARCHIVE IS EMPTY RATHER THAN ABSENT WHEN A
+%% SNAPSHOT PREDATES IT. An island restoring from a store written before the
+%% archive existed gets `invaders:new()', which is the same shape it would have
+%% on a fresh boot, so nothing downstream needs to know which happened.
+-spec restore(atom(), roster:roster()) ->
+    {ok, roster:roster(), map(), invaders:archive()} | {error, term()}.
 restore(StoreId, Empty) ->
     try folded(read_from(StoreId, newest_snapshot(StoreId)), Empty)
     catch Class:Reason -> {error, {restore_failed, Class, Reason}}
@@ -228,7 +260,7 @@ paged(Other, _StoreId, _From, _Acc) -> {error, {unexpected, Other}}.
 folded({error, _} = E, _Empty) -> E;
 folded({ok, Events}, Empty) -> restored_pair(rebuild(Events, Empty)).
 
-restored_pair({R, Tally}) -> {ok, R, Tally}.
+restored_pair({R, Tally, Archive}) -> {ok, R, Tally, Archive}.
 
 %% @doc Interpret a list of stored events into a roster and a tally.
 %%
@@ -236,8 +268,10 @@ restored_pair({R, Tally}) -> {ok, R, Tally}.
 %% events and returns state can be tested without a store, a node or a network.
 %% There was no such seam, so there was no such test, so `restore/2' shipped
 %% raising `badmap' on its first event and stayed that way for weeks.
--spec rebuild([#event{}], roster:roster()) -> {roster:roster(), map()}.
-rebuild(Events, Empty) -> lists:foldl(fun apply_event/2, {Empty, #{}}, Events).
+-spec rebuild([#event{}], roster:roster()) ->
+    {roster:roster(), map(), invaders:archive()}.
+rebuild(Events, Empty) ->
+    lists:foldl(fun apply_event/2, {Empty, #{}, invaders:new()}, Events).
 
 %% ⚠ AN EVENT THAT CANNOT BE UNDERSTOOD IS SKIPPED, NOT FATAL. A store written by
 %% a later version of this island will hold event types this one has never heard
@@ -249,10 +283,40 @@ apply_event(Ev, Acc) -> replay(type_of(Ev), data_of(Ev), Acc).
 %% A snapshot REPLACES. It is full state, so whatever was folded before it is
 %% superseded, tally included.
 replay(<<"roster_snapshotted">>, #{entries := Es} = D, _Acc) ->
-    {roster:restore(rebuilt_all(Es)), tally_in(D)};
-replay(<<"genome_admitted">>, Packed, {R, T}) -> {readmit(unpacked(Packed), R), T};
-replay(<<"genome_evicted">>, #{id := Id}, {R, T}) -> {roster:evict(R, Id), T};
+    {roster:restore(rebuilt_all(Es)), tally_in(D), archive_in(D)};
+replay(<<"genome_admitted">>, Packed, {R, T, A}) -> {readmit(unpacked(Packed), R), T, A};
+replay(<<"genome_evicted">>, #{id := Id}, {R, T, A}) -> {roster:evict(R, Id), T, A};
 replay(_Unknown, _Data, Acc) -> Acc.
+
+%% ⚠ A SNAPSHOT FROM BEFORE THE ARCHIVE EXISTED HAS NO `invaders' KEY, and that
+%% is an empty archive rather than a crash. Islands roll one at a time and a
+%% rollback must not be an outage.
+archive_in(D) -> witnessed_all(maps:get(invaders, D, []), fresh_archive(D)).
+
+fresh_archive(D) ->
+    case maps:get(invader_capacity, D, undefined) of
+        N when is_integer(N), N > 0 -> invaders:new(N);
+        _absent -> invaders:new()
+    end.
+
+witnessed_all(Packed, A) ->
+    lists:foldl(fun (P, Acc) -> witnessed_one(P, Acc) end, A, Packed).
+
+witnessed_one(#{genome := Bin} = P, A) ->
+    revived(drone_genome:unpack(Bin), P, A);
+witnessed_one(_Other, A) -> A.
+
+%% ⚠ THE ORIGINAL `seen_at' IS RESTORED, WHICH IS THE ENTIRE POINT OF PERSISTING
+%% THIS AT ALL. Witnessing them at the restore moment would date every invader to
+%% the boot and collapse every era into one, so the archive would say the island
+%% has only ever faced things from this morning — which is exactly the blindness
+%% the archive exists to remove.
+revived({error, _Why}, _P, A) -> A;
+revived({ok, Genome}, P, A) ->
+    invaders:witness(A, Genome,
+                     maps:get(from, P, <<"unknown">>),
+                     maps:get(raid, P, <<"unknown">>),
+                     maps:get(seen_at, P, 0)).
 
 %% Unpacked ONCE per entry. The previous version called `unpacked/1' twice for
 %% every genome in the snapshot, once in the filter and once in the body, which

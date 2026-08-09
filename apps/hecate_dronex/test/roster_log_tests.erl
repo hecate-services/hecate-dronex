@@ -61,7 +61,7 @@ rebuild(Events) -> roster_log:rebuild(Events, empty()).
 %% `data_of/1' and this raises `badmap', exactly as five deployed islands did on
 %% every boot. Verified red against the reverted code before being believed.
 a_snapshot_event_restores_the_roster_test() ->
-    {R, _T} = rebuild([event(0, <<"roster_snapshotted">>,
+    {R, _T, _A} = rebuild([event(0, <<"roster_snapshotted">>,
                              #{entries => [packed(1), packed(2)], capacity => 8})]),
 
     ?assertEqual(2, roster:depth(R)).
@@ -81,7 +81,7 @@ a_payload_that_is_not_a_map_fails_loudly_test() ->
 %% A snapshot is full state, so it REPLACES rather than merges. An island that
 %% folded snapshots together would carry every genome it ever evicted.
 a_later_snapshot_replaces_an_earlier_one_test() ->
-    {R, _T} = rebuild([event(0, <<"roster_snapshotted">>,
+    {R, _T, _A} = rebuild([event(0, <<"roster_snapshotted">>,
                              #{entries => [packed(1), packed(2)], capacity => 8}),
                        event(1, <<"roster_snapshotted">>,
                              #{entries => [packed(3)], capacity => 8})]),
@@ -89,7 +89,7 @@ a_later_snapshot_replaces_an_earlier_one_test() ->
     ?assertEqual(1, roster:depth(R)).
 
 the_tail_after_a_snapshot_is_replayed_test() ->
-    {R, _T} = rebuild([event(0, <<"roster_snapshotted">>, #{entries => [packed(1)], capacity => 8}),
+    {R, _T, _A} = rebuild([event(0, <<"roster_snapshotted">>, #{entries => [packed(1)], capacity => 8}),
                        event(1, <<"genome_admitted">>, packed(2)),
                        event(2, <<"genome_admitted">>, packed(3))]),
 
@@ -97,7 +97,7 @@ the_tail_after_a_snapshot_is_replayed_test() ->
 
 an_eviction_in_the_tail_is_replayed_test() ->
     Gone = maps:get(id, packed(1)),
-    {R, _T} = rebuild([event(0, <<"roster_snapshotted">>,
+    {R, _T, _A} = rebuild([event(0, <<"roster_snapshotted">>,
                              #{entries => [packed(1), packed(2)], capacity => 8}),
                        event(1, <<"genome_evicted">>, #{id => Gone})]),
 
@@ -108,7 +108,7 @@ an_eviction_in_the_tail_is_replayed_test() ->
 %% rollback that refuses to start is an outage, and the cost of skipping is a
 %% roster that is visibly shallower.
 an_unknown_event_type_is_skipped_test() ->
-    {R, _T} = rebuild([event(0, <<"roster_snapshotted">>, #{entries => [packed(1)], capacity => 8}),
+    {R, _T, _A} = rebuild([event(0, <<"roster_snapshotted">>, #{entries => [packed(1)], capacity => 8}),
                        event(1, <<"something_from_the_future">>, #{whatever => true})]),
 
     ?assertEqual(1, roster:depth(R)).
@@ -116,7 +116,7 @@ an_unknown_event_type_is_skipped_test() ->
 %% A genome that will not unpack costs one controller, never the boot.
 a_corrupt_entry_costs_one_controller_test() ->
     Broken = maps:put(genome, <<"not a genome">>, packed(2)),
-    {R, _T} = rebuild([event(0, <<"roster_snapshotted">>,
+    {R, _T, _A} = rebuild([event(0, <<"roster_snapshotted">>,
                              #{entries => [packed(1), Broken], capacity => 8})]),
 
     ?assertEqual(1, roster:depth(R)).
@@ -127,7 +127,7 @@ a_corrupt_entry_costs_one_controller_test() ->
 
 the_tally_rides_with_the_snapshot_test() ->
     Tally = #{rounds => 9000, tick => 12, raids => 4},
-    {_R, T} = rebuild([event(0, <<"roster_snapshotted">>,
+    {_R, T, _A} = rebuild([event(0, <<"roster_snapshotted">>,
                              #{entries => [], capacity => 8, tally => Tally})]),
 
     ?assertEqual(Tally, T).
@@ -136,12 +136,12 @@ the_tally_rides_with_the_snapshot_test() ->
 %% not a tally of zero. It comes back empty and `island:with_tally/2' leaves the
 %% live counters alone.
 a_snapshot_without_a_tally_restores_an_empty_one_test() ->
-    {_R, T} = rebuild([event(0, <<"roster_snapshotted">>, #{entries => [], capacity => 8})]),
+    {_R, T, _A} = rebuild([event(0, <<"roster_snapshotted">>, #{entries => [], capacity => 8})]),
 
     ?assertEqual(#{}, T).
 
 the_tally_follows_the_snapshot_that_replaced_it_test() ->
-    {_R, T} = rebuild([event(0, <<"roster_snapshotted">>,
+    {_R, T, _A} = rebuild([event(0, <<"roster_snapshotted">>,
                              #{entries => [], capacity => 8, tally => #{rounds => 10}}),
                        event(1, <<"roster_snapshotted">>,
                              #{entries => [], capacity => 8, tally => #{rounds => 20}})]),
@@ -150,7 +150,56 @@ the_tally_follows_the_snapshot_that_replaced_it_test() ->
 
 %% Nothing stored is a fresh island, not a crash.
 an_empty_stream_restores_nothing_test() ->
-    {R, T} = rebuild([]),
+    {R, T, _A} = rebuild([]),
 
     ?assertEqual(0, roster:depth(R)),
     ?assertEqual(#{}, T).
+
+%%==============================================================================
+%% The invader archive
+%%==============================================================================
+
+%% ⚠⚠ A RESTORED INVADER KEEPS THE TICK IT ARRIVED ON, AND THIS IS THE WHOLE
+%% REASON THE ARCHIVE IS PERSISTED. Its eras are the age of each entry, so
+%% witnessing them at the restore moment would date every one of them to the boot
+%% and collapse every era into one. The archive would then say the island has only
+%% ever faced things from this morning — which is exactly the blindness it exists
+%% to remove, and it would look perfectly healthy while saying it.
+a_restored_invader_keeps_the_era_it_arrived_in_test() ->
+    Packed = #{id => <<"i1">>,
+               genome => drone_genome:pack(genome(7)),
+               from => <<"beam01">>,
+               raid => <<"r1">>,
+               seen_at => 40},
+
+    {_R, _T, A} = rebuild([event(0, <<"roster_snapshotted">>,
+                                 #{entries => [], capacity => 8,
+                                   invaders => [Packed], invader_capacity => 16})]),
+
+    ?assertEqual(1, invaders:depth(A)),
+    ?assertEqual(16, invaders:capacity(A)),
+    [E] = invaders:entries(A),
+    ?assertEqual(40, invaders:entry_seen_at(E)),
+    ?assertEqual(<<"beam01">>, invaders:entry_from(E)),
+    %% And it is genuinely old at a later tick, rather than newly witnessed.
+    ?assert(invaders:era_of(E, 10_000) > 5).
+
+%% ⚠ A SNAPSHOT WRITTEN BEFORE THE ARCHIVE EXISTED HAS NO `invaders' KEY. Islands
+%% roll one at a time and a rollback must not be an outage, so that is an empty
+%% archive rather than a crash — the same shape a fresh boot produces.
+a_snapshot_from_before_the_archive_restores_an_empty_one_test() ->
+    {_R, _T, A} = rebuild([event(0, <<"roster_snapshotted">>,
+                                 #{entries => [], capacity => 8})]),
+    ?assertEqual(0, invaders:depth(A)).
+
+%% A corrupt genome costs one invader, not the archive.
+a_corrupt_invader_costs_one_invader_test() ->
+    Good = #{id => <<"i1">>, genome => drone_genome:pack(genome(7)),
+             from => <<"beam01">>, raid => <<"r1">>, seen_at => 40},
+    Bad = #{id => <<"i2">>, genome => <<"not a genome">>,
+            from => <<"beam01">>, raid => <<"r1">>, seen_at => 41},
+
+    {_R, _T, A} = rebuild([event(0, <<"roster_snapshotted">>,
+                                 #{entries => [], capacity => 8,
+                                   invaders => [Good, Bad]})]),
+    ?assertEqual(1, invaders:depth(A)).

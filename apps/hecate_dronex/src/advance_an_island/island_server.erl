@@ -56,6 +56,12 @@
 %% both run off-process on a four-core Celeron.
 -define(DEFAULT_ABLATE_MS, 300000).
 
+%% ⚠ THE MASTER TOURNAMENT, EVERY TEN MINUTES AND OFFSET FROM EVERYTHING ELSE.
+%% It flies the champion against invaders drawn from every era, which is a dozen
+%% engagements against evolved opponents rather than scripted ones, so they run
+%% long. Four slow cores already carry a trainer, a doubled exam and an ablation.
+-define(DEFAULT_MASTER_MS, 600000).
+
 %% ⚠ SLOW, AND SLOWER THAN IT LOOKS. A raid costs the DEFENDER an engagement and
 %% costs both sides airframes that have to be bred back. An island raiding every
 %% few seconds would spend its whole life rebuilding, which is the stasis this
@@ -129,6 +135,8 @@ init([]) ->
     %% Offset from the benchmark's first firing so the two heavy jobs do not
     %% start together on a node with four slow cores.
     schedule(ablate, ?DEFAULT_ABLATE_MS div 2),
+    %% Offset again, so the three heavy jobs never start together.
+    schedule(master, ?DEFAULT_MASTER_MS div 3),
     schedule(raid, ?DEFAULT_RAID_MS),
     %% ⚠⚠ ON A TIMER, AND THE FIRST VERSION DID IT ONCE HERE AND CLAIMED
     %% OTHERWISE. Its comment said "the retry is the next timer tick"; there was
@@ -154,6 +162,7 @@ init([]) ->
     schedule(announce, ?ANNOUNCE_MS),
     schedule(sweep_raids, ?SWEEP_MS),
     {ok, #{island => Island, sent => 0, failed => 0, sitting => false,
+           mastering => false,
            ablating => false, writer => roster_log_writer:silent(),
            open_islands => #{}, away => #{},
            advertising => false, open => false}}.
@@ -226,8 +235,16 @@ restored(Island) ->
     kept(Island, roster_log:restore(hecate_dronex_service:store_id(),
                                     island:roster_of(Island))).
 
-%% The roster AND the tally, because a lineage is what it bred and what it did.
-kept(Island, {ok, R, Tally}) -> island:with_tally(island:with_roster(Island, R), Tally);
+%% The roster, the tally AND the invader archive, because a lineage is what it
+%% bred, what it did, and what it has had to face.
+%%
+%% ⚠ THE ARCHIVE MUST SURVIVE A RESTART OR THE MASTER TOURNAMENT CANNOT WORK. Its
+%% whole purpose is asking whether today's controller still beats what attacked
+%% us long ago, and "long ago" cannot mean "since the last restart": measured on
+%% 2026-08-09, the release restarted three times in a morning, and msi00's VM was
+%% eight minutes old inside a container that had been up thirty-five.
+kept(Island, {ok, R, Tally, Archive}) ->
+    island:with_invaders(island:with_tally(island:with_roster(Island, R), Tally), Archive);
 %% ⚠⚠ LOUD, AND IT WAS SILENT FOR THE WHOLE LIFE OF THE MODULE. This clause used
 %% to be `kept(Island, {error, _Why}) -> Island', which is the correct BEHAVIOUR
 %% (an island that cannot read its log must still start) attached to the wrong
@@ -356,6 +373,22 @@ handle_info(bout, #{island := I} = S) ->
 %% that crashes must cost the island a stale reading, never its life. The
 %% previously published report simply stands, and the exercise count beside it
 %% stops rising, which is what makes the staleness visible.
+%% ⚠ SPAWNED AND GUARDED LIKE THE EXAM, AND FOR THE SAME REASONS. An instrument
+%% that crashes must cost a stale reading rather than the island, and one that
+%% runs long must not have a second copy started on top of it.
+handle_info(master, #{island := I, mastering := false} = S) ->
+    schedule(master, ?DEFAULT_MASTER_MS),
+    {noreply, S#{mastering := master_off_process(I)}};
+handle_info(master, S) ->
+    schedule(master, ?DEFAULT_MASTER_MS),
+    {noreply, S};
+%% ⚠⚠ A REFUSED SITTING LEAVES THE PREVIOUS RESULT STANDING. `island:mastered/2'
+%% drops a result with nothing flown, because the exam taught this exact lesson
+%% on 2026-08-09: publishing an empty profile after a failed sitting erased a
+%% good reading and claimed the island had never been measured.
+handle_info({mastered, Result}, #{island := I} = S) ->
+    {noreply, S#{island := island:mastered(I, Result), mastering := false}};
+
 handle_info(ablate, #{island := I, ablating := false} = S) ->
     schedule(ablate, ?DEFAULT_ABLATE_MS),
     {noreply, S#{ablating := ablate_off_process(I)}};
@@ -604,6 +637,20 @@ from_origin([E | _]) -> origin_named(roster:entry_origin(E)).
 
 origin_named({captured, From, _Raid}) -> #{opponent => <<"captured">>, opponent_from => From};
 origin_named(_bred) -> #{opponent => <<"bred">>}.
+
+%% @doc Fly the champion against the invader archive, off this process.
+%%
+%% ⚠ THE SAME CONTROLLER THAT SITS THE EXAM, so the two readings are about one
+%% drone. `roster:best/1' is the honest answer to "what can this island do".
+master_off_process(I) -> challenged(roster:best(island:roster_of(I)), I, self()).
+
+challenged(undefined, _I, _Back) -> false;
+challenged(Entry, I, Back) ->
+    Genome = roster:entry_genome(Entry),
+    Archive = island:invaders_of(I),
+    Now = island:tick_of(I),
+    _ = spawn(fun () -> Back ! {mastered, master:sit(Genome, Archive, Now)} end),
+    true.
 
 %% The best entry sits the exam, because the exam asks what this island's drones
 %% can do and the best is the honest answer to that.

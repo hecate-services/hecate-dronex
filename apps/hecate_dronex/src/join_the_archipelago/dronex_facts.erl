@@ -62,6 +62,11 @@
 %% reader: islands roll one at a time, so during any deploy some publish 3 and
 %% some publish 4, and a consumer that required the new fields would drop every
 %% fact from a node not yet upgraded.
+%% ⚠ 7 CARRIES THE MASTER TOURNAMENT: `master_eras' and its three vectors, the
+%% number of invaders flown, and how many the archive holds. It answers the
+%% question the scripted ladders cannot — can what we have now still beat what
+%% attacked us long ago — and a flat line across eras is dominance while a line
+%% that falls away on the old eras is a treadmill.
 %% ⚠ 6 CARRIES WHAT A BOUT'S OPPONENT IS: `opponent' as drill, bred or captured,
 %% and `opponent_from' naming the island when it was captured. Until then a bout
 %% published two genome ids and nothing that told a scripted rung from a
@@ -70,7 +75,7 @@
 %% start count, beside the `benchmark_*' fields rather than replacing them. See
 %% `REGISTER I.22' for why both are published and only one of them may be called
 %% improvement.
--define(FACT_VERSION, 6).
+-define(FACT_VERSION, 7).
 
 -spec fact_version() -> pos_integer().
 fact_version() -> ?FACT_VERSION.
@@ -193,8 +198,10 @@ vitals(Island, Runtime) ->
         captures => island:captures_of(Island)},
       maps:merge(maps:merge(station(), reachability(Runtime)),
                  maps:merge(persistence(Writer),
-                            maps:merge(maps:merge(frozen(island:benchmark_of(Island)),
-                                                  held_out(island:trials_of(Island))),
+                            maps:merge(maps:merge(maps:merge(frozen(island:benchmark_of(Island)),
+                                                             held_out(island:trials_of(Island))),
+                                                  mastered(island:master_of(Island),
+                                                           island:invaders_of(Island))),
                                        ablation(island:ablation_of(Island),
                                                 island:ablations_of(Island))))))).
 
@@ -280,6 +287,22 @@ frozen(Profile) ->
 %% called improvement. Replacing the old keys would have silently changed what
 %% every historical reading meant, which is worse than publishing a number that
 %% is wrong, because nothing would mark the discontinuity.
+%% ⚠ THE ONE MEASURE THAT CANNOT SATURATE, because its opponents are evolved and
+%% keep arriving. Both scripted ladders are floor tests and a floor test expires
+%% when it is cleared: `D.16' has the fleet solving the first in about a day and
+%% `I.23' the second reaching 91% in twelve hours.
+%%
+%% ⚠⚠ `master_archived' RIDES BESIDE IT SO A THIN READING IS VISIBLE AS ONE. An
+%% island that has faced four invaders and beaten them all is not an island that
+%% has beaten everything, and without the archive depth the two are one number.
+mastered(Result, Archive) ->
+    #{master_eras => maps:get(eras, Result, []),
+      master_wins => maps:get(wins, Result, []),
+      master_draws => maps:get(draws, Result, []),
+      master_losses => maps:get(losses, Result, []),
+      master_flown => maps:get(flown, Result, 0),
+      master_archived => invaders:depth(Archive)}.
+
 held_out(Profile) ->
     #{trials_rungs => maps:get(rungs, Profile, []),
       trials_wins => maps:get(wins, Profile, []),

@@ -28,6 +28,7 @@
 -export([tally_of/1, with_tally/2]).
 -export([tick_of/1, roster_depth/1, capacity/1, seed_of/1, roster_of/1]).
 -export([generation_of/1, benchmark_of/1, trials_of/1, rounds_of/1, admissions_of/1]).
+-export([invaders_of/1, with_invaders/2, master_of/1, mastered/2]).
 -export([sitter_of/1]).
 -export([ablated/2, ablation_of/1, ablations_of/1]).
 -export([muster/2, aim/3, returned/3, defended/5, can_defend/2]).
@@ -61,6 +62,15 @@
     %% readings taken from two different champions cannot be compared and the
     %% roster breeds on between them.
     trials :: map(),
+    %% ⚠ THE INVADERS THIS ISLAND HAS FACED, HELD OUT FROM TRAINING. Not the
+    %% roster: `raid:absorb/3' admits captured genomes as OPPONENTS on purpose,
+    %% and an archive built from those same genomes would be a test set inside
+    %% its own training distribution — `REGISTER I.22', found the day before this
+    %% was written. A raid's haul is split instead. See `invaders'.
+    invaders :: invaders:archive(),
+    %% The last master tournament: how the current champion fared against the
+    %% archive, era by era. `master:empty()' until one has been sat.
+    master :: map(),
     %% ⚠ WHO SAT IT. `roster:best/1' is the sitter, and `raid:absorb/3' admits
     %% CAPTURED genomes into the same roster — so the island's exam score can be
     %% the score of a controller bred on somebody else's machine, and nothing
@@ -112,7 +122,9 @@ new(Opts) when is_map(Opts) ->
                               roster:new(island, maps:get(capacity, Opts,
                                                           ?DEFAULT_CAPACITY))),
             benchmark = benchmark:empty(),
-            trials = benchmark:empty(benchmark:held_out_ladder())}.
+            trials = benchmark:empty(benchmark:held_out_ladder()),
+            invaders = invaders:new(),
+            master = master:empty()}.
 
 %% @doc Advance the island's clock by N ticks.
 %%
@@ -241,6 +253,25 @@ benchmark_of(#island{benchmark = B}) -> B.
 -spec trials_of(island()) -> map().
 trials_of(#island{trials = T}) -> T.
 
+-spec invaders_of(island()) -> invaders:archive().
+invaders_of(#island{invaders = A}) -> A.
+
+-spec with_invaders(island(), invaders:archive()) -> island().
+with_invaders(#island{} = I, A) -> I#island{invaders = A}.
+
+-spec master_of(island()) -> map().
+master_of(#island{master = M}) -> M.
+
+%% @doc Record a master tournament result.
+%%
+%% ⚠ A REFUSED SITTING IS NOT RECORDED, which is the lesson of the exam on
+%% 2026-08-09: `sat({error, _})' published `benchmark:empty()', a shape that says
+%% "never sat", so one failure erased a good reading and claimed the island had
+%% never been measured. An empty result here leaves the previous one standing.
+-spec mastered(island(), map()) -> island().
+mastered(#island{} = I, #{flown := 0}) -> I;
+mastered(#island{} = I, Result) -> I#island{master = Result}.
+
 %% @doc Whether this island could field a defence of `N' right now.
 %%
 %% ⚠ THE SAME FLOOR THE ATTACKER RESPECTS, and asking BEFORE announcing open is
@@ -309,9 +340,30 @@ returned(#island{roster = R, raids_home = H, raids_lost = L} = I, Party, #{fates
                [{binary(), drone_genome:genome()}], map()) -> island().
 defended(#island{roster = R, defences = D, captures = C} = I, Survivors, Party, Raiders, Meta) ->
     {R1, _Home, _Lost} = raid:settle(R, Party, [{roster:entry_id(E), survived} || E <- Survivors]),
-    R2 = raid:absorb(R1, Raiders, Meta),
-    I#island{roster = R2, defences = D + 1,
+
+    %% ⚠ THE HAUL IS SPLIT HERE, AND THIS IS THE ONLY PLACE INVADERS ARRIVE.
+    %% Most of it is absorbed as OPPONENTS, which is CHARTER.md's one idea. A
+    %% fixed share is sequestered into the archive and never admitted, so the
+    %% master tournament is measured against controllers the trainer has never
+    %% been allowed to breed against. `REGISTER I.22' is what happens when a
+    %% test set and a training set are the same genomes.
+    {Held, Opponents} = split(Raiders),
+    R2 = raid:absorb(R1, Opponents, Meta),
+
+    I#island{roster = R2,
+             invaders = sequestered(I#island.invaders, Held, Meta, I#island.tick),
+             defences = D + 1,
              captures = C + (roster:depth(R2) - roster:depth(R1))}.
+
+split(Raiders) ->
+    lists:partition(fun ({Id, _G}) -> invaders:sequestered(Id, invaders:share()) end,
+                    Raiders).
+
+sequestered(Archive, Held, Meta, Tick) ->
+    From = maps:get(from, Meta, <<"unknown">>),
+    Raid = maps:get(raid, Meta, <<"unknown">>),
+    lists:foldl(fun ({_Id, G}, A) -> invaders:witness(A, G, From, Raid, Tick) end,
+                Archive, Held).
 
 %% @doc Record the result of an ablation.
 -spec ablated(island(), ablation:report()) -> island().
