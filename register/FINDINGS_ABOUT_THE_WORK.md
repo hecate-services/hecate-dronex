@@ -7,6 +7,50 @@ The index, and the rule itself, are in [`../REGISTER.md`](../REGISTER.md).
 
 ---
 
+## I.28: both operational instruments reported the fleet as absent, during the one deploy that needed checking
+
+The fleet was wiped on 2026-08-09 by starting a new event stream. Verifying that
+five islands had rolled is the whole job, and both scripts written for it lied,
+in the same direction: **they reported nothing, and nothing looks like a dead
+fleet.**
+
+**`did_the_islands_restart.sh`** printed the heading `--- podman` and then no
+container lines for beam00 through beam03. All four were up and healthy on the
+new image. It detects the runtime correctly on line 21 — `podman` or `docker` —
+and then calls `podman` unconditionally twenty lines later. Four of the five
+boxes run docker and have no podman at all.
+
+**`what_is_the_island_doing.sh`** printed `no answer` for every sample on every
+box, including the boxes that were fine. Three independent faults, each enough on
+its own:
+
+1. the `eval` expression had **no trailing period**, so the release returned
+   `{error, "Incomplete form (missing .<cr>)??"}` and nothing ever ran;
+2. `io:format` inside `eval` sends its output to the **island's** log, because
+   that is where its group leader is — so even with the period, the answer went
+   somewhere nobody was reading. This is in the operator notes. Twice;
+3. `docker exec` was hardcoded, so msi00, the one podman box, could never have
+   answered.
+
+⚠ **AND EACH SCRIPT HAD A LINE THAT CONVERTED FAILURE INTO SILENCE.** One ended
+`| grep -E '^20' || echo 'no answer'`, which discards every error message and
+prints one reassuring phrase for a parse failure, a missing runtime and a
+genuinely wedged process alike. The other printed a heading unconditionally and
+its container list conditionally, so "no containers" and "did not look" rendered
+identically.
+
+⚠⚠ **THE FIX FOR ONE OF THEM WAS ALSO BROKEN BY THE HOUSE COMMENT STYLE.** The
+remote block is a single-quoted shell string, and this repository writes module
+names as `` `podman' ``. That apostrophe closes the string, and bash reports the
+failure as an unmatched backtick on a line that looks innocent.
+
+**ELI5.** We wiped five machines and then asked two tools "is everyone there?"
+Both said nothing at all, which sounds like "no one is there". Everyone was
+there. One tool was asking in a language four of the machines do not speak; the
+other was asking a question with no full stop on the end, and shouting the answer
+into a different room. And both had a line that turned every kind of failure into
+the same quiet shrug.
+
 ## I.27: three constants that meant something only while a fourth stood still
 
 Raf asked whether elvis has a "no magic numbers" rule while the interceptor was

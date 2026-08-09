@@ -32,13 +32,28 @@ for box in $BOXES; do
         sed "s/^/    ${u} /"
     done
 
-    echo "  --- podman"
-    podman ps -a --format "{{.Names}}\t{{.Status}}\t{{.Image}}" 2>&1 | grep -i dronex |
-      sed "s/^/    /"
-    for c in $(podman ps -a --format "{{.Names}}" 2>/dev/null | grep -i dronex); do
+    # NOTE: no apostrophes below. This whole block is a single-quoted string, so
+    # one apostrophe ends it early and the shell fails with an EOF error naming a
+    # line that looks innocent. That is how this comment got written twice.
+    #
+    # WARNING: this used podman here regardless of what ct found, and four of the
+    # five boxes run docker. On 2026-08-09, while verifying a fleet wipe, it
+    # printed the heading "--- podman" and then NOTHING for beam00 through
+    # beam03, which reads exactly like four dead islands. All four were up and
+    # healthy on the new image. The runtime was detected two lines above and then
+    # ignored.
+    #
+    # The heading also named a runtime rather than the question, which is what
+    # made empty output look like an answer instead of a failure. It now reports
+    # which runtime it used, and says so explicitly when it finds no container.
+    echo "  --- containers, via $(basename "$ct")"
+    found=$($ct ps -a --format "{{.Names}}\t{{.Status}}\t{{.Image}}" 2>&1 | grep -i dronex)
+    [ -z "$found" ] && echo "    NO dronex CONTAINER FOUND (not the same as one that is down)"
+    [ -n "$found" ] && echo "$found" | sed "s/^/    /"
+    for c in $($ct ps -a --format "{{.Names}}" 2>/dev/null | grep -i dronex); do
       printf "    %s started %s restarts %s\n" "$c" \
-        "$(podman inspect -f "{{.State.StartedAt}}" "$c" 2>/dev/null)" \
-        "$(podman inspect -f "{{.RestartCount}}" "$c" 2>/dev/null)"
+        "$($ct inspect -f "{{.State.StartedAt}}" "$c" 2>/dev/null)" \
+        "$($ct inspect -f "{{.RestartCount}}" "$c" 2>/dev/null)"
     done
   ' 2>&1 | grep -v "post-quantum\|store now, decrypt later\|openssh.com/pq\|may need to be upgraded" | sed "s/^/  /"
   echo

@@ -28,24 +28,41 @@ SAMPLES="${2:-12}"
 EVERY="${3:-5}"
 SSH_USER="${SSH_USER:-rl}"
 
+# ⚠⚠⚠ THIS PRINTED `no answer' FOR EVERY SAMPLE ON EVERY BOX AND THE ISLANDS WERE
+# FINE. Found on 2026-08-09, verifying a fleet wipe, which is the worst possible
+# moment to be told the fleet is not answering. Three faults, each of which alone
+# produces exactly that output:
+#
+#   1. THE `eval' EXPRESSION HAD NO TRAILING PERIOD. The release's `eval' parses
+#      a form and returns `{error, "Incomplete form (missing .<cr>)??"}' without
+#      it. Nothing was ever run on the island.
+#   2. `io:format' INSIDE `eval' DOES NOT COME BACK HERE. Its group leader is on
+#      the target node, so the line lands in the ISLAND'S log. Even with the
+#      period, this printed into a log nobody was reading. Recorded in the
+#      operator notes twice before, and written again anyway.
+#   3. `docker exec' IS HARDCODED and msi00 runs podman, so the fifth island
+#      could never have answered whatever the other two faults did.
+#
+# ⚠ AND `|| echo "no answer"' CONVERTED ALL THREE INTO THE SAME REASSURING WORD.
+# The `grep -E "^20"' dropped every error message, so a parse failure, a missing
+# runtime and a genuinely wedged process were indistinguishable. Errors are now
+# printed as they arrive.
+#
+# It returns a TERM and bash formats it. Nothing inside `eval' prints.
 ssh -n -o ConnectTimeout=10 "${SSH_USER}@${NODE}" "
     set -u
-    printf '%-9s %-6s %-7s %-8s %-7s %-7s %s\n' \
+    CT=\$(command -v docker 2>/dev/null || command -v podman 2>/dev/null)
+    [ -z \"\$CT\" ] && { echo 'no container runtime on this box'; exit 1; }
+    export XDG_RUNTIME_DIR=\"/run/user/\$(id -u)\"
+    export DBUS_SESSION_BUS_ADDRESS=\"unix:path=\${XDG_RUNTIME_DIR}/bus\"
+
+    printf '%-20s %-6s %-7s %-8s %-7s %-7s %s\n' \
         time queue tick sent failed roster fn
     for i in \$(seq 1 ${SAMPLES}); do
-        docker exec hecate-dronex /app/bin/hecate_dronex eval '
-            P = whereis(island_server),
-            [{message_queue_len, Q}, {current_function, {_M, F, _A}}] =
-                process_info(P, [message_queue_len, current_function]),
-            %% 30s, not the 5s default: a busy island is not a wedged one.
-            V = gen_server:call(island_server, snapshot, 30000),
-            #{sent := Sent, failed := Failed} =
-                gen_server:call(island_server, publishes, 30000),
-            io:format(\"~s ~-6b ~-7b ~-8b ~-7b ~-7b ~p~n\",
-                      [calendar:system_time_to_rfc3339(erlang:system_time(second),
-                                                       [{unit, second}]),
-                       Q, maps:get(tick, V), Sent, Failed, maps:get(roster, V), F])
-        ' 2>&1 | grep -E '^20' || echo 'no answer'
+        OUT=\$(\$CT exec hecate-dronex /app/bin/hecate_dronex eval 'P = whereis(island_server), [{message_queue_len, Q}, {current_function, {_M, F, _A}}] = process_info(P, [message_queue_len, current_function]), V = gen_server:call(island_server, snapshot, 30000), #{sent := Sent, failed := Failed} = gen_server:call(island_server, publishes, 30000), {Q, maps:get(tick, V), Sent, Failed, maps:get(roster, V), F}.' 2>&1)
+        # The tuple, stripped of its braces, is already six ordered fields.
+        echo \"\$OUT\" | sed 's/[{}]//g' | tr ',' ' ' | \
+            awk -v t=\"\$(date +%FT%T)\" '{ printf \"%-20s %-6s %-7s %-8s %-7s %-7s %s\n\", t, \$1, \$2, \$3, \$4, \$5, \$6 }'
         sleep ${EVERY}
     done
 "

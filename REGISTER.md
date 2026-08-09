@@ -186,6 +186,7 @@ In [`register/FINDINGS_ABOUT_THE_WORK.md`](register/FINDINGS_ABOUT_THE_WORK.md),
 
 | | |
 |---|---|
+| [`I.28`](register/FINDINGS_ABOUT_THE_WORK.md#i28-both-operational-instruments-reported-the-fleet-as-absent-during-the-one-deploy-that-needed-checking) | both operational instruments reported the fleet as absent, during the one deploy that needed checking |
 | [`I.27`](register/FINDINGS_ABOUT_THE_WORK.md#i27-three-constants-that-meant-something-only-while-a-fourth-stood-still) | three constants that meant something only while a fourth stood still |
 | [`I.26`](register/FINDINGS_ABOUT_THE_WORK.md#i26-two-probes-lied-about-the-same-api-in-opposite-directions-within-a-minute) | two probes lied about the same API, in opposite directions, within a minute |
 | [`I.25`](register/FINDINGS_ABOUT_THE_WORK.md#i25-two-counters-that-could-never-count-and-one-of-them-made-the-central-claim-unobservable) | two counters that could never count, and one of them made the central claim unobservable |
