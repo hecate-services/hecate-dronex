@@ -65,10 +65,25 @@
                     %% faced little" from "we sampled little".
                     archived := non_neg_integer()}.
 
-%% How many invaders one sitting flies, and over how many starts each. Small,
-%% because this runs on the same four slow cores as everything else and the
-%% archive spans eras rather than being large.
--define(FLY, 12).
+%% How many invaders one sitting flies, and over how many starts each.
+%%
+%% ⚠ SET FROM A MEASUREMENT, AND THE FIRST GUESS WAS WRONG FOR A REASON COST HAD
+%% NOTHING TO DO WITH. Timed on beam03, a 1.5 GHz Celeron, against a full
+%% 96-entry archive of evolved controllers: 24 engagements in 8,204 ms, so about
+%% 341 ms each. At 12 invaders that is 8 seconds every ten minutes, which is
+%% 1.4% of one core and was never the constraint.
+%%
+%% ⚠⚠ THE CONSTRAINT IS n PER ERA, AND 12 WOULD HAVE MADE EVERY BAND UNREADABLE.
+%% That same sitting reached TWELVE distinct eras, and `invaders:sample/4' takes
+%% one from each before a second from any — so 12 invaders over 12 eras is one
+%% invader per era, n=2 after starts. The exhibit fades any band decided by fewer
+%% than six engagements and refuses to call it a reading, so every band would
+%% have been drawn faint, for ever, and the panel would never once have made the
+%% judgement it exists to make.
+%%
+%% 30 invaders across five drawn bands is about six per band, n=12 after starts.
+%% That costs 60 engagements, roughly 20 seconds a sitting, 3.4% of one core.
+-define(FLY, 30).
 -define(STARTS, 2).
 
 %% @doc Nothing measured, for an island that has not sat it or has no archive.
