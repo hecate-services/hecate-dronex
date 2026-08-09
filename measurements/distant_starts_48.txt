@@ -1,0 +1,14 @@
+
+A fight that begins out of sight: does it still finish?
+
+Both sets, the same controllers, 48 starts each.
+The sensor and the guided interceptor both reach 600 m.
+
+  set              controllers             decided  1st shot  med ticks   unseen t0
+  drone_starts     null vs null                0/48     never        177         0/48
+  drone_starts     seed 1 vs seed 2           48/48         0         89         0/48
+  drone_starts     seed 3 vs seed 4           48/48         0        176         0/48
+  distant_starts   null vs null                0/48     never        177        48/48
+  distant_starts   seed 1 vs seed 2           48/48        53         89        48/48
+  distant_starts   seed 3 vs seed 4           48/48         0        227        48/48
+
