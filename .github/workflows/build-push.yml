@@ -37,6 +37,17 @@ on:
       # `apps' and nothing else, so a probe or a deploy script cannot change the
       # image and has no business restarting five islands to prove it.
       - 'scripts/**'
+      # Recorded numbers, same argument, and the gap that proved it. `**.md'
+      # covered the register but not `measurements/*.txt', so filing the
+      # engine-upgrade measurement was about to roll all five islands to ship a
+      # text file the image does not contain. A roll is not free: the roster
+      # survives it in `roster_log', the island's own counters do not, and
+      # `rounds' is the breeding clock.
+      - 'measurements/**'
+      - 'champions/**'
+      - 'register/**'
+      - 'claims/**'
+      - 'architecture/**'
   workflow_dispatch:
 
 jobs:
