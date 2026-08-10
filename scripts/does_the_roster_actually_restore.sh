@@ -54,21 +54,47 @@ for box in $BOXES; do
 
       %% The restore itself. A roster is huge, so only its size is reported, and
       %% an error is reported by REASON with the payload dropped.
-      %% restore/2 answers {ok, Roster, Tally} since the 2026-08-07 fix. The
-      %% two-tuple clause is kept so this probe still says something useful when
-      %% pointed at an island running the older image.
+      %%
+      %% ⚠ FOUR ELEMENTS: {ok, Roster, Tally, Archive}. The invader archive rides
+      %% the same stream as the roster, so a restore brings both back. This probe
+      %% matched three and nothing else did, so every island answered
+      %% {probe_failed, error, {case_clause, ...}} after a roll -- four boxes
+      %% reporting the same failure at once, which reads exactly like a
+      %% fleet-wide restore failure. It was not one: the rosters had come back,
+      %% and the crash dump was printing them. Found 2026-08-10 verifying the
+      %% faber_tweann 2.4.0 roll. The older clauses are kept so this still says
+      %% something useful when pointed at an island running an older image.
       %% NO APOSTROPHES IN THIS EVAL: it travels inside a single-quoted bash
       %% string, and one closing quote ends the ssh argument early.
       Restored = case roster_log:restore(S, roster:new(probe)) of
-                   {ok, R, Tal} -> {ok, roster:depth(R), maps:get(rounds, Tal, no_tally)};
+                   {ok, R, Tal, Arc} ->
+                     {ok, roster:depth(R), maps:get(rounds, Tal, no_tally),
+                      {invaders, maps:size(maps:get(entries, Arc, #{}))}};
+                   {ok, R, Tal} -> {ok_no_archive, roster:depth(R), maps:get(rounds, Tal, no_tally)};
                    {ok, R} -> {ok_old_image, roster:depth(R)};
                    {error, Why} -> {error, element(1, Why)}
                  end,
 
+      %% ⚠ THE LIVE FIELDS ARE ASKED DEFENSIVELY, EACH ON ITS OWN. They are
+      %% gen_server calls into an island that is breeding, and a busy island
+      %% misses the default 5 s. When they were inside the same try as the
+      %% restore, one timeout discarded the restore answer that had ALREADY been
+      %% computed and the probe reported {probe_failed, exit, {timeout, ...}} --
+      %% nothing, in place of the one number it exists to report. An instrument
+      %% must hand back what it knows even when part of the question fails.
+      %% ⚠ NOT C:R. The variable R is bound by some clauses of the case above and
+      %% not others, which makes it UNSAFE outside it, and erl_eval refuses the
+      %% whole expression with unsafe_var rather than shadowing it.
+      %% ⚠⚠ AND NO APOSTROPHES, WHICH THIS COMMENT ORIGINALLY HAD. The eval
+      %% travels inside a single-quoted bash string, so one apostrophe ends the
+      %% argument and bash reports a syntax error on the fun, twenty lines from
+      %% the quote that actually broke. The warning was already written below and
+      %% was still walked into.
+      Ask = fun(F) -> try F() catch AskC:AskR -> {unavailable, AskC, element(1, AskR)} end end,
       #{shape => Shape, stream_depth => Depth, restore => Restored,
-        live_roster => roster:depth(island_server:roster()),
-        live_rounds => island:rounds_of(island_server:island()),
-        live_tick => island:tick_of(island_server:island())}
+        live_roster => Ask(fun() -> roster:depth(island_server:roster()) end),
+        live_rounds => Ask(fun() -> island:rounds_of(island_server:island()) end),
+        live_tick => Ask(fun() -> island:tick_of(island_server:island()) end)}
       catch Class:Reason -> {probe_failed, Class, Reason}
       end,
       lists:flatten(io_lib:format(\"~P\", [Answer, 12]))." 2>&1 | tail -3
