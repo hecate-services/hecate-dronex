@@ -50,9 +50,23 @@ against the 6% before and the 60% at 600 m, and the lock range stays 600 m so th
 worked around.** A `_g3` genome was bred to fly a fight decided inside 60 m, so
 its fitness number does not transfer, which is the `_g2` argument about this same
 constant — the lineage is `$dronex:roster_g4`, twelve hours after `_g3` started.
-And physics sits inside `dronex_raid:fingerprint_parts/0`, measured `B582D158` →
-`566C0420`, so the five islands roll together or they silently stop raiding each
-other (`I.12`).
+And physics sits inside `dronex_raid:fingerprint_parts/0`, so the five islands
+roll together or they silently stop raiding each other (`I.12`).
+
+Confirmed on the fleet at 13:10, about three hours after the push: all five
+islands on `$dronex:roster_g4`, `interceptor_ttl` 30, one shared image, and one
+shared fingerprint `B8141CA6`. Watchtower and `podman auto-update` rolled every
+box inside four minutes of each other, 10:11 to 10:15, so the split-fleet window
+never opened.
+
+⚠ **A FINGERPRINT IS NOT A NUMBER YOU CAN QUOTE ACROSS ENVIRONMENTS**, and this
+entry said otherwise for an afternoon. `fingerprint_parts/0` includes the OTP
+release, ERTS version and system architecture by design, so the same physics
+digests differently on a laptop than in the container: `566C0420` on a dev
+machine, `B8141CA6` on all five islands. Comparing a local digest to a fleet one
+manufactures a mismatch that is not there, which is `I.12`'s failure mode arrived
+at from the opposite direction — an operator chasing a split that does not exist.
+Compare islands to islands.
 
 **ELI5.** We had shortened the arrow's flight to sixty metres, having only checked
 that it was not so short the arrow fell out of the sky. We never checked what

@@ -135,11 +135,19 @@
 %% a roster whose numbers mean two different things.
 %%
 %% ⚠ THIS ONE ALSO MOVES THE ENGINE FINGERPRINT, WHICH NEITHER `_g2' NOR `_g3'
-%% DID. `airspace:limits/0' feeds `dronex_raid:fingerprint_parts/0', measured
-%% B582D158 -> 566C0420, so an island on this image refuses every neighbour still
-%% on the old one, silently, with `raids' at zero and nothing logged on either
-%% side — register `I.12'. The fleet rolls together or the archipelago stops
-%% raiding. `scripts/does_the_fingerprint_move.sh' prints both digests.
+%% DID. `airspace:limits/0' feeds `dronex_raid:fingerprint_parts/0', so an island
+%% on this image refuses every neighbour still on the old one, silently, with
+%% `raids' at zero and nothing logged on either side — register `I.12'. The fleet
+%% rolls together or the archipelago stops raiding.
+%%
+%% ⚠⚠ AND A DIGEST IS ONLY COMPARABLE AGAINST THE SAME BUILD ENVIRONMENT, WHICH
+%% MAKES IT USELESS AS A NUMBER TO QUOTE. `fingerprint_parts/0' includes the OTP
+%% release, the ERTS version and the system architecture, on purpose. So a laptop
+%% and a container disagree even when the physics is identical: this change
+%% measured B582D158 -> 566C0420 on a dev machine and the rolled fleet answers
+%% B8141CA6, all five agreeing with each other and none of them agreeing with the
+%% laptop. Nothing is wrong there. Compare islands to ISLANDS, never to a local
+%% build, or the check invents a split that does not exist.
 -define(STREAM, <<"$dronex:roster_g4">>).
 
 %% How far back `restore/1' will look for a snapshot before giving up and
