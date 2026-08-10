@@ -55,6 +55,12 @@
 -module(breed).
 
 -export([mutate/3, cross/3, random/1, sigma/0, tau_sigma/0]).
+%% ⚠ EXPORTED FOR INSTRUMENTS, WHICH MUST NOT COPY THEM. An analysis script that
+%% types the draw width in as a literal reports "how far the population has left
+%% the band seeding can draw" against a band that stopped existing, and on
+%% 2026-08-10 one did: it read 1581 genes outside a band the new seeding covers
+%% entirely. A number that describes seeding has to come from seeding.
+-export([weight_draw/0, tau_draw/0]).
 
 %% The default perturbation, in gene units. Genes span -32768 to 32767 at Q12, so
 %% 4096 is one unit of weight: a mutation of about 600 moves a weight by ~0.15,
@@ -96,6 +102,14 @@ sigma() -> ?SIGMA.
 %% chosen: no number here was picked by looking at what it produced.
 -spec tau_sigma() -> pos_integer().
 tau_sigma() -> ?SIGMA * ?TAU_SIGMA_RATIO.
+
+%% @doc How wide a seeded weight is drawn, in gene units.
+-spec weight_draw() -> pos_integer().
+weight_draw() -> ?WEIGHT_DRAW.
+
+%% @doc How wide a seeded time constant is drawn, in gene units.
+-spec tau_draw() -> pos_integer().
+tau_draw() -> ?TAU_DRAW.
 
 %% @doc A wholly random genome, for seeding a roster that has nothing in it.
 %%

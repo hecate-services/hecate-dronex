@@ -1,0 +1,45 @@
+
+Did widening the search actually widen it?
+
+The prediction was written down before the change shipped: taus should spread
+across [0.05, 1.0), and rosters should climb toward 240. Measured about twenty
+minutes after all five islands rolled onto $dronex:roster_g3, so these are young
+lineages, generations 1 to 5.
+
+Three of five islands answered NO ANSWER to the roster fetch, which is a 30 s
+gen_server call into an island breeding hard from a cold seed. Recorded as not
+measured rather than as empty.
+
+  TIME CONSTANTS                    before (g2, 150 gens)   after (g3, 5 gens)
+  islands measured                              5                    2
+  time constants                           10,848                3,888
+  fast, below 0.2                               0                  631
+  slow, above 0.8                               0                  848
+  minimum seen                              0.366                0.050
+  maximum seen                              0.669                1.000
+
+  POPULATION                        before                  after, 20 minutes
+  beam00                            74 / 240                91 / 240
+  beam03                            60 / 240                71 / 240
+
+The range the encoding always offered is being sampled for the first time. Note
+what this is and is not: it says the SEARCH can now reach fast and slow neurons.
+It says nothing whatever about whether they help. That question is a claim, it
+needs pre-registration and a gate, and it could not even be asked before today.
+
+⚠ THE INSTRUMENT LIED ON ITS FIRST RUN AGAINST THE NEW LINEAGE, and the lie was
+predicted in its own comment. `what_is_in_the_whole_roster.escript` carried
+`-define(SEED_DRAW, 8192)` under a warning that hardcoding the bound "would make
+this lie the day seeding changes". Seeding changed the same day. The first run
+reported 1581 of 2184 time constants "outside the band seeding can draw" against
+a seeding that now draws the whole range and has no band. It asks `breed` for the
+draw widths now, which is what the comment had claimed all along.
+
+A warning written next to a literal is still a literal.
+
+⚠⚠ THE POPULATION NUMBERS ARE NOT YET EVIDENCE FOR THE SEATING CHANGE. Twenty
+minutes in, 91 and 71 are what a roster filling from empty looks like, and the
+old code would also have been climbing at this stage. The seating fix predicts
+they reach 240 and stay there, where the old ones stalled between 60 and 153 over
+twelve thousand rounds. That is a measurement for tomorrow, not today, and it
+would be dishonest to claim it now.

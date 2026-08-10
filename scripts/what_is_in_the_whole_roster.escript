@@ -13,32 +13,38 @@
 %% {Origin, Generation, Sorties, Taus, WMin, WMax, MeanAbsW}, summarised on the
 %% island so a roster does not have to cross the wire.
 %%
-%% ⚠ THE SEEDED BAND IS THE REFERENCE AND IT IS COMPUTED, NOT TYPED IN.
-%% `breed:random/1` draws every gene uniform on plus or minus 8192, so a seeded
-%% tau can only land in [to_tau(-8192), to_tau(8192)] and a seeded weight in
-%% [-2, 2]. Every question below is "how far outside that has the population
-%% got", and hardcoding either bound would make this lie the day seeding changes.
+%% ⚠ THE SEEDED BAND IS THE REFERENCE AND IT IS ASKED OF `breed`, NOT TYPED IN.
+%% Every question below is "how far outside what seeding can draw has the
+%% population got", so the bound has to come from the thing that does the
+%% drawing.
+%%
+%% ⚠⚠ AND IT WAS TYPED IN, AND IT LIED WITHIN THE HOUR. This carried
+%% `-define(SEED_DRAW, 8192)` and a comment saying hardcoding the bound would
+%% make it lie the day seeding changed. Seeding changed the same day. Run against
+%% the new lineage it reported 1581 of 2184 time constants "outside a band
+%% seeding can draw", against a seeding that now draws the whole range and has no
+%% band at all. The comment predicted the failure exactly and did not prevent it,
+%% because a warning next to a literal is still a literal.
 %%
 %% Usage:
 %%   ERL_LIBS=_build/default/lib scripts/what_is_in_the_whole_roster.escript rosters
-
--define(SEED_DRAW, 8192).
 
 main([Dir]) -> report(Dir);
 main(_Args) -> report("rosters").
 
 report(Dir) ->
     Islands = islands(Dir),
-    TauLo = drone_genome:to_tau(-?SEED_DRAW),
-    TauHi = drone_genome:to_tau(?SEED_DRAW),
+    TauLo = drone_genome:to_tau(-breed:tau_draw()),
+    TauHi = drone_genome:to_tau(breed:tau_draw() - 1),
     io:format("~nThe whole population, from ~s~n~n", [Dir]),
     %% ⚠ ~.0f IS NOT A VALID FORMAT. Erlang wants a precision of at least one
     %% digit after the point for ~f, and rejects the whole call rather than the
     %% one directive, so a percentage is rounded to an integer and printed ~b.
     io:format("  seeding can draw tau only in [~.3f, ~.3f], which is ~b% of the~n"
-              "  expressible [~.3f, ~.3f). Weights only in [-2, 2].~n~n",
+              "  expressible [~.3f, ~.3f). Weights only in +/-~b gene units.~n~n",
               [TauLo, TauHi, round(100 * (TauHi - TauLo) / (1.0 - 0.05)),
-               drone_genome:to_tau(-32768), drone_genome:to_tau(32767)]),
+               drone_genome:to_tau(-32768), drone_genome:to_tau(32767),
+               breed:weight_draw()]),
     population(Islands),
     origins(Islands),
     lineage(Islands),
@@ -134,7 +140,8 @@ tau_row(Name, Rows, Lo, Hi) ->
 %%------------------------------------------------------------------------------
 
 weights(Is) ->
-    io:format("  HOW FAR THE WEIGHTS HAVE LEFT THE SEEDING BOX OF PLUS OR MINUS 2~n~n"),
+    io:format("  HOW FAR THE WEIGHTS HAVE LEFT THE SEEDING BOX OF PLUS OR MINUS ~.1f~n~n",
+              [breed:weight_draw() / drone_genome:scale()]),
     io:format("  ~-8s ~10s ~12s ~9s ~6s~n",
               ["island", "furthest", "median |w|", "outside", "of"]),
     [weight_row(N, R) || {N, R} <- Is],
@@ -146,7 +153,8 @@ weight_row(Name, Rows) ->
     Furthest = lists:max([max(abs(Mn), abs(Mx))
                           || {_O, _G, _S, _T, Mn, Mx, _A} <- Rows]),
     Means = lists:sort([A || {_O, _G, _S, _T, _Mn, _Mx, A} <- Rows]),
+    Box = breed:weight_draw() / drone_genome:scale(),
     Outside = length([1 || {_O, _G, _S, _T, Mn, Mx, _A} <- Rows,
-                           Mn < -2.0 orelse Mx > 2.0]),
+                           Mn < -Box orelse Mx > Box]),
     io:format("  ~-8s ~10.3f ~12.3f ~9b ~6b~n",
               [Name, Furthest, median(Means), Outside, length(Rows)]).
