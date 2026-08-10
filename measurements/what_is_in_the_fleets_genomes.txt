@@ -1,0 +1,93 @@
+
+What is actually inside the genomes the fleet is breeding?
+
+The five live champions, pulled 2026-08-10 08:00, about 12,400 rounds into the
+roster_g2 lineage. scripts/what_is_in_a_genome.escript, with two seeded controls
+drawn from breed:random/1 at fixed seeds.
+
+Topology [41, 24, 10]: 1258 weights and 24 time constants, Q12, 4096 is 1.0.
+
+  THE WEIGHTS, dequantised
+
+  island        min   median      max  mean|w|   near 0   at rail
+  SEED-a     -2.000    0.016    1.997    0.992        6         0
+  SEED-b     -1.999    0.068    1.999    1.023        3         0
+  beam00     -2.849    0.024    2.551    0.989        8         0
+  beam01     -2.526   -0.019    2.554    1.016        7         0
+  beam02     -2.743    0.035    2.566    0.992        6         0
+  beam03     -2.617   -0.030    2.383    1.033        7         0
+  msi00      -2.535    0.054    2.551    1.010        5         0
+
+  THE TIME CONSTANTS, one per hidden neuron, expressible on [0.05, 1.0)
+
+  island        min   median      max   fast<0.2   slow>0.8
+  SEED-a      0.410    0.475    0.615          0          0
+  SEED-b      0.417    0.493    0.635          0          0
+  beam00      0.418    0.506    0.628          0          0
+  beam01      0.412    0.528    0.633          0          0
+  beam02      0.398    0.524    0.657          0          0
+  beam03      0.382    0.557    0.654          0          0
+  msi00       0.416    0.516    0.650          0          0
+
+  OUTPUT SATURATION, 200 closed-form ticks
+
+  island     |out|>0.99  |out|>0.999  mean |out|
+  SEED-a          50.9%        28.9%       0.882
+  SEED-b          46.0%        28.9%       0.862
+  beam00          36.8%        19.3%       0.822
+  beam01          56.5%        41.0%       0.882
+  beam02          42.6%        27.8%       0.822
+  beam03          66.7%        54.9%       0.894
+  msi00           73.8%        58.9%       0.930
+
+  KINSHIP, mean |gene difference| in weight units
+
+             SEED-a   SEED-b   beam00   beam01   beam02   beam03    msi00
+  SEED-a      0.000    1.330    1.346    1.364    1.302    1.367    1.354
+  SEED-b      1.330    0.000    1.365    1.334    1.373    1.388    1.335
+  beam00      1.346    1.365    0.000    1.247    1.260    1.262    1.146
+  beam01      1.364    1.334    1.247    0.000    1.239    1.282    1.241
+  beam02      1.302    1.373    1.260    1.239    0.000    1.293    1.209
+  beam03      1.367    1.388    1.262    1.282    1.293    0.000    1.213
+  msi00       1.354    1.335    1.146    1.241    1.209    1.213    0.000
+
+THREE OF THESE FOUR TABLES SAY THE OPPOSITE OF WHAT THEY SAY WITHOUT THE CONTROL,
+and the first version of this script had no control. Recorded because the wrong
+readings are the intuitive ones.
+
+TIME CONSTANTS: NOT CONVERGENCE. Zero fast neurons and zero slow ones looks like
+a population that has settled on one way of using time. The seeded controls have
+zero of each too. breed:random/1 draws genes uniform on plus or minus 8192, a
+quarter of the 16-bit range, which puts every seeded tau in [0.406, 0.644]. That
+is 25% of the expressible [0.05, 1.0), and the fleet has barely left it: the
+widest champion reaches 0.382 and 0.657.
+
+**The archipelago has never once flown a drone with a fast reflex or a long
+memory.** Not because breeding rejected them. Because seeding cannot draw one and
+mutation moves tau by about 0.0087 per nudge on one gene in twenty. Whether the
+band is drift-limited or actively held there by selection is NOT answered here.
+
+SATURATION: NOT A SIGNATURE OF TRAINING. The champions straddle the controls,
+beam00 below both and msi00 above. Random weights of this magnitude saturate tanh
+just as hard. Note also that the inputs are closed-form, not sensor readings, so
+this measures the network and not the flight.
+
+WEIGHTS: MUTATION IS WORKING, AND THE HISTOGRAM CANNOT SAY MORE. Champions reach
+-2.85 and 2.57 against a seeding box of exactly plus or minus 2.000, so genes have
+been pushed 25-40% beyond anything seeding can produce. Mean |w| is unchanged at
+about 1.0. That is the expected shape: selection acts on the ARRANGEMENT of
+weights, which a marginal histogram is nearly blind to. Nothing here is evidence
+that breeding has or has not improved anything.
+
+KINSHIP: THE ONE POSITIVE RESULT, AND RAIDS ARE VISIBLE IN IT. Two genomes known
+to be unrelated sit at 1.330, and every champion-to-seed pair agrees, averaging
+1.348 over ten pairs. Every one of the ten champion-to-champion pairs is BELOW
+that, averaging 1.239, with msi00 and beam00 closest at 1.146.
+
+The five islands share ancestry. This is the first evidence that the raid
+protocol moves genetic material and not merely counters: captures were already
+counted in the thousands, and a counter cannot tell a genome that was absorbed
+from one that was absorbed and immediately outcompeted.
+
+It is a WEAK mixing, about 8% of the way from unrelated toward identical, and it
+rests on one genome per island rather than the population.
