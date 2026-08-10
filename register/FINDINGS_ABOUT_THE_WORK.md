@@ -7,6 +7,58 @@ The index, and the rule itself, are in [`../REGISTER.md`](../REGISTER.md).
 
 ---
 
+## I.29: the differential test compared the old engine against itself, and would have passed
+
+The question was whether upgrading `faber_tweann` from 2.0.1 to 2.4.0 changes what
+a bred drone computes, because if it does the roster is no longer comparable to
+itself and the lineage has to restart on a new stream, as it did on 2026-08-09.
+The instrument was right: fly the five committed champions for 200 ticks and
+compare the outputs bit for bit.
+
+Getting the new engine in front of it was where it went wrong. `_checkouts/` is
+rebar3's local-override mechanism, so a symlink went in there, `rebar3 compile`
+reported success, and the script was run. **It printed `faber_tweann : 2.0.1`.**
+
+rebar3 had put the checkout under `_build/default/checkouts/`, left it
+uncompiled, and `ERL_LIBS=_build/default/lib` never looked there. The old
+version was still the only one on the path. Had the script not been made to
+print the version it was measuring, it would have compared 2.0.1 against 2.0.1,
+produced two identical digests, and those identical digests are **exactly the
+result that authorises a fleet upgrade with no wipe.** The false green and the
+true green are the same string.
+
+Two things saved it, and only one was foresight.
+
+**The instrument names its subject.** It prints the version and the
+implementation beside every digest. That was written in because a digest with no
+provenance cannot be compared with another digest, and it happened to catch a
+harness fault instead.
+
+**The injection test.** Asking the same script for the `fallback` path, whose CfC
+maths is known to have changed across these versions, must produce two DIFFERENT
+digests. It does: `5A61FF14…` becomes `29CD6985…`. Without that, "the digests
+match" is indistinguishable from "this script cannot tell anything apart".
+
+**The rule.** A differential test must prove it was handed two different things
+before its agreement means anything. Print the version of each side, and give
+the harness a case it is required to fail.
+
+An aside worth keeping, because it inverts the usual reading of a difference: the
+2.0.1 native and Erlang paths disagreed by **2.0** on outputs bounded in
+`[-1, 1]`, the entire available range. At 2.4.0 the same comparison is 1.7e-15.
+The number to distrust was never the small one.
+
+**ELI5.** Someone wanted to know whether a new engine drives differently from the
+old one, so they planned to drive both around the same track and compare the lap
+times. They rolled what they thought was the new engine into the garage, drove
+it, and got exactly the old lap time. That is the answer meaning "nothing
+changed, go ahead" — except they had never swapped the engine, and were timing
+the old one twice. The only reason anyone noticed is that the stopwatch also
+printed which engine it had just timed, and it said the old one. So now there is
+a second rule: before trusting "these two are the same", make the equipment prove
+it can tell two things apart, by giving it two things you already know are
+different.
+
 ## I.28: both operational instruments reported the fleet as absent, during the one deploy that needed checking
 
 The fleet was wiped on 2026-08-09 by starting a new event stream. Verifying that

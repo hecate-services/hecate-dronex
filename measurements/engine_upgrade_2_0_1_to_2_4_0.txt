@@ -1,0 +1,41 @@
+
+Does faber_tweann 2.0.1 -> 2.4.0 change what a champion computes?
+
+The five committed champions, 200 threaded CfC ticks each, closed-form inputs.
+Digest is sha256 over term_to_binary of the whole output trace, so it is exact
+to the bit. scripts/does_the_engine_upgrade_move_the_numbers.escript, 2026-08-10.
+
+The live fleet was measured the same day as faber_nn_nifs on all five islands,
+so the NATIVE row is the one the decision rests on.
+
+  version  implementation      fleet digest        native vs fallback
+  2.0.1    faber_nn_nifs       2CE98EB6FEDEE606              2.00000
+  2.4.0    faber_nn_nifs       2CE98EB6FEDEE606            1.72e-15
+  2.0.1    tweann_nif_fallback 5A61FF144923CB3E
+  2.4.0    tweann_nif_fallback 29CD69853625CE26
+
+Read it in two directions.
+
+DOWN THE NATIVE COLUMN: identical. Not close, identical, over 200 ticks with the
+CfC state threaded so any mishandled time constant would compound rather than
+cancel. The upgrade does not move the physics, the roster stays comparable to
+itself, and $dronex:roster_g2 stands. No wipe.
+
+ACROSS THE 2.0.1 ROW: the two implementations were 2.0 apart. The outputs are
+tanh, so they live in [-1, 1] and 2.0 is the entire range: the worst disagreement
+possible. A drone flown on the Erlang path was not the same drone. That gap is
+1.72e-15 at 2.4.0, which is last-place disagreement between Rust and libm
+accumulated over 200 ticks, so the two paths are now one function in the only
+sense that can be asked of floating point.
+
+WHY THE FALLBACK ROWS ARE HERE AT ALL. They are the injection test. A digest that
+never moves cannot be told apart from an instrument that cannot move, and the
+native rows agreeing is evidence only because the fallback rows show the same
+script reporting a difference when there is one.
+
+WHAT THIS DOES NOT SAY. It measures the forward pass, not the exam. That is on
+purpose and it is the stronger claim: drone_pilot:commands/1 thresholds at zero,
+so equal exam scores are consistent with a changed network, while equal outputs
+force equal scores. It also says nothing about any faber_tweann function dronex
+does not call, and dronex calls four: create_cfc_feedforward/5, set_weights/2,
+set_neuron_meta/2, evaluate_with_state/2.
