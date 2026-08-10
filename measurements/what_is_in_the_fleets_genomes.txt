@@ -29,6 +29,17 @@ Topology [41, 24, 10]: 1258 weights and 24 time constants, Q12, 4096 is 1.0.
   beam03      0.382    0.557    0.654          0          0
   msi00       0.416    0.516    0.650          0          0
 
+  WHAT THE MEMORY DOES, 24 hidden states over 200 ticks
+
+  island    |state|>.99 mean |state|     distinct
+  SEED-a          27.6%        0.659        24/24
+  SEED-b          21.3%        0.603        24/24
+  beam00          24.6%        0.617        24/24
+  beam01          27.4%        0.650        24/24
+  beam02          24.0%        0.623        24/24
+  beam03          20.4%        0.592        24/24
+  msi00           24.7%        0.621        24/24
+
   OUTPUT SATURATION, 200 closed-form ticks
 
   island     |out|>0.99  |out|>0.999  mean |out|
@@ -66,6 +77,19 @@ widest champion reaches 0.382 and 0.657.
 memory.** Not because breeding rejected them. Because seeding cannot draw one and
 mutation moves tau by about 0.0087 per nudge on one gene in twenty. Whether the
 band is drift-limited or actively held there by selection is NOT answered here.
+
+AND THE CONFINEMENT MATTERS, WHICH HAD TO BE CHECKED SEPARATELY. The CfC update
+flown here is f = Sum/tau, gate = sigmoid(-f) with f clamped to [-10, 10], and
+state = gate*state + (1-gate)*head. Tau is a DIVISOR ON THE INPUT, not a leak
+rate, so it decides nothing while the weighted sum is large enough to pin the
+sigmoid. A hidden neuron sums 41 inputs through weights of order 1, which made
+"the gate is pinned and tau is inert" the obvious guess, and it would have made
+the whole tau finding a non-issue.
+
+It is wrong. Only 20-28% of hidden states sit at the bound, mean |state| is about
+0.62, and all 24 neurons move on every island. The gate is live roughly three
+quarters of the time, so tau is operating where its value changes behaviour, and
+a quarter of its range is where the fleet has been kept.
 
 SATURATION: NOT A SIGNATURE OF TRAINING. The champions straddle the controls,
 beam00 below both and msi00 above. Random weights of this magnitude saturate tanh

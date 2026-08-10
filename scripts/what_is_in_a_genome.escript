@@ -45,6 +45,7 @@ report(Dir) ->
               [drone_genome:scale()]),
     weights(Cs),
     taus(Cs),
+    memory(Cs),
     saturation(Cs),
     kinship(Cs),
     ok.
@@ -113,6 +114,66 @@ tau_row(Name, Genome) ->
     io:format("  ~-8s ~8.3f ~8.3f ~8.3f ~10b ~10b~n",
               [Name, hd(Ts), lists:nth(max(1, length(Ts) div 2), Ts), lists:last(Ts),
                length([X || X <- Ts, X < 0.2]), length([X || X <- Ts, X > 0.8])]).
+
+%%------------------------------------------------------------------------------
+%% Is the time constant doing anything at all?
+%%------------------------------------------------------------------------------
+
+%% ⚠ THIS IS THE TABLE THAT DECIDES WHETHER THE TAU RANGE MATTERS, and without it
+%% the tau table above invites an expensive fix that would change nothing.
+%%
+%% The CfC update dronex flies is, in simple mode:
+%%     f     = Sum / tau
+%%     gate  = sigmoid(-f),  with f CLAMPED to [-10, 10]
+%%     state = gate * state + (1 - gate) * head(Sum)
+%%
+%% So tau is a DIVISOR ON THE INPUT, not a leak rate. It only decides anything
+%% while the weighted sum is small enough for the sigmoid to be off its rails. A
+%% hidden neuron here sums 41 inputs through weights of order 1, so the sums are
+%% of order several units, f is of order ten, and the gate is pinned at 0 or 1
+%% whatever tau does. When that is the case the memory is a sign-triggered latch
+%% and widening the tau range buys nothing.
+%%
+%% The internal state is the observable: a pinned gate drives it to the state
+%% bound and holds it there, a live gate leaves it graded inside the bound.
+memory(Cs) ->
+    io:format("  WHAT THE MEMORY DOES, 24 hidden states over 200 ticks~n~n"),
+    io:format("  ~-8s ~12s ~12s ~12s~n",
+              ["island", "|state|>.99", "mean |state|", "distinct"]),
+    [mem_row(N, G) || {N, G} <- Cs],
+    io:format("~n  State is bounded at 1.0. Pinned means the gate saturated and the~n"
+              "  neuron latched. `distinct` counts how many of the 24 neurons ever~n"
+              "  move at all across the run: a neuron that never moves is carrying~n"
+              "  no memory regardless of what its time constant says.~n~n").
+
+mem_row(Name, Genome) ->
+    States = states(Genome),
+    Flat = lists:flatten(States),
+    N = length(Flat),
+    Moving = length([1 || I <- lists:seq(1, 24), moves(States, I)]),
+    io:format("  ~-8s ~11.1f% ~12.3f ~9b/24~n",
+              [Name,
+               100 * length([X || X <- Flat, abs(X) > 0.99]) / N,
+               lists:sum([abs(X) || X <- Flat]) / N,
+               Moving]).
+
+%% A neuron moves if its state is not the same value at every tick.
+moves(States, I) ->
+    Col = [lists:nth(I, S) || S <- States],
+    length(lists:usort([round(X * 1000) || X <- Col])) > 1.
+
+states(Genome) ->
+    {ok, #{net := Net}} = drone_pilot:init(Genome),
+    walk(Net, 200, 1, []).
+
+walk(_Net, Ticks, N, Acc) when N > Ticks -> lists:reverse(Acc);
+walk(Net, Ticks, N, Acc) ->
+    {_Out, Stepped} = drone_pilot:decide(Net, inputs(N)),
+    walk(Stepped, Ticks, N + 1, [hidden_of(Stepped) | Acc]).
+
+%% get_internal_state/1 arrived in faber_tweann 2.4.0. One entry per layer, and
+%% the hidden layer is the only recurrent one.
+hidden_of(Net) -> hd(network_evaluator:get_internal_state(Net)).
 
 %%------------------------------------------------------------------------------
 %% What the network does with them
