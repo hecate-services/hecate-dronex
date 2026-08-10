@@ -108,10 +108,19 @@ to be unrelated sit at 1.330, and every champion-to-seed pair agrees, averaging
 1.348 over ten pairs. Every one of the ten champion-to-champion pairs is BELOW
 that, averaging 1.239, with msi00 and beam00 closest at 1.146.
 
-The five islands share ancestry. This is the first evidence that the raid
-protocol moves genetic material and not merely counters: captures were already
-counted in the thousands, and a counter cannot tell a genome that was absorbed
-from one that was absorbed and immediately outcompeted.
+The five islands are more alike than chance.
 
-It is a WEAK mixing, about 8% of the way from unrelated toward identical, and it
-rests on one genome per island rather than the population.
+⚠ WITHDRAWN, 2026-08-10, SAME DAY: this paragraph originally read "this is the
+first evidence that the raid protocol moves genetic material and not merely
+counters". **The numbers stand and that reading does not.** Convergent selection
+predicts exactly the same signal: five islands facing one frozen curriculum and
+one physics drift toward similar weights with no gene flow at all. Nothing here
+separates the two.
+
+The population census in what_is_in_the_whole_population.txt makes it worse for
+the gene-flow reading rather than better: three of the five islands hold ZERO
+captured entries and the other two hold 1 and 12, against thousands of captures.
+Imports are admitted and then lose.
+
+It is a WEAK similarity, about 8% of the way from unrelated toward identical, and
+it rests on one genome per island rather than the population.

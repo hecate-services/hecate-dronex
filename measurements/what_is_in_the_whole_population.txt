@@ -1,0 +1,87 @@
+
+The population, not its champion.
+
+All five rosters, 2026-08-10 08:20, summarised on the island and fetched by
+scripts/fetch_the_rosters.sh. 452 entries and 10,848 time constants fleet-wide.
+scripts/what_is_in_the_whole_roster.escript.
+
+Seeding can draw tau only in [0.406, 0.644], 25% of the expressible [0.05, 1.0).
+Weights only in [-2, 2].
+
+  HOW BIG          WHERE FROM                    LINEAGE DEPTH
+  island  entries  bred    captured    gen max  gen med  gen zero
+  beam00       74  99%     1%              146      141         1
+  beam01       87  100%    -               166      155         0
+  beam02       78  100%    -               165      158         0
+  beam03       60  100%    -               158      151         0
+  msi00       153  92%     8% (3 peers)    113      106        12
+
+  Capacity is 240 on every island.
+
+  TIME CONSTANTS, WHOLE POPULATION
+
+  island        min      max   outside       of   fast<0.2   slow>0.8
+  beam00      0.383    0.654        38     1776          0          0
+  beam01      0.366    0.651       105     2088          0          0
+  beam02      0.378    0.657       140     1872          0          0
+  beam03      0.382    0.669       119     1440          0          0
+  msi00       0.378    0.659       126     3672          0          0
+
+  WEIGHTS, WHOLE POPULATION
+
+  island     furthest   median |w|   outside     of
+  beam00        2.899        0.999        74     74
+  beam01        2.921        1.020        87     87
+  beam02        2.851        1.010        78     78
+  beam03        3.047        1.020        60     60
+  msi00         2.899        1.007       153    153
+
+THE LINEAGES ARE DEEP, WHICH KILLS THE OBVIOUS EXPLANATION. Median generation is
+106 to 158 and almost nothing sits at generation zero. The champions looked close
+to seeded genomes and the tempting reading was that the population churns faster
+than it adapts, so an entry is only ever a few mutations old. It is not so. These
+are lineages 150 generations deep and they still have seeded time constants.
+
+THE TAU BAND IS A POPULATION FACT. Not one of the 10,848 time constants in the
+archipelago is fast (below 0.2) or slow (above 0.8). Between 2% and 7% have
+escaped the band seeding drew them from at all. **No drone in the history of this
+archipelago has had a fast reflex or a long memory, and none is on course to.**
+
+AND THE REASON IS ARITHMETIC, NOT SELECTION. One mutation is a draw at sigma=600
+gene units, on one gene in twenty.
+
+  for a WEIGHT  600/4096          = 0.146 weight units, against a seeded spread
+                                    of [-2, 2], so 3.7% of the range per nudge
+  for a TAU     600 * 0.95/65536  = 0.0087 tau units, against an expressible
+                                    0.95, so 0.9% of the range per nudge
+
+Weights are seeded ACROSS the range they use, so a gene already sitting near 2.0
+crosses the line on its first nudge, and every entry on every island carries at
+least one weight outside the box. Time constants are seeded into the MIDDLE
+QUARTER, so a tau must cross 0.206 units of dead ground before it is even fast.
+
+At one gene in twenty over 150 generations each tau has taken about 7.5 nudges,
+giving a random walk of sd 0.0087*sqrt(7.5) = 0.024. Reaching 0.2 is 8.6 standard
+deviations. Reaching it at ONE standard deviation needs about 560 nudges, so
+about 11,000 generations. The fleet is at 150. **The search would need roughly
+seventy times its whole history to sample the range the encoding offers.**
+
+Two quantities with different scales share one step size and one seeding draw.
+That is the defect, and it is in `breed:random/1` and `?SIGMA` together, not in
+`to_tau/1`, which is the only part that states its intent.
+
+⚠ A CORRECTION TO measurements/what_is_in_the_fleets_genomes.txt. That file says
+the kinship result is "the first evidence that the raid protocol moves genetic
+material and not merely counters". **That was too strong and this table is why.**
+Three of the five islands hold ZERO captured entries right now and the other two
+hold 1 and 12, against thousands of captures historically. Imports are admitted
+and then lose.
+
+Convergent selection predicts the same signal: five islands facing one frozen
+curriculum and one physics will drift toward similar weights with no gene flow at
+all. Gene flow and convergence are not separated by anything measured here, and
+the near-absence of surviving captured entries is the weaker news for gene flow.
+The kinship numbers stand; the interpretation does not.
+
+OPEN, NOT CHASED. Rosters sit at 25% to 64% of capacity. Median sorties is 0 or 1,
+so most entries have barely flown. Neither is explained here.
