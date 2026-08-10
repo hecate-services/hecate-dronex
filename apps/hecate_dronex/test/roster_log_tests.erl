@@ -239,10 +239,24 @@ the_stream_name_is_one_the_store_will_accept_test() ->
     ?assertError({invalid_stream_id, _},
                  reckon_db_stream_path:stream_path(<<"$dronex:roster:g2">>)).
 
-%% ⚠⚠ AND IT IS NOT THE PRE-WIPE STREAM. On 2026-08-09 the fleet was wiped by
+%% ⚠⚠ AND IT IS NOT A PRE-WIPE STREAM. On 2026-08-09 the fleet was wiped by
 %% starting a new lineage rather than deleting a store: the physics changed
 %% underneath every genome bred so far, so their fitness was earned in a different
 %% game. Pointing this back at `$dronex:roster' silently resurrects all of it, on
 %% every island, at the next boot.
-the_lineage_is_not_the_one_bred_under_the_old_physics_test() ->
-    ?assertNotEqual(<<"$dronex:roster">>, roster_log:stream()).
+%%
+%% ⚠⚠⚠ AND EVERY SUPERSEDED NAME IS LISTED, NOT JUST THE FIRST, BECAUSE THIS TEST
+%% COULD NOT SEE THE SECOND WIPE OR THE THIRD. It asserted only that the stream
+%% was not `$dronex:roster', so it passed identically on `_g2', `_g3' and `_g4' —
+%% including on a revert from `_g4' to `_g3', which is the failure that can
+%% actually happen now. There have been three wipes in two days and each one
+%% makes the previous name a hazard rather than a spare.
+%%
+%% A revert is not hypothetical: the name is one token, it reads like a version
+%% nobody needs to think about, and the whole cost of getting it wrong is invisible
+%% — the island boots, restores a roster bred under other physics, and reports
+%% itself healthy while its fitness numbers mean something else.
+the_lineage_is_not_one_bred_under_older_physics_test() ->
+    Superseded = [<<"$dronex:roster">>, <<"$dronex:roster_g2">>,
+                  <<"$dronex:roster_g3">>],
+    [?assertNotEqual(Old, roster_log:stream()) || Old <- Superseded].

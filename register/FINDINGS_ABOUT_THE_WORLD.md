@@ -46,6 +46,14 @@ Set to 120 m, `INTERCEPTOR_TTL` 30. Twice the kill zone, 12% of a 1000 m arena
 against the 6% before and the 60% at 600 m, and the lock range stays 600 m so the
 5× gap that makes fire discipline a skill survives.
 
+**It cost a lineage and moved the fingerprint, and both were paid rather than
+worked around.** A `_g3` genome was bred to fly a fight decided inside 60 m, so
+its fitness number does not transfer, which is the `_g2` argument about this same
+constant — the lineage is `$dronex:roster_g4`, twelve hours after `_g3` started.
+And physics sits inside `dronex_raid:fingerprint_parts/0`, measured `B582D158` →
+`566C0420`, so the five islands roll together or they silently stop raiding each
+other (`I.12`).
+
 **ELI5.** We had shortened the arrow's flight to sixty metres, having only checked
 that it was not so short the arrow fell out of the sky. We never checked what
 eighty or a hundred and twenty would have been like. Having now checked: the arrow

@@ -121,7 +121,26 @@
 %% a `_g2' genome and a `_g3' genome were not produced by the same process and
 %% their fitness numbers are not comparable. Same mechanism as before: a new name,
 %% the old streams intact and unread, no ssh and no `rm' near a store.
--define(STREAM, <<"$dronex:roster_g3">>).
+%%
+%% ⚠⚠⚠ AND `_g4' FROM 2026-08-10, LATER THE SAME DAY, WHICH IS THE `_g2' REASON
+%% EXACTLY. The guided weapon's reach went from 60 m to 120 m: register `D.20'
+%% found that 60 had been set at the short end of a curve nobody had plotted, and
+%% that reach is the size of the kill zone and nothing else. Doubling it doubles
+%% the band in which a controller may take a certain shot.
+%%
+%% A `_g3' genome was bred to fly a fight decided inside 60 m. Its fitness number
+%% says how well it did at that, and there is no reading of it that says how well
+%% it would do here — the same argument `_g2' records, at the same layer, about
+%% the same constant. Twelve hours of lineage is the price, and it is cheaper than
+%% a roster whose numbers mean two different things.
+%%
+%% ⚠ THIS ONE ALSO MOVES THE ENGINE FINGERPRINT, WHICH NEITHER `_g2' NOR `_g3'
+%% DID. `airspace:limits/0' feeds `dronex_raid:fingerprint_parts/0', measured
+%% B582D158 -> 566C0420, so an island on this image refuses every neighbour still
+%% on the old one, silently, with `raids' at zero and nothing logged on either
+%% side — register `I.12'. The fleet rolls together or the archipelago stops
+%% raiding. `scripts/does_the_fingerprint_move.sh' prints both digests.
+-define(STREAM, <<"$dronex:roster_g4">>).
 
 %% How far back `restore/1' will look for a snapshot before giving up and
 %% starting from nothing. Generous, because the cost is paid once at boot and the
