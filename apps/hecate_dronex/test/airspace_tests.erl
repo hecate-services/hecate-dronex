@@ -520,9 +520,10 @@ a_launch_spends_a_round_and_starts_its_own_cooldown_test() ->
 %% cannot answer because it leads nothing, and the guided one closes anyway.
 %%
 %% ⚠⚠ 45 m, AND IT USED TO BE 200 m. The interceptor reached 600 m until
-%% 2026-08-09 and reaches 60 m now, so the old distance tested a weapon that no
-%% longer exists. The PROPERTY is unchanged and is what this still asserts;
-%% only the envelope it holds in moved.
+%% 2026-08-09, 60 m until 2026-08-10 and 120 m now, so the old distance tested a
+%% weapon that no longer exists. The PROPERTY is unchanged and is what this still
+%% asserts; only the envelope it holds in moved, and 45 m is inside every version
+%% of it since the cut.
 a_guided_interceptor_runs_a_fleeing_target_down_test() ->
     #{max_accel := T, gravity := G, start_health := H} = airspace:limits(),
     Near = airspace:new([{a, attacker, 455 * ?M, 500 * ?M, 100 * ?M, 0},
@@ -538,8 +539,13 @@ a_guided_interceptor_runs_a_fleeing_target_down_test() ->
 %% munition in the air at frame zero. The whole redesign of 2026-08-09 is this
 %% number, so a silent revert of `INTERCEPTOR_TTL' has to fail something.
 %%
-%% 200 m is well outside the 60 m reach, and the shot is otherwise identical to
+%% 200 m is well outside the 120 m reach, and the shot is otherwise identical to
 %% the one above: same intent, same duration, same fleeing target.
+%%
+%% ⚠ THE `S * Ttl < 200 * ?M' ASSERTION IS THE GUARD ON THE GUARD. It fails the
+%% moment a reach increase would make 200 m a reachable shot, so the day someone
+%% takes the weapon past 200 m this test says so instead of quietly passing on a
+%% target it can now hit. `INTERCEPTOR_TTL' above 50 trips it.
 a_guided_interceptor_cannot_reach_past_its_range_test() ->
     #{max_accel := T, gravity := G, start_health := H,
       interceptor_speed := S, interceptor_ttl := Ttl} = airspace:limits(),

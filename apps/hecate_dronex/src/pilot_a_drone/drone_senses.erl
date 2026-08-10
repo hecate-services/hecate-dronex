@@ -64,11 +64,13 @@ range() -> ?SENSE_RANGE.
 %% @doc How far the guided interceptor reaches, in the units a contact's `range'
 %% is reported in: a fraction of sensor range, where 1.0 is the far edge of sight.
 %%
-%% ⚠ THIS EXISTS SO NOBODY WRITES `0.1' AGAIN. On 2026-08-09 the interceptor's
-%% reach went from 600 m to 60 m, and the launch gates in `drone_drills' and
-%% `drone_trials' were given the ceiling `R =< 0.1' in three places to match.
-%% That literal means "60 m" only for as long as `INTERCEPTOR_TTL' stays 15, and
-%% NOTHING connected the two: change the weapon and all six curriculum rungs and
+%% ⚠ THIS EXISTS SO NOBODY WRITES `0.1' AGAIN, AND ON 2026-08-10 IT PAID FOR
+%% ITSELF. On 2026-08-09 the interceptor's reach went from 600 m to 60 m, and the
+%% launch gates in `drone_drills' and `drone_trials' were given the ceiling
+%% `R =< 0.1' in three places to match. That literal meant "60 m" only for as
+%% long as `INTERCEPTOR_TTL' stayed 15 — it is 30 now, for 120 m, and every gate
+%% followed with no edit — and NOTHING connected the two: change the weapon and
+%% all six curriculum rungs and
 %% all six trial rungs quietly start firing into fuel they do not have, spending
 %% a magazine of two before contact. The ladders would not fail, they would just
 %% get easier, which is the failure mode a benchmark cannot survive.

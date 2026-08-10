@@ -7,6 +7,40 @@ The index, and the rule itself, are in [`../REGISTER.md`](../REGISTER.md).
 
 ---
 
+## I.31: the sweep scripts left the build newer than the source, so two clean compiles changed nothing
+
+Both `at_what_range_can_a_break_work.sh` and `sweep_the_interceptor.sh` overwrite
+`airspace.beam` in place, and both restore the shipped one on every exit path,
+which is careful and was written up as such. The restore ended `cp orig.beam
+$BEAM; touch $BEAM`.
+
+**That leaves a build artefact NEWER than the source it was built from.** On
+2026-08-10, immediately after a sweep, `INTERCEPTOR_TTL` was edited from 15 to 30.
+`rebar3 compile` reported success. `rebar3 eunit` ran 442 tests green. And
+`airspace:limits/0` kept answering **15**, because rebar3 compares timestamps,
+found the beam younger than the source, and correctly concluded there was nothing
+to do. The change had not been compiled and every check performed on it was a
+check of the old weapon.
+
+It was caught only because the value was read back out of the beam rather than
+inferred from the source. Nothing else would have shown it: the tests pin
+relationships rather than numbers, so they pass at either reach, and a green suite
+was exactly what a stale build produced.
+
+⚠ **THE SCRIPT'S OWN COMMENT NAMED THIS RISK AND STILL SHIPPED IT.** The restore
+is introduced as guarding against "the stale-beam trap in a new costume", meaning
+a swept build left in place. It guarded that direction and opened the opposite
+one: not a wrong beam left behind, but a right beam that cannot be replaced.
+
+Fixed by touching the SOURCE last, so the restored artefact is never newer than
+what it came from. Verified by running a sweep, compiling, and reading the value
+back: 30 where it had been 15.
+
+**ELI5.** A tool borrows your file, puts the original back, and marks it "just
+tidied". Later you rewrite the file, and the machine looks at the two dates,
+decides the tidy copy is the newer one, and keeps using it. Everything says it
+worked. Nothing changed. We now make sure the rewrite always looks newer.
+
 ## I.30: a contest was asked a question about admission, and a counter was read as a flight log
 
 Three things looked wrong in the population census of 2026-08-10. Two were, one

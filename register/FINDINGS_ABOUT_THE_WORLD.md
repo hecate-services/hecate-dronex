@@ -7,6 +7,51 @@ The index, and the rule itself, are in [`../REGISTER.md`](../REGISTER.md).
 
 ---
 
+## D.20: the weapon's reach was set at the short end of a curve nobody had plotted
+
+On 2026-08-09 the guided interceptor was cut from 600 m of reach to 60 m, and the
+60 was chosen against one question: how short can it be before the missile stops
+having the fuel to curve onto its target. That question has an answer, roughly
+32 m, and 60 m clears it. **What was never measured is where 60 m sits against
+the alternatives**, because `at_what_range_can_a_break_work.sh` steps 100 m to
+200 m and prints identical tables for every reach in between.
+
+Measured 2026-08-10 with the rungs narrowed, 24 starts per cell. The number is the
+longest launch range that still connects:
+
+| reach | 60 m | 80 m | 100 m | 120 m | 140 m | 160 m |
+|---|---|---|---|---|---|---|
+| vs a target running | — | 80 m | 100 m | 120 m | 140 m | 160 m |
+| vs a target breaking | 50 m | 80 m | 100 m | 115 m | 130 m | 160 m |
+
+Two things, and only the first was expected.
+
+**A hard break costs the weapon between 0 and 10 m and never more.** Every arm
+connects 100% at every range it can physically reach, on both evasions. The
+pre-registered viability criterion — hit at 300 m, be beatable at 50 m, 40 points
+between — **fails on all six arms including the shipped one**. `D.10` and `D.17`
+said this about the turn rate and about time of flight; it is true of reach as
+well, and it means viability does not choose this constant and cannot be made to.
+Reach is the size of the kill zone, exactly, and picking it is a design decision
+recorded as one rather than dressed up as a measurement.
+
+**And the launch gate over-promises by the break margin, at every value.**
+`drone_senses:reach_fraction/0` derives the gate from `speed * ttl`, the NOMINAL
+reach, so a rung may fire in the last few metres where a breaking target lives:
+10 m of the shipped 60, 5 m of the 120 it moved to. Smaller, not zero. Closing it
+means gating on a measured fraction instead of on the arithmetic, which is a
+different change and is not made here.
+
+Set to 120 m, `INTERCEPTOR_TTL` 30. Twice the kill zone, 12% of a 1000 m arena
+against the 6% before and the 60% at 600 m, and the lock range stays 600 m so the
+5× gap that makes fire discipline a skill survives.
+
+**ELI5.** We had shortened the arrow's flight to sixty metres, having only checked
+that it was not so short the arrow fell out of the sky. We never checked what
+eighty or a hundred and twenty would have been like. Having now checked: the arrow
+always hits anything it can reach, ducking does not help at all, so the only thing
+the distance decides is how close you must walk before shooting. We doubled it.
+
 ## D.19: the search could not reach three quarters of the memory it was given
 
 Every drone carries 24 time constants, one per hidden neuron, and

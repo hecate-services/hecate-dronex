@@ -186,6 +186,9 @@ In [`register/FINDINGS_ABOUT_THE_WORK.md`](register/FINDINGS_ABOUT_THE_WORK.md),
 
 | | |
 |---|---|
+| [`I.31`](register/FINDINGS_ABOUT_THE_WORK.md#i31-the-sweep-scripts-left-the-build-newer-than-the-source-so-two-clean-compiles-changed-nothing) | the sweep scripts left the build newer than the source, so two clean compiles changed nothing |
+| [`I.30`](register/FINDINGS_ABOUT_THE_WORK.md#i30-a-contest-was-asked-a-question-about-admission-and-a-counter-was-read-as-a-flight-log) | a contest was asked a question about admission, and a counter was read as a flight log |
+| [`I.29`](register/FINDINGS_ABOUT_THE_WORK.md#i29-the-differential-test-compared-the-old-engine-against-itself-and-would-have-passed) | the differential test compared the old engine against itself, and would have passed |
 | [`I.28`](register/FINDINGS_ABOUT_THE_WORK.md#i28-both-operational-instruments-reported-the-fleet-as-absent-during-the-one-deploy-that-needed-checking) | both operational instruments reported the fleet as absent, during the one deploy that needed checking |
 | [`I.27`](register/FINDINGS_ABOUT_THE_WORK.md#i27-three-constants-that-meant-something-only-while-a-fourth-stood-still) | three constants that meant something only while a fourth stood still |
 | [`I.26`](register/FINDINGS_ABOUT_THE_WORK.md#i26-two-probes-lied-about-the-same-api-in-opposite-directions-within-a-minute) | two probes lied about the same API, in opposite directions, within a minute |
@@ -221,6 +224,8 @@ In [`register/FINDINGS_ABOUT_THE_WORLD.md`](register/FINDINGS_ABOUT_THE_WORLD.md
 
 | | |
 |---|---|
+| [`D.20`](register/FINDINGS_ABOUT_THE_WORLD.md#d20-the-weapons-reach-was-set-at-the-short-end-of-a-curve-nobody-had-plotted) | the weapon's reach was set at the short end of a curve nobody had plotted |
+| [`D.19`](register/FINDINGS_ABOUT_THE_WORLD.md#d19-the-search-could-not-reach-three-quarters-of-the-memory-it-was-given) | the search could not reach three quarters of the memory it was given |
 | [`D.18`](register/FINDINGS_ABOUT_THE_WORLD.md#d18-a-random-controller-could-win-rungs-and-the-weapon-was-paying-for-it) | a random controller could win rungs, and the weapon was paying for it |
 | [`D.17`](register/FINDINGS_ABOUT_THE_WORLD.md#d17-nothing-can-dodge-the-interceptor-at-any-range-and-the-sweep-built-to-check-that-cannot-see-it) | nothing can dodge the interceptor, at any range, and the sweep built to check that cannot see it |
 | [`D.16`](register/FINDINGS_ABOUT_THE_WORLD.md#d16-the-fleet-solved-the-frozen-exam-in-about-a-day-once-it-could-keep-a-lineage) | the fleet solved the frozen exam in about a day, once it could keep a lineage |

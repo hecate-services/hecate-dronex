@@ -144,7 +144,7 @@
 %% ==========================================================================
 %%
 %% They were measured against five champions bred under a guided weapon reaching
-%% 600 m, which now reaches 60 m, on a start set that opened at 400 m, which now
+%% 600 m, which reaches 120 m now, on a start set that opened at 400 m, which now
 %% opens at 800 m. Every one of those champions has since been wiped.
 %%
 %% ⚠ RE-GRADING NEEDS CONTROLLERS THAT CAN TELL RUNGS APART, AND THERE ARE NONE.
@@ -179,11 +179,16 @@
 %%
 %% ⚠⚠ AND IT WAS A LITERAL `0.15' UNTIL 2026-08-09, WHICH BROKE THE RUNG SILENTLY
 %% THE HOUR THE WEAPON CHANGED. 0.15 is 90 m. That was comfortably inside a
-%% weapon reaching 600 m, and is outside one reaching 60 m — so the circler would
-%% have held station beyond its own launch gate, shot nothing for the whole
-%% engagement, and become the hoverer its own comment warned about. Nothing would
-%% have failed. The rung would just have gone quietly easy, and a benchmark that
-%% goes quietly easy is worse than one that breaks.
+%% weapon reaching 600 m, and was outside the 60 m one that replaced it — so the
+%% circler would have held station beyond its own launch gate, shot nothing for
+%% the whole engagement, and become the hoverer its own comment warned about.
+%% Nothing would have failed. The rung would just have gone quietly easy, and a
+%% benchmark that goes quietly easy is worse than one that breaks.
+%%
+%% ⚠⚠⚠ AND THE REACH MOVED AGAIN ON 2026-08-10, TO 120 m, WHICH IS THE PROOF THE
+%% DERIVED FORM WAS WORTH WRITING. 90 m is back inside the weapon. Had this stayed
+%% a literal it would now be wrong in the OTHER direction, too tight rather than
+%% too loose, and just as silent.
 %%
 %% Three quarters of the reach, so the relationship the paragraph above describes
 %% survives whatever the weapon becomes. `trials_tests' checks the bounds rather
@@ -258,7 +263,7 @@ fly(circler, _N, Seen, _Mem) ->
     closing_on(Seen, #{vertical => hold, forward => standoff});
 
 %% Rung 4. The chaser, plus an altitude advantage it takes before it commits. It
-%% holds itself above the contact while far, and dives once inside 60 m.
+%% holds itself above the contact while far, and dives once inside the weapon.
 fly(swooper, _N, Seen, _Mem) ->
     closing_on(Seen, #{vertical => above, forward => full});
 
@@ -290,10 +295,11 @@ closing_on(#{bearing_sin := S, bearing_cos := C, range := R} = Seen, How) ->
             thrust_vert = gravity() + vertical(maps:get(vertical, How), Seen),
             yaw_rate = turn(S, toward),
             release = trigger(C > 0.9 andalso R < 0.05),
-            %% 0.2 is 120 m, the interceptor's whole reach since 2026-08-09.
-            %% Uncapped, as this read until that day, every rung would spend both
-            %% of its two shots at four hundred metres and arrive unarmed. Same
-            %% change and same reason as `drone_drills:shooting/2'.
+            %% The ceiling is the interceptor's whole reach, whatever it is: 0.1
+            %% for the 60 m weapon of 2026-08-09, 0.2 for the 120 m one since
+            %% 2026-08-10. Uncapped, as this read before either, every rung would
+            %% spend both of its two shots at four hundred metres and arrive
+            %% unarmed. Same change and same reason as `drone_drills:shooting/2'.
             launch = trigger(C > 0.9 andalso R >= 0.05 andalso R =< drone_senses:reach_fraction())}.
 
 forward(full, _R) -> accel() * 3 div 4;
@@ -348,12 +354,12 @@ led(#{bearing_sin := S} = Seen, #{last_sin := Prev}) ->
 %% the same competence: do not spend a round of two on a shot that cannot
 %% connect.
 %%
-%% ⚠⚠ 0.15 IS 90 m AND IT WAS 0.3, WHICH IS 180 m AND IS NOW BEYOND THE WEAPON.
-%% The interceptor reached 600 m until 2026-08-09 and reaches 120 m now, so the
-%% old band spent half its shots into empty air — with a magazine of two, that is
-%% the whole drone. This rung's identity is that it holds fire longer than the
-%% others do, so it keeps the tighter number: everyone else stops at 120 m, the
-%% marksman stops at 90 m and its shots connect.
+%% ⚠⚠ 0.15 IS 90 m AND IT WAS 0.3, WHICH IS 180 m AND IS STILL BEYOND THE WEAPON.
+%% The interceptor reached 600 m until 2026-08-09, 60 m for the day after, and
+%% 120 m since 2026-08-10, so the old band spent half its shots into empty air —
+%% with a magazine of two, that is the whole drone. This rung's identity is that
+%% it holds fire longer than the others do, so it keeps the tighter number:
+%% everyone else stops at the reach, the marksman stops at 90 m of it.
 aimed(undefined, Intent) -> Intent;
 aimed(#{bearing_cos := C, range := R}, #intent{} = I) ->
     I#intent{release = trigger(C > 0.98 andalso R < 0.05),

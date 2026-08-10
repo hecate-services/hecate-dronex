@@ -33,6 +33,12 @@
 %%
 %% Usage:
 %%   ERL_LIBS=$PWD/_build/default/lib scripts/can_a_drone_dodge_an_interceptor.escript
+%%
+%% The launch ranges can be narrowed to walk a boundary the default rungs are too
+%% coarse to resolve. The DEFAULT is the published sweep; a narrowed run is a
+%% follow-up and says so in whatever record cites it. 50 m and 300 m are always
+%% measured whatever is asked for, because they are the criterion.
+%%   DODGE_RANGES="100 120 140 160" scripts/can_a_drone_dodge_an_interceptor.escript
 
 %% ⚠ THE RECORD, NOT `element/2', AND THIS SCRIPT GOT IT WRONG BEFORE IT GOT IT
 %% RIGHT. A hand-counted field offset read `battery' where it meant `health',
@@ -58,7 +64,30 @@ main(_Args) ->
     verdict(Rows),
     ok.
 
-ranges() -> [30, 50, 100, 200, 300, 450].
+%% The published sweep. A run with no `DODGE_RANGES' in the environment measures
+%% exactly this and prints exactly what it always printed.
+default_ranges() -> [30, 50, 100, 200, 300, 450].
+
+%% ⚠ THE RUNGS JUMP 100 m TO 200 m, AND THAT GAP HID AN ANSWER. Asked how far the
+%% weapon should reach, the sweep printed identical tables for 100 m, 120 m and
+%% 160 m of reach: all three connect at a 100 m launch and none reaches 200 m, so
+%% the instrument could not separate them and the equality was an artefact of
+%% where the rungs happen to sit. A narrowed run is how you tell them apart.
+%%
+%% ⚠⚠ AND THE CRITERION RANGES ARE MERGED IN WHATEVER IS ASKED FOR, so narrowing
+%% CANNOT quietly drop the pre-registered verdict. A follow-up that measured 120
+%% and 140 alone would have printed no criterion at all, which is the same shape
+%% as choosing a value and then choosing the test it passes.
+criterion_ranges() -> [50, 300].
+
+ranges() -> lists:usort(criterion_ranges() ++ requested_ranges()).
+
+requested_ranges() ->
+    parsed(os:getenv("DODGE_RANGES")).
+
+parsed(false) -> default_ranges();
+parsed("") -> default_ranges();
+parsed(S) -> [list_to_integer(T) || T <- string:lexemes(S, " ,")].
 
 %% ⚠ TWO EVASIONS, BECAUSE THE FIRST VERSION MEASURED ONLY ONE AND IT WAS THE
 %% WRONG ONE. It used the `evader' drill, which turns away once and then runs

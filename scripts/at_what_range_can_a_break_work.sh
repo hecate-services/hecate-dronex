@@ -37,8 +37,14 @@ TMP=$(mktemp -d)
 # artefact in place, so an interrupted run that skipped the restore would leave
 # the tree compiled against a weapon nobody chose, and the next `rebar3 eunit'
 # would measure it without saying so.
+# ⚠⚠ AND THE SOURCE IS TOUCHED AFTER THE BEAM, WHICH IS THE STALE-BEAM TRAP IN
+# ITS THIRD COSTUME. Restoring a beam and touching it leaves a build artefact
+# NEWER than the source it came from, so the next `rebar3 compile' after somebody
+# edits a constant decides there is nothing to do and silently keeps the old
+# weapon. Measured 2026-08-10: `INTERCEPTOR_TTL' was edited 15 -> 30, two clean
+# compiles reported success, and `airspace:limits/0' kept answering 15.
 restore() {
-    [ -f "$TMP/orig.beam" ] && { cp "$TMP/orig.beam" "$BEAM"; touch "$BEAM"; }
+    [ -f "$TMP/orig.beam" ] && { cp "$TMP/orig.beam" "$BEAM"; touch "$BEAM"; touch "$SRC"; }
     rm -rf "$TMP"
 }
 trap restore EXIT
@@ -51,7 +57,20 @@ cp "$TMP/airspace.beam" "$BEAM"
 touch "$BEAM"
 
 echo
-echo "Interceptor reach fixed at $(( TTL * 4 )) m, so fuel is not what is being measured."
+echo "Interceptor reach fixed at $(( TTL * 4 )) m."
+# ⚠ THE DEFAULT ARM AND A SHORT ARM MEASURE DIFFERENT THINGS, AND SAYING SO IS
+# THE WHOLE POINT OF THE SCRIPT. At 600 m the missile never runs dry inside the
+# table, so every zero is guidance losing to manoeuvre. At a short reach a zero
+# past the fuel is the missile never arriving, which looks identical in the
+# column and is not the same finding. This line used to claim "fuel is not what
+# is being measured" whatever TTL it was handed, which was false for exactly the
+# runs somebody would reach for this script to make.
+if [ "$TTL" -ge 150 ]; then
+    echo "Nothing in the table is fuel-limited, so every miss is guidance losing to manoeuvre."
+else
+    echo "⚠ Reach is SHORTER than the far end of the table, so a zero past $(( TTL * 4 )) m"
+    echo "  is the missile never arriving, not a target out-flying it."
+fi
 echo "The shooter fires once and holds station. The target breaks or runs."
 echo
 scripts/can_a_drone_dodge_an_interceptor.escript

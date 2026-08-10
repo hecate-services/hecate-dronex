@@ -191,8 +191,8 @@
 -ifndef(INTERCEPTOR_TURN).
 -define(INTERCEPTOR_TURN, 7680).
 -endif.
-%% ⚠⚠⚠⚠ 15 TICKS, SO 60 m OF REACH, AND IT USED TO BE 150 FOR 600 m. THIS IS THE
-%% CHANGE THAT DECIDES WHAT A FIGHT IS.
+%% ⚠⚠⚠⚠ 30 TICKS, SO 120 m OF REACH. IT WAS 150 FOR 600 m UNTIL 2026-08-09 AND 15
+%% FOR 60 m UNTIL 2026-08-10. THIS IS THE CHANGE THAT DECIDES WHAT A FIGHT IS.
 %%
 %% At 600 m the interceptor reached as far as the sensor did, which meant it
 %% covered most of a 1000 m arena from anywhere in it. Every engagement was
@@ -235,21 +235,51 @@
 %% the size of the zone where that pays, and shrinking it is exactly equivalent
 %% to demanding more flying before the shot.
 %%
-%% 60 m, so the guided weapon owns 15 m to 60 m — the dumb round is effective
-%% inside about 15 m — and 6% of a 1000 m arena rather than the 60% it owned at
-%% 600 m. A fight is now: search from 800 m to first contact at 600 m, a long
-%% approach under observation, and a decision inside 60 m. These are drones, not
+%% 120 m, so the guided weapon owns 15 m to 120 m — the dumb round is effective
+%% inside about 15 m — and 12% of a 1000 m arena rather than the 60% it owned at
+%% 600 m. A fight is: search from 800 m to first contact at 600 m, a long
+%% approach under observation, and a decision inside 120 m. These are drones, not
 %% interceptor aircraft, and an engagement that opens at half a kilometre was
 %% never the thing being modelled.
 %%
-%% ⚠ AND 60 m IS THE SHORT END OF WHAT STILL FUNCTIONS, WHICH IS WHY IT IS NOT
-%% SHORTER. The missile needs fuel to curve onto its target, so too short a reach
-%% misses for a reason that has nothing to do with the fight. Measured at this
-%% value: 100% at a 30 m launch, 100% at 50 m, 0% at 100 m, the last of those
-%% being fuel and not flying. At 32 m of reach it fails to connect even at 50 m.
-%% The whole table is `scripts/at_what_range_can_a_break_work.sh'.
+%% ==========================================================================
+%% ⚠⚠ WHY 120 AND NOT THE 60 THIS SAID FOR A DAY
+%% ==========================================================================
+%%
+%% 60 m was set on 2026-08-09 against the wrong end of the table. What was
+%% measured then was that reach must be long enough for the missile to ARRIVE,
+%% and 60 m is indeed the short end of what functions. What was never measured is
+%% where the shipped value sits against the alternatives, because the sweep's
+%% rungs jump 100 m to 200 m and print identical tables for everything between.
+%%
+%% `scripts/how_far_should_the_interceptor_reach.sh' is that sweep, narrowed.
+%% The last launch range that connects, over 24 starts per cell:
+%%
+%%   reach          60 m   80 m  100 m  120 m  140 m  160 m
+%%   vs a runner       -     80    100    120    140    160
+%%   vs a hard break  50     80    100    115    130    160
+%%
+%% Two things come out of it, and only one was expected.
+%%
+%%   1. A BREAK COSTS THE WEAPON BETWEEN 0 AND 10 m AND NEVER MORE. Every arm
+%%      connects 100% at every range it can reach, on both evasions. The
+%%      pre-registered viability criterion — good at 300 m, beatable at 50 m,
+%%      40 points between — FAILS ON ALL SIX ARMS INCLUDING THE SHIPPED ONE, so
+%%      viability does not choose this constant and cannot be made to. Register
+%%      `D.10' said so about the turn rate and it is true of reach as well.
+%%
+%%   2. SO REACH IS THE SIZE OF THE KILL ZONE, EXACTLY, AND NOTHING ELSE. It is
+%%      chosen on what a fight should look like, which is a design decision and
+%%      is recorded here as one rather than dressed as a measurement.
+%%
+%% ⚠ AND THE GATE OVER-PROMISES BY THE BREAK MARGIN, AT EVERY VALUE. `drone_senses'
+%% derives the launch gate from `speed * ttl', the NOMINAL reach, so a rung may
+%% fire in the last few metres where a breaking target survives: 10 m of the 60,
+%% 5 m of this 120. It is smaller here than it was, it is not zero, and closing it
+%% means gating on a measured fraction rather than on the arithmetic. Not done:
+%% it is a different change and this one is already physics.
 -ifndef(INTERCEPTOR_TTL).
--define(INTERCEPTOR_TTL, 15).
+-define(INTERCEPTOR_TTL, 30).
 -endif.
 %% ⚠ THE SEEKER HAS A FIELD OF VIEW, AND LEAVING IT OUT WAS THE DEFECT REGISTER
 %% `D.8' RECORDS. Without one the interceptor steers toward its target for ever,

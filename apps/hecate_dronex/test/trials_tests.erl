@@ -58,8 +58,8 @@ the_default_ladder_is_unchanged_test() ->
 %% MATTERS. The order below was measured over 48 starts against five live
 %% champions — circler 227, harrier 202, marksman 192, bruiser 185, swooper 139,
 %% leader 130 out of 240 — under a guided weapon reaching 600 m and a start set
-%% opening at 400 m. The weapon now reaches 60 m, the set opens at 800 m, and
-%% those champions have been wiped, so the ORDER IS UNKNOWN.
+%% opening at 400 m. The weapon has reached 60 m and now reaches 120 m, the set
+%% opens at 800 m, and those champions have been wiped, so the ORDER IS UNKNOWN.
 %%
 %% ⚠⚠ IT IS STILL ASSERTED, ON PURPOSE, SO THE LIST CANNOT DRIFT WHILE NOBODY IS
 %% LOOKING. What this catches today is a silent reorder or a rung appearing and
@@ -303,8 +303,10 @@ above() ->
                                       130 * 20480, 0}]))).
 
 %% Beyond the circler's standoff, off the nose so a turn is not a no-op. About
-%% 128 m out, which cleared the standoff when it was a flat 90 m and still clears
-%% it now that it is three quarters of the weapon's 60 m reach.
+%% 126 m out, which cleared the standoff when it was a flat 90 m, cleared it at
+%% three quarters of a 60 m weapon, and clears it at three quarters of the 120 m
+%% one — 90 m — by the narrowest margin it has ever had. A longer reach eats this
+%% fixture's headroom, so a further increase needs this distance moved out.
 far_off_axis() ->
     hd(airspace:drones(airspace:new([{b, defender, 620 * 20480, 540 * 20480,
                                       100 * 20480, 0}]))).
@@ -319,7 +321,7 @@ barely_left() ->
 %% 45 m ahead and 14 m off, which is about 17 degrees.
 %%
 %% ⚠ 45 m, AND IT WAS 100 m UNTIL 2026-08-09. The guided weapon reached 600 m and
-%% now reaches 60 m, so both rungs refuse a 100 m shot and the fixture stopped
+%% was cut to 60 m, so both rungs refused a 100 m shot and the fixture stopped
 %% separating them: the test went red saying the CHASER would not fire, which was
 %% correct and was not what it is here to check. Any distance inside the envelope
 %% works; this one keeps the same angle the comment always claimed.

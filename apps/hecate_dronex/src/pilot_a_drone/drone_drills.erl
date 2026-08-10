@@ -189,14 +189,17 @@ running(#{bearing_sin := S}, N) ->
 %% HAVE BECOME A PUSHOVER ON 2026-08-09. `R' is a fraction of the 600 m sensor,
 %% and this used to read `R >= 0.05' with no ceiling: fire the guided weapon at
 %% anything past 30 m. That was reasonable when the interceptor reached 600 m and
-%% is nonsense now that it reaches 60 m, because a drill would have spent its
-%% whole magazine — two, not four — at four hundred metres, into fuel it does not
-%% have, and closed to every fight unarmed.
+%% is nonsense at any of the reaches it has had since, because a drill would have
+%% spent its whole magazine — two, not four — at four hundred metres, into fuel
+%% it does not have, and closed to every fight unarmed.
 %%
-%% 0.1 is 60 m, which is the reach exactly. Below 0.05 is 30 m, where the dumb
-%% round takes over. So a drill now shoots the guided weapon only in the 30 m
-%% band where the guided weapon works, and closing at 3.5 m per tick that band
-%% lasts about 9 ticks — against a 40 tick cooldown, one shot per merge.
+%% The ceiling is `drone_senses:reach_fraction/0' and NOT A LITERAL, which is the
+%% whole point of that function: the reach was 60 m for a day and is 120 m since
+%% 2026-08-10, and this gate followed both without being edited. Below 0.05 is
+%% 30 m, where the dumb round takes over. So a drill shoots the guided weapon
+%% only in the band where the guided weapon works, and closing at 3.5 m per tick
+%% that band lasts about 26 ticks — against a 40 tick cooldown, one shot per
+%% merge.
 %%
 %% ⚠ THIS IS A CHANGE TO THE STANDARD AND IT ONLY HAPPENED BECAUSE THE FLEET WAS
 %% WIPED THE SAME DAY. A ladder freezes the moment a population is bred against
