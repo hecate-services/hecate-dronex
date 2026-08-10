@@ -7,6 +7,54 @@ The index, and the rule itself, are in [`../REGISTER.md`](../REGISTER.md).
 
 ---
 
+## I.30: a contest was asked a question about admission, and a counter was read as a flight log
+
+Three things looked wrong in the population census of 2026-08-10. Two were, one
+was me misreading a field, and the misreading is the more useful entry.
+
+**The counter.** Median `sorties` was 0 or 1 across every roster, which I wrote up
+as "most entries have barely flown" and offered as evidence that the population
+was not being evaluated. `roster:flew/1` is called from exactly one place,
+`raid:sortie/3`. **`sorties` counts RAIDS, not training bouts.** A median of 0
+means most entries have never been mustered for a raid, which is simply what a
+raid counter looks like on an island that raids occasionally. Nothing was wrong.
+I had inferred the meaning of a field from its name and from what I was already
+looking for, with `grep` one command away.
+
+**The contest.** `trainer:judged/7` refused any child that did not beat the worst
+entry, unconditionally. `roster:admit/2` immediately below it already knows the
+difference between a roster with room and a full one, taking a newcomer outright
+in the first case and running the displacement contest only in the second. The
+gate reached the decision first and answered the wrong question: a contest
+decides who LEAVES, and it was being asked whether anyone may ENTER.
+
+Cost: every island sat at 25% to 64% of a capacity of 240 after twelve thousand
+rounds. That is not just a smaller number. The roster is `opponents/1` AND
+`sample/3`, so it is the opponent set and the parent pool at once; keeping it
+small narrows the search and makes the local fitness easier, which is the
+direction that flatters a number.
+
+**The draining is NOT a fault and was nearly "fixed" too.** `roster:take/2`
+evicts a raid party and only survivors return, and its own comment says why:
+copying them out instead would make losing a raid free. Two of the three
+candidate causes for a short roster were deliberate.
+
+**The rule.** Before calling a measured oddity a defect, find the line that
+writes the field. Two of the three symptoms here dissolved on reading one
+function each, and the one that survived was not the one that looked worst.
+
+**ELI5.** Someone counts the hats in a cloakroom and finds far fewer than there
+are pegs, so they conclude something is stealing hats. Three explanations get
+offered. One is that the door staff turn away anyone whose coat is worse than the
+worst coat already inside, even when the room is half empty, which turns out to
+be true and silly. One is that people leave with their hats on trips and not all
+come back, which is true and intended. And one is that the sign-in book has
+almost no entries, which looked like proof nobody ever comes in, until somebody
+read the top of the page and saw it was the book for organised outings, not for
+arrivals. The lesson is the third one: the book was not lying, it was answering a
+different question, and its name was close enough to the one being asked that
+nobody opened it.
+
 ## I.29: the differential test compared the old engine against itself, and would have passed
 
 The question was whether upgrading `faber_tweann` from 2.0.1 to 2.4.0 changes what

@@ -56,12 +56,27 @@ the_mute_reaches_the_engine_test_() ->
 %% And the two sides are separable: silencing the defender is not the same run as
 %% silencing the attacker. A global mute would make these identical, and a
 %% self-play delta would then cancel to zero however much the channel was worth.
+%%
+%% ⚠ EIGHT FIGHTS, NOT ONE, AND THE REASON IS THAT ONE WAS A COIN TOSS. This drew
+%% a single fight and asserted the two tick counts differed. Two runs of the same
+%% geometry CAN end on the same tick for reasons that have nothing to do with the
+%% radio, so the test was passing on the draw rather than on the property, and it
+%% went red on 2026-08-10 when `breed:random/1` changed which genomes a seed
+%% produces. The engine was not touched by that change and is not what failed.
+%%
+%% Comparing the two SEQUENCES keeps the intent exactly and removes the
+%% sensitivity: if muting the attacker and muting the defender were the same
+%% operation, all eight pairs would agree, and a single coincidence no longer
+%% decides the verdict. Same shape as the sibling test above, which already ran
+%% over eight and never had this problem.
 the_two_sides_mute_independently_test_() ->
     {timeout, 60, fun () ->
-        [{A, C} | _] = fights(1),
-        Att = engagement:run(A, C, #{mute => #{attacker => all}}),
-        Def = engagement:run(A, C, #{mute => #{defender => all}}),
-        ?assertNotEqual(maps:get(ticks, Att), maps:get(ticks, Def))
+        Fs = fights(8),
+        Att = [maps:get(ticks, engagement:run(A, C, #{mute => #{attacker => all}}))
+               || {A, C} <- Fs],
+        Def = [maps:get(ticks, engagement:run(A, C, #{mute => #{defender => all}}))
+               || {A, C} <- Fs],
+        ?assertNotEqual(Att, Def)
     end}.
 
 %%==============================================================================

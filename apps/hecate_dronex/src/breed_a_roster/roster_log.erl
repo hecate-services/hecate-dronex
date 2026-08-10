@@ -107,7 +107,21 @@
 %% and system streams exist for exactly that operational legibility. A user
 %% stream would need 32 hex digits of identity for a thing there is only ever one
 %% of, and the store is already per-island.
--define(STREAM, <<"$dronex:roster_g2">>).
+%% ⚠⚠ AND `_g3' FROM 2026-08-10, FOR THE SAME REASON AT A DIFFERENT LAYER. The
+%% weapon did not change this time; the SEARCH did. `breed:random/1' drew every
+%% seeded time constant into [0.406, 0.644], a quarter of what `to_tau/1'
+%% expresses, and one sigma in gene units moved a tau at a quarter of a weight's
+%% pace through a range four times larger. Measured over all five rosters, 452
+%% entries and 10,848 time constants: not one was fast or slow, after 150
+%% generations. Seeding now draws taus across the whole range and the step is
+%% scaled to match, and `trainer' seats a child while the roster has room instead
+%% of turning it away.
+%%
+%% Both change the distribution a lineage starts from and the rate it moves at, so
+%% a `_g2' genome and a `_g3' genome were not produced by the same process and
+%% their fitness numbers are not comparable. Same mechanism as before: a new name,
+%% the old streams intact and unread, no ssh and no `rm' near a store.
+-define(STREAM, <<"$dronex:roster_g3">>).
 
 %% How far back `restore/1' will look for a snapshot before giving up and
 %% starting from nothing. Generous, because the cost is paid once at boot and the

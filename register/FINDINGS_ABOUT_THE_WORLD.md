@@ -7,6 +7,59 @@ The index, and the rule itself, are in [`../REGISTER.md`](../REGISTER.md).
 
 ---
 
+## D.19: the search could not reach three quarters of the memory it was given
+
+Every drone carries 24 time constants, one per hidden neuron, and
+`drone_genome:to_tau/1` maps them onto [0.05, 1.0). Low is a reflex, high is a
+memory that lasts. `drone_pilot` says in its own docstring that memory is close
+to a prerequisite here: a contact leaving the sensor cone cannot be tracked
+without it, and leading a target needs to know where the target was.
+
+Measured 2026-08-10 across all five rosters, 452 entries and **10,848 time
+constants: not one was fast (below 0.2) or slow (above 0.8).** Only 2% to 7% had
+left the band they were born in. Median lineage depth was 150 generations, so
+this is not a young population that has not got going.
+
+**It was arithmetic, and the two blocks of the genome were never on the same
+scale.** One mutation is a draw at sigma 600 in gene units, on one gene in
+twenty. A weight reads its gene as `gene/4096`, and was seeded uniform on
+plus or minus 8192, so it starts spread across [-2, 2] and one nudge moves it
+0.146, about 3.7% of that span. A tau reads the WHOLE 16-bit range as [0.05,
+1.0), so the same seeded draw covered only the middle quarter, and one nudge
+moves it 0.0087, about 0.9%.
+
+So weights were seeded across the range they use and a gene near 2.0 left the box
+on its first nudge, which is why every entry on every island carried weights
+outside it. Time constants were seeded into the middle and had to cross 0.206 of
+dead ground before being merely fast. At one gene in twenty over 150 generations
+each tau had taken about 7.5 nudges, a random walk of sd 0.024, so the crossing
+was 8.6 standard deviations. Reaching it at one standard deviation needs about
+560 nudges, roughly **11,000 generations against the 150 available.**
+
+Nothing was selecting against fast or slow neurons. They were never proposed.
+
+**What it cost.** Every claim this repository might have made about whether
+learnable time constants help was unanswerable, and would have read as "memory
+does not pay" — a negative about a component that was never given the chance.
+That is the same shape as the faber corpus's memory arc, recorded in the
+2026-08-10 handover: a broken component manufactures exactly one kind of result.
+
+**Fixed** by giving each block the draw and the step its own map deserves: taus
+seeded across the full range, sigma scaled by the ratio of the two draw widths so
+one nudge is the same fraction of each. It changes the distribution a lineage
+starts from, so it shipped with a new lineage, `$dronex:roster_g3`.
+
+**ELI5.** Imagine breeding dogs where you can choose coat colour and also size,
+but the pen you draw your first dogs from only ever contains medium dogs, and
+each generation can change size by a millimetre while it can change colour
+completely. After a hundred generations you have every colour under the sun and
+every dog is still medium. Somebody looking at your kennel concludes that size
+does not matter for herding sheep. It might matter enormously. You never had a
+big dog or a small one to find out with. The mistake was not in the breeding. It
+was that "one step" meant a millimetre for one thing and a whole colour for the
+other, and nobody had checked that the two steps were the same size relative to
+what they were stepping through.
+
 ## D.18: a random controller could win rungs, and the weapon was paying for it
 
 Under the 600 m interceptor, a null and eight random controllers used to take

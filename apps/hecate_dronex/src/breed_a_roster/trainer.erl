@@ -130,8 +130,23 @@ contested(R, Opts, {A, B}, Child, S) ->
     judged(roster:scored(R, roster:entry_id(Incumbent), Theirs),
            Opts, {A, B}, Child, Mine, Theirs, S2).
 
-judged(R, _Opts, _Pair, _Child, Mine, Theirs, S) when Mine =< Theirs ->
-    {R, #{outcome => rejected, challenger => Mine, incumbent => Theirs}, S};
+%% ⚠ THE CONTEST DECIDES WHO LEAVES, NOT WHETHER ANYONE MAY ENTER, AND APPLYING
+%% IT TO AN EMPTY SEAT STARVED THE POPULATION. This clause used to be
+%% unconditional, so a child that lost to the worst entry was dropped even when
+%% the roster had a hundred and eighty free places. Measured 2026-08-10: rosters
+%% sat at 60 to 153 of a capacity of 240, on every island, after twelve thousand
+%% rounds. `roster:admit/2' already knows the difference, taking a newcomer
+%% outright while there is room and running the displacement contest only when
+%% full; the gate here reached that decision first and answered it wrongly.
+%%
+%% ⚠⚠ REFUSING A LOSER WITH ROOM TO SPARE IS NOT A HARMLESS EXTRA FILTER. The
+%% roster is also `opponents/1' and `sample/3', so it is the parent pool AND the
+%% opponent set. Keeping it small narrows both, and narrowing the opponent set
+%% makes the local fitness easier, which is the direction that flatters the
+%% numbers. Nothing here is tuned on that; the seats exist and were going unused.
+judged(R, Opts, {A, B}, Child, Mine, Theirs, S) when Mine =< Theirs ->
+    admitted_with_room(roster:depth(R) < roster:capacity(R),
+                       R, Opts, {A, B}, Child, Mine, Theirs, S);
 judged(R, Opts, {A, B}, Child, Mine, Theirs, S) ->
     Entry = roster:entry(Child,
                          #{origin => {bred, maps:get(island, Opts, unknown)},
@@ -140,6 +155,27 @@ judged(R, Opts, {A, B}, Child, Mine, Theirs, S) ->
                            parents => [id(A), id(B)],
                            fitness => Mine}),
     admitted(roster:admit(R, Entry), R, Mine, Theirs, S).
+
+%% A loser with a seat to sit in. It enters at the fitness it just earned, which
+%% is a real measurement on the same opponents and starts as the incumbent, so it
+%% is immediately comparable and will be the one displaced first if it deserves
+%% to be. The outcome is named apart from `admitted' so the two can never be
+%% confused in a log or a fact: one won its place and one filled a gap.
+admitted_with_room(false, R, _Opts, _Pair, _Child, Mine, Theirs, S) ->
+    {R, #{outcome => rejected, challenger => Mine, incumbent => Theirs}, S};
+admitted_with_room(true, R, Opts, {A, B}, Child, Mine, Theirs, S) ->
+    Entry = roster:entry(Child,
+                         #{origin => {bred, maps:get(island, Opts, unknown)},
+                           born_at => maps:get(tick, Opts, 0),
+                           generation => 1 + max(generation(A), generation(B)),
+                           parents => [id(A), id(B)],
+                           fitness => Mine}),
+    seated(roster:admit(R, Entry), R, Mine, Theirs, S).
+
+seated({admitted, R2}, _Was, Mine, Theirs, S) ->
+    {R2, #{outcome => seated, challenger => Mine, incumbent => Theirs}, S};
+seated({refused, Why}, Was, Mine, Theirs, S) ->
+    {Was, #{outcome => {refused, Why}, challenger => Mine, incumbent => Theirs}, S}.
 
 admitted({admitted, R2}, _Was, Mine, Theirs, S) ->
     {R2, #{outcome => admitted, challenger => Mine, incumbent => Theirs}, S};
