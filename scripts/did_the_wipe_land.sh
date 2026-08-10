@@ -17,10 +17,15 @@
 #                thing that made the wipe necessary, so it is read directly
 #                rather than trusted to have travelled with the rest.
 #
-# ⚠⚠ AND `rounds' IS PRINTED BECAUSE A FRESH LINEAGE CANNOT HAVE MANY. An island
-# reporting `_g4' with four thousand breeding rounds behind it would mean the
-# stream name moved and the state did not, which is a different bug from the one
-# this script is looking for and would otherwise read as success.
+# ⚠⚠ `rounds' IS PRINTED, AND IT IS NOT EVIDENCE OF ANYTHING ON ITS OWN. The
+# tempting reading is "a fresh lineage cannot have many rounds, so a big number
+# means the wipe did not land". That reading is FALSE and it cost an afternoon:
+# these islands breed at roughly 1,500 rounds an hour, so a `_g4' lineage three
+# hours old is legitimately at four to five thousand, and the public exhibit
+# showing thousands of rounds was read as a fleet that had never rolled. It had
+# rolled, inside four minutes, on all five boxes.
+#
+# The LINEAGE NAME is the answer. `rounds' is context.
 set -uo pipefail
 
 BOXES="${*:-beam00.lab beam01.lab beam02.lab beam03.lab msi00.lab}"
@@ -38,12 +43,28 @@ BOXES="${*:-beam00.lab beam01.lab beam02.lab beam03.lab msi00.lab}"
 # A slow answer must never be able to take a fast one down with it. So the three
 # constants are computed first and unconditionally, and `rounds' is a bounded call
 # whose failure is a VALUE in the tuple rather than an exception over it.
+#
+# ⚠⚠⚠⚠ AND THE BOUND IS 30 SECONDS, NOT FOUR, BECAUSE FOUR ACCUSES A HEALTHY BOX.
+# `what_is_the_island_doing.sh' has said since 2026-08-09 that a breeding round on
+# a 1.5 GHz Celeron can exceed a short call timeout, and that reading that as a
+# wedged process is a measurement artefact. This script was written with a 4
+# second bound anyway, reported `island_server_did_not_answer' for beam00, and
+# that was taken as evidence of a stuck island. The value is now named for what it
+# means. It was not stuck: sampled over a hundred
+# seconds, beam00's queue never exceeded 7, its tick advanced every sample and it
+# was inside `evaluate_neurons_cfc' every time. It was busy.
+#
+# ⚠ THE WARNING EXISTED AND DID NOT TRAVEL, WHICH IS THE PART TO LEARN FROM. It
+# lived in a comment in a DIFFERENT script, so writing a new one that asks the
+# same process the same kind of question reproduced the same mistake from scratch.
+# The wedge signature is a queue in the hundreds of thousands and a FLAT tick
+# (register I.20), not a call that takes longer than you felt like waiting.
 EXPR='{roster_log:stream(),
        binary:part(binary:encode_hex(dronex_raid:fingerprint()), 0, 8),
        maps:get(interceptor_ttl, airspace:limits()),
-       case catch island:rounds_of(maps:get(island, sys:get_state(island_server, 4000))) of
+       case catch island:rounds_of(maps:get(island, sys:get_state(island_server, 30000))) of
            N when is_integer(N) -> N;
-           _ -> island_server_did_not_answer
+           _ -> island_server_busy_past_the_bound
        end}.'
 
 for box in $BOXES; do
